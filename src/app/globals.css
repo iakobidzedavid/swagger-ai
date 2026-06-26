@@ -23,6 +23,29 @@
 
   --max-width: 1200px;
   --content-width: 680px;
+  --bg: #0d1f33;
+  --background: #0d1f33;
+  --surface: #102542;
+  --card: #102542;
+  --card-bg: #102542;
+  --border: #1a3a5c;
+  --text-primary: #ecebf3;
+  --text-body: #ecebf3;
+  --foreground: #ecebf3;
+  --text: #ecebf3;
+  --text-muted: #8fa3b8;
+  --text-subtle: #8fa3b8;
+  --muted: #8fa3b8;
+  --accent: #7c3aed;
+  --primary: #7c3aed;
+  --danger: #dc2626;
+  --destructive: #dc2626;
+  --error: #dc2626;
+  --primary-hover: #6d33d0;
+  --accent-text: #7c3aed;
+  --primary-light: #102542;
+  --accent-bg: #102542;
+  --accent-border: #1a3a5c;
 }
 
 *, *::before, *::after {
