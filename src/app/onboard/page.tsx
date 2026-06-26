@@ -1,0 +1,361 @@
+'use client'
+
+import { useState, useRef, useCallback } from 'react'
+
+type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid'
+type SubmitState = 'idle' | 'submitting' | 'success' | 'error'
+
+interface BrandResult {
+  id: string
+  domain: string
+  company_name: string
+  logo_url: string | null
+  primary_color: string
+  secondary_color: string
+  status: string
+  created_at: string
+}
+
+const PERSONAL_DOMAINS = new Set([
+  'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
+  'icloud.com', 'protonmail.com', 'mail.com',
+])
+const DOMAIN_RE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i
+
+function normalise(v: string) {
+  return v.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+}
+
+function formatValidate(domain: string): string | null {
+  if (!domain) return null
+  if (PERSONAL_DOMAINS.has(domain)) return 'Enter a company domain, not a personal email provider'
+  if (!DOMAIN_RE.test(domain)) return 'Enter a valid domain (e.g., acme.com)'
+  return null
+}
+
+function ColorSwatch({ color, label, onCopy }: { color: string; label: string; onCopy: (c: string) => void }) {
+  return (
+    <div className="flex items-center gap-2" style={{ gap: '10px' }}>
+      <button
+        className="color-swatch"
+        style={{ background: color }}
+        title={`Copy ${color}`}
+        onClick={() => onCopy(color)}
+        type="button"
+        aria-label={`Copy ${label} color ${color}`}
+      />
+      <div>
+        <div className="text-small text-muted" style={{ fontSize: '0.75rem', lineHeight: 1.3 }}>{label}</div>
+        <div className="text-small font-semibold" style={{ fontFamily: 'monospace', letterSpacing: '0.03em' }}>{color}</div>
+      </div>
+    </div>
+  )
+}
+
+export default function OnboardPage() {
+  const [domain, setDomain] = useState('')
+  const [formatError, setFormatError] = useState<string | null>(null)
+  const [validationState, setValidationState] = useState<ValidationState>('idle')
+  const [validationMsg, setValidationMsg] = useState<string | null>(null)
+  const [submitState, setSubmitState] = useState<SubmitState>('idle')
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [brand, setBrand] = useState<BrandResult | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+  const [logoError, setLogoError] = useState(false)
+  const validateTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const showToast = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  const copyHex = async (color: string) => {
+    try {
+      await navigator.clipboard.writeText(color)
+      showToast(`Copied ${color}`)
+    } catch {
+      showToast(color)
+    }
+  }
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value
+    setDomain(raw)
+    setBrand(null)
+    setLogoError(false)
+    setSubmitState('idle')
+    setSubmitError(null)
+
+    const norm = normalise(raw)
+    const err = formatValidate(norm)
+    setFormatError(err)
+
+    if (err || !norm) {
+      setValidationState('idle')
+      setValidationMsg(null)
+    }
+
+    // Debounce API validation
+    if (validateTimer.current) clearTimeout(validateTimer.current)
+    if (!err && norm) {
+      validateTimer.current = setTimeout(() => runApiValidation(norm), 600)
+    }
+  }, [])
+
+  const handleBlur = useCallback(() => {
+    if (validateTimer.current) clearTimeout(validateTimer.current)
+    const norm = normalise(domain)
+    const err = formatValidate(norm)
+    if (!err && norm && validationState === 'idle') {
+      runApiValidation(norm)
+    }
+  }, [domain, validationState])
+
+  async function runApiValidation(norm: string) {
+    setValidationState('validating')
+    setValidationMsg(null)
+    try {
+      const res = await fetch(`/api/domain/validate?domain=${encodeURIComponent(norm)}`)
+      const data = await res.json()
+      if (data.valid) {
+        setValidationState('valid')
+        setValidationMsg(null)
+      } else {
+        setValidationState('invalid')
+        setValidationMsg(data.reason ?? 'Domain could not be verified')
+      }
+    } catch {
+      // Network error — allow submit anyway (fail gracefully)
+      setValidationState('valid')
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const norm = normalise(domain)
+    const err = formatValidate(norm)
+    if (err || !norm) return
+
+    setSubmitState('submitting')
+    setSubmitError(null)
+    setBrand(null)
+    setLogoError(false)
+
+    try {
+      const res = await fetch('/api/domain/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: norm }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setSubmitState('error')
+        setSubmitError(data.error ?? 'Something went wrong. Please try again.')
+        return
+      }
+      setBrand(data)
+      setSubmitState('success')
+    } catch {
+      setSubmitState('error')
+      setSubmitError('Network error. Please check your connection and try again.')
+    }
+  }
+
+  const norm = normalise(domain)
+  const fmtErr = formatValidate(norm)
+  const canSubmit = !!norm && !fmtErr && validationState !== 'invalid' && submitState !== 'submitting'
+  const isSubmitting = submitState === 'submitting'
+
+  return (
+    <div className="section">
+      <div className="container content-narrow">
+
+        {/* Progress */}
+        <div style={{ marginBottom: '40px' }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
+            <span className="text-small text-muted">Step 1 of 3</span>
+            <span className="text-small text-muted">Brand Detection</span>
+          </div>
+          <div className="progress-bar">
+            <div className="progress-fill" style={{ width: '33%' }} />
+          </div>
+        </div>
+
+        {/* Header */}
+        <div style={{ marginBottom: '40px' }}>
+          <h1 className="text-h1" style={{ marginBottom: '10px' }}>Let&apos;s get your brand</h1>
+          <p className="text-body text-muted">
+            Enter your company domain to auto-fetch your brand colors and logo.
+          </p>
+        </div>
+
+        {/* Domain Input Form */}
+        <div className="card" style={{ marginBottom: '24px' }}>
+          <form onSubmit={handleSubmit} noValidate>
+            <label htmlFor="domain-input" style={{ display: 'block', marginBottom: '8px' }}>
+              <span className="text-small font-semibold">Company Domain</span>
+            </label>
+
+            <div className="input-wrapper" style={{ marginBottom: '8px' }}>
+              <input
+                id="domain-input"
+                type="text"
+                className={`input-field${
+                  validationState === 'valid' ? ' input-valid' :
+                  (fmtErr || validationState === 'invalid') ? ' input-error' : ''
+                }`}
+                placeholder="acme.com"
+                value={domain}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                disabled={isSubmitting}
+                aria-describedby={fmtErr || validationMsg ? 'domain-error' : undefined}
+              />
+              <span className="input-suffix">
+                {validationState === 'validating' && (
+                  <span className="spinner" aria-label="Validating…" />
+                )}
+                {validationState === 'valid' && (
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <circle cx="9" cy="9" r="8" stroke="var(--color-success)" strokeWidth="1.5"/>
+                    <path d="M5.5 9l2.5 2.5 4.5-5" stroke="var(--color-success)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+                {(fmtErr || validationState === 'invalid') && domain && (
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <circle cx="9" cy="9" r="8" stroke="var(--color-danger)" strokeWidth="1.5"/>
+                    <path d="M9 5v5M9 12.5v.5" stroke="var(--color-danger)" strokeWidth="1.8" strokeLinecap="round"/>
+                  </svg>
+                )}
+              </span>
+            </div>
+
+            {/* Inline error */}
+            {(fmtErr || validationMsg) && (
+              <p id="domain-error" className="text-small text-danger" style={{ marginBottom: '12px' }}>
+                {fmtErr || validationMsg}
+              </p>
+            )}
+
+            {!fmtErr && !validationMsg && domain && (
+              <p className="text-small text-muted" style={{ marginBottom: '12px' }}>
+                e.g. linear.app, ramp.com, retool.com
+              </p>
+            )}
+
+            {submitError && (
+              <div className="error-banner" style={{ marginBottom: '16px' }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4"/>
+                  <path d="M8 4v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                </svg>
+                {submitError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="btn btn-primary btn-full"
+              disabled={!canSubmit}
+              style={{ marginTop: fmtErr || validationMsg ? 0 : undefined }}
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="spinner" style={{ width: 16, height: 16 }} />
+                  Fetching brand assets…
+                </>
+              ) : (
+                <>
+                  Fetch Brand &amp; Preview
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 8h10M9 4l4 4-4 4"/>
+                  </svg>
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Brand Preview */}
+        {brand && submitState === 'success' && (
+          <div className="card" style={{ borderColor: 'var(--color-accent)', borderWidth: '1px' }}>
+            <div className="success-banner" style={{ marginBottom: '24px' }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4"/>
+                <path d="M5 8l2.5 2.5 4-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Brand detected and saved — ID {brand.id.slice(0, 8)}…
+            </div>
+
+            <div className="flex items-center" style={{ gap: '20px', marginBottom: '24px', flexWrap: 'wrap' }}>
+              {/* Logo */}
+              <div style={{
+                width: '80px', height: '80px',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-bg)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, overflow: 'hidden',
+              }}>
+                {brand.logo_url && !logoError ? (
+                  <img
+                    src={brand.logo_url}
+                    alt={`${brand.company_name} logo`}
+                    style={{ width: '60px', height: '60px', objectFit: 'contain' }}
+                    onError={() => setLogoError(true)}
+                  />
+                ) : (
+                  <span style={{ fontSize: '1.5rem', fontWeight: 800, color: brand.primary_color }}>
+                    {brand.company_name.charAt(0)}
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <div className="text-h2">{brand.company_name}</div>
+                <div className="text-small text-muted">{brand.domain}</div>
+              </div>
+            </div>
+
+            {/* Colors */}
+            <div style={{ marginBottom: '24px' }}>
+              <div className="text-small font-semibold" style={{ marginBottom: '12px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
+                Brand Colors
+              </div>
+              <div className="flex" style={{ gap: '20px', flexWrap: 'wrap' }}>
+                <ColorSwatch color={brand.primary_color} label="Primary" onCopy={copyHex} />
+                <ColorSwatch color={brand.secondary_color} label="Secondary" onCopy={copyHex} />
+              </div>
+            </div>
+
+            {/* Color bar preview */}
+            <div style={{
+              height: '8px', borderRadius: '4px',
+              background: `linear-gradient(to right, ${brand.primary_color} 0%, ${brand.secondary_color} 100%)`,
+              marginBottom: '24px',
+            }} />
+
+            <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: '12px' }}>
+              <div className="text-small text-muted">
+                Saved to Swagger AI · {new Date(brand.created_at).toLocaleString()}
+              </div>
+              <a href="/onboard" className="btn btn-secondary btn-sm" onClick={(e) => { e.preventDefault(); setBrand(null); setDomain(''); setValidationState('idle'); setSubmitState('idle'); }}>
+                Try another domain
+              </a>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className="toast" role="status" aria-live="polite">
+          {toast}
+        </div>
+      )}
+    </div>
+  )
+}
