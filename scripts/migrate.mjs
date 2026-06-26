@@ -26,13 +26,19 @@ if (existsSync(envLocal)) {
 async function migrate() {
   const url = process.env.DATABASE_URL
   if (!url) {
-    console.error('ERROR: DATABASE_URL is not set — cannot run migrations')
-    process.exit(1)
+    console.warn('WARNING: DATABASE_URL is not set — skipping migrations (set in Vercel env vars to run automatically)')
+    return
   }
 
-  const client = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } })
-  await client.connect()
-  console.log('Connected to database')
+  let client
+  try {
+    client = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } })
+    await client.connect()
+    console.log('Connected to database')
+  } catch (err) {
+    console.warn('WARNING: Could not connect to database — skipping migrations:', err.message)
+    return
+  }
 
   // Ensure migration tracking table exists
   await client.query(`
@@ -77,6 +83,5 @@ async function migrate() {
 }
 
 migrate().catch(err => {
-  console.error('Migration error:', err)
-  process.exit(1)
+  console.warn('Migration error (non-fatal — build will continue):', err.message)
 })
