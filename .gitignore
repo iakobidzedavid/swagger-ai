@@ -31,3 +31,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Goal-loop — ephemeral/build/deliverable paths (auto-excluded)
+.context/
+documents/
+.s3-docs/
+.next/
+node_modules/
+dist/
+build/
+*.log
