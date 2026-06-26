@@ -5,6 +5,8 @@ import { useState, useRef, useCallback } from 'react'
 type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid'
 type SubmitState = 'idle' | 'submitting' | 'success' | 'error'
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 interface BrandResult {
   id: string
   domain: string
@@ -53,6 +55,9 @@ function ColorSwatch({ color, label, onCopy }: { color: string; label: string; o
 }
 
 export default function OnboardPage() {
+  const [contactName, setContactName] = useState('')
+  const [contactEmail, setContactEmail] = useState('')
+  const [emailError, setEmailError] = useState<string | null>(null)
   const [domain, setDomain] = useState('')
   const [formatError, setFormatError] = useState<string | null>(null)
   const [validationState, setValidationState] = useState<ValidationState>('idle')
@@ -78,6 +83,16 @@ export default function OnboardPage() {
     }
   }
 
+  const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value
+    setContactEmail(v)
+    if (v && !EMAIL_RE.test(v)) {
+      setEmailError('Enter a valid email address')
+    } else {
+      setEmailError(null)
+    }
+  }, [])
+
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value
     setDomain(raw)
@@ -98,7 +113,7 @@ export default function OnboardPage() {
     // Debounce API validation
     if (validateTimer.current) clearTimeout(validateTimer.current)
     if (!err && norm) {
-      validateTimer.current = setTimeout(() => runApiValidation(norm), 600)
+      validateTimer.current = setTimeout(() => runApiValidation(norm), 300)
     }
   }, [])
 
@@ -135,6 +150,7 @@ export default function OnboardPage() {
     const norm = normalise(domain)
     const err = formatValidate(norm)
     if (err || !norm) return
+    if (emailError) return
 
     setSubmitState('submitting')
     setSubmitError(null)
@@ -145,7 +161,11 @@ export default function OnboardPage() {
       const res = await fetch('/api/domain/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain: norm }),
+        body: JSON.stringify({
+          domain: norm,
+          contact_name: contactName.trim() || undefined,
+          contact_email: contactEmail.trim() || undefined,
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -163,7 +183,7 @@ export default function OnboardPage() {
 
   const norm = normalise(domain)
   const fmtErr = formatValidate(norm)
-  const canSubmit = !!norm && !fmtErr && validationState !== 'invalid' && submitState !== 'submitting'
+  const canSubmit = !!norm && !fmtErr && !emailError && validationState !== 'invalid' && submitState !== 'submitting'
   const isSubmitting = submitState === 'submitting'
 
   return (
@@ -192,6 +212,44 @@ export default function OnboardPage() {
         {/* Domain Input Form */}
         <div className="card" style={{ marginBottom: '24px' }}>
           <form onSubmit={handleSubmit} noValidate>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div>
+                <label htmlFor="contact-name" style={{ display: 'block', marginBottom: '6px' }}>
+                  <span className="text-small font-semibold">Your Name</span>
+                  <span className="text-small text-muted" style={{ marginLeft: '6px' }}>(optional)</span>
+                </label>
+                <input
+                  id="contact-name"
+                  type="text"
+                  className="input-field"
+                  placeholder="Maya Chen"
+                  value={contactName}
+                  onChange={e => setContactName(e.target.value)}
+                  autoComplete="name"
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div>
+                <label htmlFor="contact-email" style={{ display: 'block', marginBottom: '6px' }}>
+                  <span className="text-small font-semibold">Work Email</span>
+                  <span className="text-small text-muted" style={{ marginLeft: '6px' }}>(optional)</span>
+                </label>
+                <input
+                  id="contact-email"
+                  type="email"
+                  className={`input-field${emailError ? ' input-error' : ''}`}
+                  placeholder="maya@acme.com"
+                  value={contactEmail}
+                  onChange={handleEmailChange}
+                  autoComplete="email"
+                  disabled={isSubmitting}
+                />
+                {emailError && (
+                  <p className="text-small text-danger" style={{ marginTop: '4px' }}>{emailError}</p>
+                )}
+              </div>
+            </div>
+
             <label htmlFor="domain-input" style={{ display: 'block', marginBottom: '8px' }}>
               <span className="text-small font-semibold">Company Domain</span>
             </label>

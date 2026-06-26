@@ -66,7 +66,7 @@ function companyName(domain: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { domain?: string }
+  let body: { domain?: string; contact_name?: string; contact_email?: string }
   try {
     body = await req.json()
   } catch {
@@ -75,6 +75,8 @@ export async function POST(req: NextRequest) {
 
   const raw = (body.domain ?? '').trim().toLowerCase()
     .replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+  const contactName = (body.contact_name ?? '').trim() || null
+  const contactEmail = (body.contact_email ?? '').trim().toLowerCase() || null
 
   if (!raw) return NextResponse.json({ error: 'domain is required' }, { status: 400 })
   if (!DOMAIN_RE.test(raw)) return NextResponse.json({ error: 'Invalid domain format' }, { status: 400 })
@@ -83,7 +85,11 @@ export async function POST(req: NextRequest) {
   // Insert with pending status first to immediately persist the submission
   const { data: inserted, error: insertErr } = await supabase
     .from('domain_submissions')
-    .insert({ domain: raw, status: 'fetching' })
+    .insert({
+      domain: raw,
+      status: 'fetching',
+      raw_brand_data: { contact_name: contactName, contact_email: contactEmail },
+    })
     .select()
     .single()
 
@@ -116,6 +122,8 @@ export async function POST(req: NextRequest) {
         themeColorFound: !!themeColor,
         logoFound: logoExists,
         source: logoExists ? 'clearbit' : 'fallback',
+        contact_name: contactName,
+        contact_email: contactEmail,
       },
       updated_at: new Date().toISOString(),
     })
