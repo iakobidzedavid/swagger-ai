@@ -15,12 +15,12 @@ export default function LandingPage() {
 
           <h1 className="text-display" style={{ marginBottom: '24px' }}>
             Paste your domain.<br />
-            <span style={{ color: 'var(--color-accent)' }}>Get a branded storefront.</span>
+            <span style={{ color: 'var(--color-accent)' }}>Branded swag store in minutes.</span>
           </h1>
 
-          <p className="text-body text-muted" style={{ fontSize: '1.125rem', maxWidth: '540px', margin: '0 auto 40px' }}>
-            Swagger AI reads your brand assets, curates on-brand swag products, and
-            launches your employee storefront — in minutes, not months.
+          <p className="text-body text-muted" style={{ fontSize: '1.125rem', maxWidth: '520px', margin: '0 auto 40px' }}>
+            Swagger AI fetches your logo and colors, curates on-brand products,
+            and hands you a live employee storefront — no agencies, no spreadsheets.
           </p>
 
           <Link href="/onboard" className="btn btn-primary btn-lg">
