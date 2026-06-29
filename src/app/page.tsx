@@ -14,23 +14,21 @@ export default function LandingPage() {
           </div>
 
           <h1 className="text-display" style={{ marginBottom: '24px' }}>
-            Swag in minutes,<br />
-            <span style={{ color: 'var(--color-accent)' }}>not months.</span>
+            Paste your domain.<br />
+            <span style={{ color: 'var(--color-accent)' }}>Get a branded storefront.</span>
           </h1>
 
-          <p className="text-body text-muted" style={{ fontSize: '1.125rem', maxWidth: '560px', margin: '0 auto 40px' }}>
-            Paste your company domain. Swagger AI fetches your brand assets and builds a
-            live employee swag storefront — fully on-brand, in under five minutes.
+          <p className="text-body text-muted" style={{ fontSize: '1.125rem', maxWidth: '540px', margin: '0 auto 40px' }}>
+            Swagger AI reads your brand assets, curates on-brand swag products, and
+            launches your employee storefront — in minutes, not months.
           </p>
 
-          <div className="flex items-center gap-4" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/onboard" className="btn btn-primary btn-lg">
-              Generate your store
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 8h10M9 4l4 4-4 4"/>
-              </svg>
-            </Link>
-          </div>
+          <Link href="/onboard" className="btn btn-primary btn-lg">
+            Generate your store
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 8h10M9 4l4 4-4 4"/>
+            </svg>
+          </Link>
         </div>
       </section>
 
