@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 
 type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid'
 type SubmitState = 'idle' | 'submitting' | 'success' | 'error'
+type StoreRequestState = 'idle' | 'requesting' | 'queued' | 'error'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -67,6 +68,9 @@ export default function OnboardPage() {
   const [brand, setBrand] = useState<BrandResult | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [logoError, setLogoError] = useState(false)
+  const [storeRequestState, setStoreRequestState] = useState<StoreRequestState>('idle')
+  const [storeRequestId, setStoreRequestId] = useState<string | null>(null)
+  const [storeRequestError, setStoreRequestError] = useState<string | null>(null)
   const validateTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const showToast = (msg: string) => {
@@ -145,6 +149,39 @@ export default function OnboardPage() {
     }
   }
 
+  async function handleGenerateStore() {
+    if (!brand) return
+    setStoreRequestState('requesting')
+    setStoreRequestError(null)
+    try {
+      const res = await fetch('/api/storefront/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domain_submission_id: brand.id,
+          domain: brand.domain,
+          company_name: brand.company_name,
+          logo_url: brand.logo_url,
+          primary_color: brand.primary_color,
+          secondary_color: brand.secondary_color,
+          contact_name: contactName.trim() || undefined,
+          contact_email: contactEmail.trim() || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setStoreRequestState('error')
+        setStoreRequestError(data.error ?? 'Failed to queue store request')
+        return
+      }
+      setStoreRequestId(data.id)
+      setStoreRequestState('queued')
+    } catch {
+      setStoreRequestState('error')
+      setStoreRequestError('Network error. Please try again.')
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const norm = normalise(domain)
@@ -193,19 +230,29 @@ export default function OnboardPage() {
         {/* Progress */}
         <div style={{ marginBottom: '40px' }}>
           <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
-            <span className="text-small text-muted">Step 1 of 3</span>
-            <span className="text-small text-muted">Brand Detection</span>
+            <span className="text-small text-muted">
+              {storeRequestState === 'queued' ? 'Step 3 of 3' : submitState === 'success' ? 'Step 2 of 3' : 'Step 1 of 3'}
+            </span>
+            <span className="text-small text-muted">
+              {storeRequestState === 'queued' ? 'Store Queued' : submitState === 'success' ? 'Generate Store' : 'Brand Detection'}
+            </span>
           </div>
           <div className="progress-bar">
-            <div className="progress-fill" style={{ width: '33%' }} />
+            <div className="progress-fill" style={{ width: storeRequestState === 'queued' ? '100%' : submitState === 'success' ? '66%' : '33%' }} />
           </div>
         </div>
 
         {/* Header */}
         <div style={{ marginBottom: '40px' }}>
-          <h1 className="text-h1" style={{ marginBottom: '10px' }}>Let&apos;s get your brand</h1>
+          <h1 className="text-h1" style={{ marginBottom: '10px' }}>
+            {storeRequestState === 'queued' ? 'Your store is queued!' : submitState === 'success' ? 'Brand detected!' : 'Let’s get your brand'}
+          </h1>
           <p className="text-body text-muted">
-            Enter your company domain to auto-fetch your brand colors and logo.
+            {storeRequestState === 'queued'
+              ? 'Your branded swag storefront is being configured. We\'ll reach out with a personalized preview.'
+              : submitState === 'success'
+              ? 'Review your brand colors and logo, then generate your swag storefront.'
+              : 'Enter your company domain to auto-fetch your brand colors and logo.'}
           </p>
         </div>
 
@@ -396,13 +443,59 @@ export default function OnboardPage() {
               marginBottom: '24px',
             }} />
 
+            {/* Store request error */}
+            {storeRequestError && (
+              <div className="error-banner" style={{ marginBottom: '16px' }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4"/>
+                  <path d="M8 4v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                </svg>
+                {storeRequestError}
+              </div>
+            )}
+
+            {/* Queued confirmation */}
+            {storeRequestState === 'queued' && storeRequestId && (
+              <div className="success-banner" style={{ marginBottom: '20px' }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4"/>
+                  <path d="M5 8l2.5 2.5 4-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Store queued — request ID {storeRequestId.slice(0, 8)}…
+              </div>
+            )}
+
             <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: '12px' }}>
               <div className="text-small text-muted">
                 Saved to Swagger AI · {new Date(brand.created_at).toLocaleString()}
               </div>
-              <a href="/onboard" className="btn btn-secondary btn-sm" onClick={(e) => { e.preventDefault(); setBrand(null); setDomain(''); setValidationState('idle'); setSubmitState('idle'); }}>
-                Try another domain
-              </a>
+              <div className="flex" style={{ gap: '10px', flexWrap: 'wrap' }}>
+                <a href="/onboard" className="btn btn-secondary btn-sm" onClick={(e) => { e.preventDefault(); setBrand(null); setDomain(''); setValidationState('idle'); setSubmitState('idle'); setStoreRequestState('idle'); setStoreRequestId(null); }}>
+                  Try another domain
+                </a>
+                {storeRequestState !== 'queued' && (
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={handleGenerateStore}
+                    disabled={storeRequestState === 'requesting'}
+                  >
+                    {storeRequestState === 'requesting' ? (
+                      <>
+                        <span className="spinner" style={{ width: 14, height: 14 }} />
+                        Queuing…
+                      </>
+                    ) : (
+                      <>
+                        Generate My Store
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 8h10M9 4l4 4-4 4"/>
+                        </svg>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
