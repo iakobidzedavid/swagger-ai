@@ -20,7 +20,7 @@ export default function LandingPage() {
 
           <p className="text-body text-muted" style={{ fontSize: '1.125rem', maxWidth: '520px', margin: '0 auto 40px' }}>
             Swagger AI fetches your logo and colors, curates on-brand products,
-            and hands you a live employee storefront — no agencies, no spreadsheets.
+            and hands you a live employee storefront — swag in minutes, not months.
           </p>
 
           <Link href="/onboard" className="btn btn-primary btn-lg">
