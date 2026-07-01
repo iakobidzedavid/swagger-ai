@@ -45,3 +45,4 @@ build/
 # Gstack — ephemeral/build paths (auto-excluded)
 .mcp.json
 .claude/
+.gstack/

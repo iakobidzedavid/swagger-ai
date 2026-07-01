@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import AttributionCapture from '@/components/AttributionCapture'
+import HomepageBrandPreview from '@/components/HomepageBrandPreview'
 
 export default function LandingPage() {
   return (
@@ -12,8 +13,13 @@ export default function LandingPage() {
         <p className="text-body text-muted" style={{ fontSize: '1.125rem', maxWidth: '460px', margin: '0 auto 40px' }}>
           Branded employee swag stores, set up in minutes.
         </p>
+
+        <div style={{ marginBottom: '40px' }}>
+          <HomepageBrandPreview />
+        </div>
+
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href="/onboard" className="btn btn-primary btn-lg">
+          <Link href="/onboard" className="btn btn-secondary btn-lg">
             Get started
           </Link>
           <Link href="/design-engine?domain=stripe.com" className="btn btn-primary btn-lg" style={{ backgroundColor: '#6b21a8' }}>

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { captureAttribution, getAttribution } from '@/lib/attribution'
 
 type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid'
@@ -56,7 +57,8 @@ function ColorSwatch({ color, label, onCopy }: { color: string; label: string; o
   )
 }
 
-export default function OnboardPage() {
+function OnboardForm() {
+  const searchParams = useSearchParams()
   const [contactName, setContactName] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [emailError, setEmailError] = useState<string | null>(null)
@@ -80,6 +82,18 @@ export default function OnboardPage() {
   useEffect(() => {
     captureAttribution()
   }, [])
+
+  // Prefill from ?domain= (the homepage brand-preview widget hands off here
+  // via /onboard?domain=<domain> so the visitor doesn't retype it — DE-18).
+  useEffect(() => {
+    const fromQuery = searchParams.get('domain')
+    if (!fromQuery) return
+    const norm = normalise(fromQuery)
+    if (!norm || formatValidate(norm)) return
+    setDomain(norm)
+    runApiValidation(norm)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -517,5 +531,14 @@ export default function OnboardPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function OnboardPage() {
+  // useSearchParams requires a Suspense boundary during static generation.
+  return (
+    <Suspense fallback={null}>
+      <OnboardForm />
+    </Suspense>
   )
 }
