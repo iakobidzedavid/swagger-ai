@@ -32,6 +32,7 @@ interface ChannelSpec {
   parsed_endpoints: ParsedEndpoint[]
   endpoint_count: number
   source_format?: 'json' | 'yaml'
+  source_url?: string | null
   created_at: string
   acquisition_channels?: { name: string; horizon: Horizon } | null
 }
@@ -59,6 +60,8 @@ export default function ChannelsAdminPage() {
   const [specFormat, setSpecFormat] = useState<SpecFormat>('openapi')
   const [fileName, setFileName] = useState('')
   const [specText, setSpecText] = useState(SPEC_PLACEHOLDER.openapi)
+  const [importMode, setImportMode] = useState<'paste' | 'url'>('paste')
+  const [specUrl, setSpecUrl] = useState('')
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [lastParsed, setLastParsed] = useState<ChannelSpec | null>(null)
@@ -116,7 +119,12 @@ export default function ChannelsAdminPage() {
       return
     }
 
-    if (!specText.trim()) {
+    if (importMode === 'url' && !specUrl.trim()) {
+      setSubmitState('error')
+      setSubmitError('Enter a URL to import from first')
+      return
+    }
+    if (importMode === 'paste' && !specText.trim()) {
       setSubmitState('error')
       setSubmitError('Paste or upload a spec first')
       return
@@ -126,18 +134,19 @@ export default function ChannelsAdminPage() {
     setSubmitError(null)
 
     try {
-      // Send the raw text — the server parses it as JSON or YAML (real
-      // OpenAPI docs are frequently authored as YAML) and reports back
-      // whichever format it detected.
+      // In URL mode the server fetches and parses the live doc directly
+      // (real partner API docs are usually hosted, e.g. an /openapi.json
+      // endpoint). In paste mode the raw text is sent as-is — the server
+      // parses it as JSON or YAML (real OpenAPI docs are frequently YAML)
+      // and reports back whichever format/source it detected.
       const res = await fetch('/api/channels/spec', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          channel_id: selectedChannelId,
-          spec_format: specFormat,
-          file_name: fileName || undefined,
-          spec_text: specText,
-        }),
+        body: JSON.stringify(
+          importMode === 'url'
+            ? { channel_id: selectedChannelId, spec_format: specFormat, spec_url: specUrl.trim() }
+            : { channel_id: selectedChannelId, spec_format: specFormat, file_name: fileName || undefined, spec_text: specText }
+        ),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -214,9 +223,9 @@ export default function ChannelsAdminPage() {
         <div style={{ marginTop: '32px', marginBottom: '32px' }}>
           <h2 className="text-h2" style={{ marginBottom: '8px' }}>Register an integration spec</h2>
           <p className="text-small text-muted" style={{ marginBottom: '20px' }}>
-            Upload or paste an OpenAPI document (JSON or YAML), a webhook config, or a UTM link-tracking
-            config for one of the channels above. It is parsed and stored immediately — no external
-            service required.
+            Import a live OpenAPI document by URL, or upload/paste an OpenAPI document (JSON or YAML), a
+            webhook config, or a UTM link-tracking config for one of the channels above. It is fetched,
+            parsed, and stored immediately — no external service required.
           </p>
 
           <form onSubmit={handleSubmit} className="card">
@@ -253,35 +262,75 @@ export default function ChannelsAdminPage() {
               </div>
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
-              <label htmlFor="spec-file" style={{ display: 'block', marginBottom: '6px' }}>
-                <span className="text-small font-semibold">Upload a file</span>
-                <span className="text-small text-muted" style={{ marginLeft: '6px' }}>(optional — or paste JSON/YAML below)</span>
-              </label>
-              <input
-                id="spec-file"
-                ref={fileInputRef}
-                type="file"
-                accept=".json,application/json,.yaml,.yml,application/x-yaml,text/plain"
-                onChange={handleFileUpload}
-                className="input-field"
-                style={{ padding: '10px' }}
-              />
+            <div className="flex items-center" style={{ gap: '8px', marginBottom: '16px' }}>
+              <button
+                type="button"
+                className={importMode === 'url' ? 'btn btn-primary' : 'btn'}
+                style={{ padding: '6px 14px', fontSize: '0.8125rem' }}
+                onClick={() => setImportMode('url')}
+              >
+                Import from URL
+              </button>
+              <button
+                type="button"
+                className={importMode === 'paste' ? 'btn btn-primary' : 'btn'}
+                style={{ padding: '6px 14px', fontSize: '0.8125rem' }}
+                onClick={() => setImportMode('paste')}
+              >
+                Upload / paste
+              </button>
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
-              <label htmlFor="spec-text" style={{ display: 'block', marginBottom: '6px' }}>
-                <span className="text-small font-semibold">Spec JSON or YAML</span>
-              </label>
-              <textarea
-                id="spec-text"
-                className="input-field"
-                style={{ fontFamily: 'monospace', fontSize: '0.8125rem', minHeight: '180px', resize: 'vertical' }}
-                value={specText}
-                onChange={e => setSpecText(e.target.value)}
-                spellCheck={false}
-              />
-            </div>
+            {importMode === 'url' ? (
+              <div style={{ marginBottom: '16px' }}>
+                <label htmlFor="spec-url" style={{ display: 'block', marginBottom: '6px' }}>
+                  <span className="text-small font-semibold">Documentation URL</span>
+                  <span className="text-small text-muted" style={{ marginLeft: '6px' }}>
+                    (e.g. https://api.partner.com/openapi.json — fetched and parsed server-side)
+                  </span>
+                </label>
+                <input
+                  id="spec-url"
+                  type="url"
+                  className="input-field"
+                  placeholder="https://api.partner.com/openapi.json"
+                  value={specUrl}
+                  onChange={e => setSpecUrl(e.target.value)}
+                />
+              </div>
+            ) : (
+              <>
+                <div style={{ marginBottom: '16px' }}>
+                  <label htmlFor="spec-file" style={{ display: 'block', marginBottom: '6px' }}>
+                    <span className="text-small font-semibold">Upload a file</span>
+                    <span className="text-small text-muted" style={{ marginLeft: '6px' }}>(optional — or paste JSON/YAML below)</span>
+                  </label>
+                  <input
+                    id="spec-file"
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json,application/json,.yaml,.yml,application/x-yaml,text/plain"
+                    onChange={handleFileUpload}
+                    className="input-field"
+                    style={{ padding: '10px' }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label htmlFor="spec-text" style={{ display: 'block', marginBottom: '6px' }}>
+                    <span className="text-small font-semibold">Spec JSON or YAML</span>
+                  </label>
+                  <textarea
+                    id="spec-text"
+                    className="input-field"
+                    style={{ fontFamily: 'monospace', fontSize: '0.8125rem', minHeight: '180px', resize: 'vertical' }}
+                    value={specText}
+                    onChange={e => setSpecText(e.target.value)}
+                    spellCheck={false}
+                  />
+                </div>
+              </>
+            )}
 
             {submitError && (
               <div className="error-banner" style={{ marginBottom: '16px' }}>{submitError}</div>
@@ -291,16 +340,17 @@ export default function ChannelsAdminPage() {
               {submitState === 'submitting' ? (
                 <>
                   <span className="spinner" style={{ width: 14, height: 14 }} />
-                  Parsing…
+                  {importMode === 'url' ? 'Fetching & parsing…' : 'Parsing…'}
                 </>
-              ) : 'Upload & parse'}
+              ) : importMode === 'url' ? 'Fetch & parse' : 'Upload & parse'}
             </button>
           </form>
 
           {submitState === 'success' && lastParsed && (
             <div className="card" style={{ marginTop: '16px', borderColor: 'var(--color-success)' }}>
               <div className="success-banner" style={{ marginBottom: '16px' }}>
-                Parsed{lastParsed.source_format ? ` (detected as ${lastParsed.source_format.toUpperCase()})` : ''} and saved — {lastParsed.parsed_summary}
+                {lastParsed.source_url ? `Imported from ${lastParsed.source_url}` : 'Parsed and saved'}
+                {lastParsed.source_format ? ` (detected as ${lastParsed.source_format.toUpperCase()})` : ''} — {lastParsed.parsed_summary}
               </div>
               <div className="text-small font-semibold text-muted" style={{ marginBottom: '8px' }}>
                 {lastParsed.endpoint_count} endpoint(s)
@@ -334,6 +384,11 @@ export default function ChannelsAdminPage() {
                     </span>
                   </div>
                   <p className="text-small text-muted" style={{ marginTop: '4px' }}>{s.parsed_summary}</p>
+                  {s.source_url && (
+                    <p className="text-small text-muted" style={{ marginTop: '4px', fontSize: '0.75rem', wordBreak: 'break-all' }}>
+                      Imported from {s.source_url}
+                    </p>
+                  )}
                   <p className="text-small text-muted" style={{ marginTop: '4px', fontSize: '0.75rem' }}>
                     {s.endpoint_count} endpoint(s) · {new Date(s.created_at).toLocaleString()}
                   </p>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { parseSpec, parseSpecSource, SpecFormat } from '@/lib/specParser'
+import { fetchSpecFromUrl } from '@/lib/specFetch'
 
 const FORMATS: SpecFormat[] = ['openapi', 'webhook', 'utm']
 
@@ -32,6 +33,7 @@ export async function POST(req: NextRequest) {
     file_name?: string
     spec?: unknown
     spec_text?: string
+    spec_url?: string
   }
 
   try {
@@ -42,6 +44,7 @@ export async function POST(req: NextRequest) {
 
   const channelId = (body.channel_id ?? '').trim()
   const specFormat = (body.spec_format ?? '').trim() as SpecFormat
+  const specUrl = (body.spec_url ?? '').trim()
 
   if (!channelId) {
     return NextResponse.json({ error: 'channel_id is required' }, { status: 400 })
@@ -50,14 +53,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `spec_format must be one of: ${FORMATS.join(', ')}` }, { status: 400 })
   }
 
-  // Uploaded/pasted specs arrive as raw text (spec_text) so both JSON and
-  // YAML documents are accepted — real OpenAPI specs are frequently YAML.
-  // spec (an already-parsed JSON object) is still accepted for API callers
-  // that prefer to send structured JSON directly.
+  // Three ways to bring in a spec: import it live from a URL (real partner
+  // docs are usually hosted, e.g. https://api.partner.com/openapi.json),
+  // paste/upload raw text (JSON or YAML — real OpenAPI specs are frequently
+  // YAML), or send an already-parsed JSON object directly.
   let parsedInput: unknown
   let sourceFormat: 'json' | 'yaml' = 'json'
+  let fetchedFileName: string | null = null
 
-  if (typeof body.spec_text === 'string' && body.spec_text.trim()) {
+  if (specUrl) {
+    const fetched = await fetchSpecFromUrl(specUrl)
+    if (!fetched.ok) {
+      return NextResponse.json({ error: fetched.error }, { status: 422 })
+    }
+    const sourceResult = parseSpecSource(fetched.text)
+    if (!sourceResult.ok) {
+      return NextResponse.json({ error: sourceResult.error }, { status: 422 })
+    }
+    parsedInput = sourceResult.value
+    sourceFormat = sourceResult.sourceFormat
+    fetchedFileName = fetched.finalUrl
+  } else if (typeof body.spec_text === 'string' && body.spec_text.trim()) {
     const sourceResult = parseSpecSource(body.spec_text)
     if (!sourceResult.ok) {
       return NextResponse.json({ error: sourceResult.error }, { status: 422 })
@@ -67,7 +83,7 @@ export async function POST(req: NextRequest) {
   } else if (body.spec !== undefined && body.spec !== null) {
     parsedInput = body.spec
   } else {
-    return NextResponse.json({ error: 'spec_text (raw JSON or YAML) or spec (a JSON object) is required' }, { status: 400 })
+    return NextResponse.json({ error: 'spec_url, spec_text (raw JSON or YAML), or spec (a JSON object) is required' }, { status: 400 })
   }
 
   // Confirm the channel exists before we attach a spec to it.
@@ -95,9 +111,10 @@ export async function POST(req: NextRequest) {
     .insert({
       channel_id: channelId,
       spec_format: specFormat,
-      file_name: body.file_name?.trim() || null,
+      file_name: body.file_name?.trim() || fetchedFileName,
       raw_spec: parsedInput,
       source_format: sourceFormat,
+      source_url: specUrl || null,
       parsed_summary: result.parsedSummary,
       parsed_endpoints: result.parsedEndpoints,
       endpoint_count: result.endpointCount,
