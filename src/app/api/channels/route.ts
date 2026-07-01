@@ -15,11 +15,45 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to load acquisition channels' }, { status: 500 })
   }
 
-  const channels = (data ?? []).map((row: Record<string, unknown>) => {
+  const rows = data ?? []
+
+  // Revenue-engine attribution (DE-18): real domain_submissions counts per
+  // channel, matched on attribution_key (see supabase/migrations/0007_channel_attribution.sql).
+  // Channels without an attribution_key (custom/manually-added ones) get 0 —
+  // an honest count, not a fabricated one.
+  const attributionKeys = rows
+    .map((r: Record<string, unknown>) => r.attribution_key as string | null)
+    .filter((k): k is string => !!k)
+
+  const submissionCounts = new Map<string, number>()
+  if (attributionKeys.length > 0) {
+    const { data: submissionRows, error: submissionErr } = await supabase
+      .from('domain_submissions')
+      .select('attribution_key')
+      .in('attribution_key', attributionKeys)
+
+    if (submissionErr) {
+      console.error('Supabase submission-count error:', submissionErr)
+      // Non-fatal — channel list still renders, just without live counts
+    } else {
+      for (const row of submissionRows ?? []) {
+        const key = (row as { attribution_key: string | null }).attribution_key
+        if (!key) continue
+        submissionCounts.set(key, (submissionCounts.get(key) ?? 0) + 1)
+      }
+    }
+  }
+
+  const channels = rows.map((row: Record<string, unknown>) => {
     const specs = row.swag_channel_api_specs as Array<{ count: number }> | undefined
     const { swag_channel_api_specs: _omit, ...rest } = row
     void _omit
-    return { ...rest, spec_count: specs?.[0]?.count ?? 0 }
+    const attributionKey = row.attribution_key as string | null
+    return {
+      ...rest,
+      spec_count: specs?.[0]?.count ?? 0,
+      submission_count: attributionKey ? submissionCounts.get(attributionKey) ?? 0 : 0,
+    }
   })
 
   return NextResponse.json({ channels })

@@ -14,6 +14,8 @@ interface Channel {
   source_de_step: string | null
   status: string
   spec_count: number
+  attribution_key: string | null
+  submission_count: number
   created_at: string
 }
 
@@ -205,11 +207,25 @@ export default function ChannelsAdminPage() {
                       </span>
                     </div>
                     <p className="text-small text-muted" style={{ marginBottom: '8px' }}>{c.description}</p>
-                    <div className="flex items-center" style={{ gap: '8px', flexWrap: 'wrap' }}>
+                    <div className="flex items-center" style={{ gap: '8px', flexWrap: 'wrap', marginBottom: c.attribution_key ? '8px' : 0 }}>
                       <span className="text-small" style={{ color: 'var(--color-accent)' }}>{c.channel_type}</span>
                       {c.source_de_step && <span className="text-small text-muted">· {c.source_de_step}</span>}
                       <span className="text-small text-muted">· {c.spec_count} spec{c.spec_count === 1 ? '' : 's'}</span>
                     </div>
+                    {c.attribution_key && (
+                      <div
+                        className="flex items-center justify-between"
+                        style={{ paddingTop: '8px', borderTop: '1px solid var(--color-border)' }}
+                        title={`Real domain submissions tagged utm_source=${c.attribution_key} or classified as ${c.attribution_key} by referrer`}
+                      >
+                        <span className="text-small text-muted" style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>
+                          {c.attribution_key}
+                        </span>
+                        <span className="text-small font-semibold" style={{ color: c.submission_count > 0 ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
+                          {c.submission_count} submission{c.submission_count === 1 ? '' : 's'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

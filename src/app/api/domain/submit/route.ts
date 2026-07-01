@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import zlib from 'node:zlib'
 import { supabase } from '@/lib/supabase'
+import { classifyAttribution, sanitizeAttribution } from '@/lib/attribution'
 
 // zlib + Buffer require the Node.js runtime (not Edge).
 export const runtime = 'nodejs'
@@ -176,7 +177,15 @@ function companyName(domain: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { domain?: string; contact_name?: string; contact_email?: string }
+  let body: {
+    domain?: string
+    contact_name?: string
+    contact_email?: string
+    utm_source?: string | null
+    utm_medium?: string | null
+    utm_campaign?: string | null
+    referrer_host?: string | null
+  }
   try {
     body = await req.json()
   } catch {
@@ -192,12 +201,28 @@ export async function POST(req: NextRequest) {
   if (!DOMAIN_RE.test(raw)) return NextResponse.json({ error: 'Invalid domain format' }, { status: 400 })
   if (PERSONAL_DOMAINS.has(raw)) return NextResponse.json({ error: 'Please enter a company domain' }, { status: 400 })
 
+  // Revenue-engine attribution (DE-18): trust nothing from the client beyond
+  // length-clipped strings — classify server-side into the same taxonomy the
+  // channels admin page reads (supabase/migrations/0007_channel_attribution.sql).
+  const attribution = sanitizeAttribution({
+    utm_source: body.utm_source,
+    utm_medium: body.utm_medium,
+    utm_campaign: body.utm_campaign,
+    referrer_host: body.referrer_host,
+  })
+  const attributionKey = classifyAttribution(attribution)
+
   // Insert with pending status first to immediately persist the submission
   const { data: inserted, error: insertErr } = await supabase
     .from('domain_submissions')
     .insert({
       domain: raw,
       status: 'fetching',
+      utm_source: attribution.utm_source,
+      utm_medium: attribution.utm_medium,
+      utm_campaign: attribution.utm_campaign,
+      referrer_host: attribution.referrer_host,
+      attribution_key: attributionKey,
       raw_brand_data: { contact_name: contactName, contact_email: contactEmail },
     })
     .select()

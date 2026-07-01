@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { captureAttribution, getAttribution } from '@/lib/attribution'
 
 type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid'
 type SubmitState = 'idle' | 'submitting' | 'success' | 'error'
@@ -72,6 +73,13 @@ export default function OnboardPage() {
   const [storeRequestId, setStoreRequestId] = useState<string | null>(null)
   const [storeRequestError, setStoreRequestError] = useState<string | null>(null)
   const validateTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // First-touch acquisition-channel attribution (DE-18 revenue engine): capture
+  // once on landing so a domain submitted directly on /onboard (e.g. via a
+  // ?utm_source= channel link) is still attributed, not just homepage entries.
+  useEffect(() => {
+    captureAttribution()
+  }, [])
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -202,6 +210,7 @@ export default function OnboardPage() {
           domain: norm,
           contact_name: contactName.trim() || undefined,
           contact_email: contactEmail.trim() || undefined,
+          ...getAttribution(),
         }),
       })
       const data = await res.json()

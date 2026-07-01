@@ -1,8 +1,10 @@
 import Link from 'next/link'
+import AttributionCapture from '@/components/AttributionCapture'
 
 export default function LandingPage() {
   return (
     <section className="section" style={{ paddingTop: '120px', paddingBottom: '120px' }}>
+      <AttributionCapture />
       <div className="container content-narrow text-center">
         <h1 className="text-display" style={{ marginBottom: '24px' }}>
           Swagger AI
