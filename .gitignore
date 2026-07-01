@@ -41,3 +41,7 @@ node_modules/
 dist/
 build/
 *.log
+
+# Gstack — ephemeral/build paths (auto-excluded)
+.mcp.json
+.claude/
