@@ -430,18 +430,18 @@ export default function OnboardPage() {
               <div className="text-small font-semibold" style={{ marginBottom: '12px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
                 Brand Colors
               </div>
-              <div className="flex" style={{ gap: '20px', flexWrap: 'wrap' }}>
+              <div className="flex" style={{ gap: '20px', flexWrap: 'wrap', marginBottom: '16px' }}>
                 <ColorSwatch color={brand.primary_color} label="Primary" onCopy={copyHex} />
                 <ColorSwatch color={brand.secondary_color} label="Secondary" onCopy={copyHex} />
               </div>
-            </div>
 
-            {/* Color bar preview */}
-            <div style={{
-              height: '8px', borderRadius: '4px',
-              background: `linear-gradient(to right, ${brand.primary_color} 0%, ${brand.secondary_color} 100%)`,
-              marginBottom: '24px',
-            }} />
+              {/* Color gradient preview */}
+              <div style={{
+                height: '8px', borderRadius: '4px',
+                background: `linear-gradient(to right, ${brand.primary_color} 0%, ${brand.secondary_color} 100%)`,
+                marginBottom: '16px',
+              }} />
+            </div>
 
             {/* Store request error */}
             {storeRequestError && (

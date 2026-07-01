@@ -9,7 +9,73 @@ const PERSONAL_DOMAINS = new Set([
 
 const DOMAIN_RE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i
 
-async function fetchBrandAssets(domain: string) {
+interface BrandAssets {
+  logoUrl: string | null
+  primaryColor: string
+  secondaryColor: string
+  source: string
+}
+
+/**
+ * Fetch brand data from Brandfetch API (if key is available).
+ * Returns null if key is not available or request fails.
+ */
+async function fetchBrandfetchBrandAssets(domain: string): Promise<BrandAssets | null> {
+  const apiKey = process.env.BRANDFETCH_API_KEY
+  if (!apiKey) return null
+
+  try {
+    const controller = new AbortController()
+    setTimeout(() => controller.abort(), 5000)
+
+    const res = await fetch(`https://api.brandfetch.io/v2/brands/${domain}`, {
+      signal: controller.signal,
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Accept': 'application/json',
+      },
+    })
+
+    if (!res.ok) return null
+
+    const data = await res.json()
+
+    let logoUrl: string | null = null
+    if (data.logo?.url) {
+      logoUrl = data.logo.url
+    }
+
+    let primaryColor = '#7c3aed'
+    let secondaryColor = '#8fa3b8'
+
+    // Extract colors from Brandfetch
+    if (data.colors && Array.isArray(data.colors) && data.colors.length > 0) {
+      const colorObjs = data.colors.filter((c: any) => c.hex)
+      if (colorObjs.length > 0) {
+        primaryColor = colorObjs[0].hex
+        if (colorObjs.length > 1) {
+          secondaryColor = colorObjs[1].hex
+        } else {
+          secondaryColor = lighten(primaryColor)
+        }
+      }
+    }
+
+    return {
+      logoUrl,
+      primaryColor,
+      secondaryColor,
+      source: 'brandfetch',
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Fetch theme color from website meta tags.
+ */
+async function fetchThemeColorFromHTML(domain: string): Promise<string | null> {
   try {
     const controller = new AbortController()
     setTimeout(() => controller.abort(), 3000)
@@ -17,7 +83,7 @@ async function fetchBrandAssets(domain: string) {
       signal: controller.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 SwaggerAI-BrandBot/1.0',
-        Accept: 'text/html',
+        'Accept': 'text/html',
       },
       redirect: 'follow',
     })
@@ -38,7 +104,10 @@ async function fetchBrandAssets(domain: string) {
   return null
 }
 
-async function checkLogo(domain: string): Promise<boolean> {
+/**
+ * Check if Clearbit has a logo for this domain.
+ */
+async function checkClearbitLogo(domain: string): Promise<boolean> {
   try {
     const controller = new AbortController()
     setTimeout(() => controller.abort(), 2000)
@@ -52,6 +121,9 @@ async function checkLogo(domain: string): Promise<boolean> {
   }
 }
 
+/**
+ * Lighten a hex color for use as secondary color.
+ */
 function lighten(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
@@ -60,9 +132,43 @@ function lighten(hex: string): string {
   return `#${Math.round(r + (255-r)*f).toString(16).padStart(2,'0')}${Math.round(g + (255-g)*f).toString(16).padStart(2,'0')}${Math.round(b + (255-b)*f).toString(16).padStart(2,'0')}`
 }
 
+/**
+ * Derive company name from domain.
+ */
 function companyName(domain: string): string {
   const n = domain.replace(/^www\./, '').split('.')[0]
   return n.charAt(0).toUpperCase() + n.slice(1)
+}
+
+/**
+ * Fetch brand assets with fallback chain:
+ * 1. Try Brandfetch API (if key available)
+ * 2. Try Clearbit logo + HTML theme-color
+ * 3. Fallback colors
+ */
+async function fetchBrandAssets(domain: string): Promise<BrandAssets> {
+  // Try Brandfetch first
+  const brandfetchResult = await fetchBrandfetchBrandAssets(domain)
+  if (brandfetchResult) {
+    return brandfetchResult
+  }
+
+  // Fallback: Clearbit + HTML theme-color
+  const [themeColor, hasLogo] = await Promise.all([
+    fetchThemeColorFromHTML(domain),
+    checkClearbitLogo(domain),
+  ])
+
+  const primaryColor = themeColor ?? '#7c3aed'
+  const secondaryColor = themeColor ? lighten(themeColor) : '#8fa3b8'
+  const logoUrl = hasLogo ? `https://logo.clearbit.com/${domain}` : null
+
+  return {
+    logoUrl,
+    primaryColor,
+    secondaryColor,
+    source: hasLogo ? 'clearbit' : 'fallback',
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -82,7 +188,7 @@ export async function POST(req: NextRequest) {
   if (!DOMAIN_RE.test(raw)) return NextResponse.json({ error: 'Invalid domain format' }, { status: 400 })
   if (PERSONAL_DOMAINS.has(raw)) return NextResponse.json({ error: 'Please enter a company domain' }, { status: 400 })
 
-  // Insert with pending status first to immediately persist the submission
+  // Insert with fetching status first to immediately persist the submission
   const { data: inserted, error: insertErr } = await supabase
     .from('domain_submissions')
     .insert({
@@ -98,15 +204,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to save submission' }, { status: 500 })
   }
 
-  // Fetch brand assets in parallel
-  const [themeColor, logoExists] = await Promise.all([
-    fetchBrandAssets(raw),
-    checkLogo(raw),
-  ])
-
-  const primaryColor = themeColor ?? '#7c3aed'
-  const secondaryColor = themeColor ? lighten(themeColor) : '#8fa3b8'
-  const logoUrl = logoExists ? `https://logo.clearbit.com/${raw}` : null
+  // Fetch brand assets with fallback chain
+  const brandAssets = await fetchBrandAssets(raw)
   const name = companyName(raw)
 
   // Update record with fetched brand data
@@ -115,13 +214,11 @@ export async function POST(req: NextRequest) {
     .update({
       status: 'detected',
       company_name: name,
-      logo_url: logoUrl,
-      primary_color: primaryColor,
-      secondary_color: secondaryColor,
+      logo_url: brandAssets.logoUrl,
+      primary_color: brandAssets.primaryColor,
+      secondary_color: brandAssets.secondaryColor,
       raw_brand_data: {
-        themeColorFound: !!themeColor,
-        logoFound: logoExists,
-        source: logoExists ? 'clearbit' : 'fallback',
+        source: brandAssets.source,
         contact_name: contactName,
         contact_email: contactEmail,
       },
@@ -138,9 +235,9 @@ export async function POST(req: NextRequest) {
       id: inserted.id,
       domain: raw,
       company_name: name,
-      logo_url: logoUrl,
-      primary_color: primaryColor,
-      secondary_color: secondaryColor,
+      logo_url: brandAssets.logoUrl,
+      primary_color: brandAssets.primaryColor,
+      secondary_color: brandAssets.secondaryColor,
       status: 'detected',
       created_at: inserted.created_at,
     })
