@@ -1,8 +1,16 @@
 // Parses the three API specification formats a partner/channel integration
 // can be registered with: an OpenAPI/Swagger document, a webhook config, or a
 // UTM link-tracking config. Pure functions — no I/O — so they're easy to test.
+//
+// Real-world OpenAPI/Swagger documents are commonly authored as YAML rather
+// than JSON, so the upload flow must accept both — parseSpecSource() is the
+// entry point that turns raw uploaded text into a JS value before parseSpec()
+// interprets it against the chosen spec_format.
+
+import { parse as parseYaml } from 'yaml'
 
 export type SpecFormat = 'openapi' | 'webhook' | 'utm'
+export type SourceFormat = 'json' | 'yaml'
 
 export interface ParsedEndpoint {
   path: string
@@ -128,6 +136,44 @@ function parseUtm(spec: unknown): ParseResult | ParseError {
     parsedSummary: campaignStr
       ? `UTM tracked — source=${source}, medium=${medium}, campaign=${campaignStr}`
       : `UTM tracked — source=${source}, medium=${medium}`,
+  }
+}
+
+export interface SourceParseResult {
+  ok: true
+  value: unknown
+  sourceFormat: SourceFormat
+}
+
+export interface SourceParseError {
+  ok: false
+  error: string
+}
+
+// Turns raw uploaded/pasted text into a JS value, trying JSON first (the
+// common case, and unambiguous when it succeeds) then falling back to YAML
+// (which is a superset syntax — most real OpenAPI specs ship this way).
+export function parseSpecSource(raw: string): SourceParseResult | SourceParseError {
+  const text = raw.trim()
+  if (!text) {
+    return { ok: false, error: 'Spec text is empty' }
+  }
+
+  try {
+    return { ok: true, value: JSON.parse(text), sourceFormat: 'json' }
+  } catch {
+    // fall through to YAML
+  }
+
+  try {
+    const value = parseYaml(text)
+    if (value === undefined) {
+      return { ok: false, error: 'Could not parse spec as JSON or YAML' }
+    }
+    return { ok: true, value, sourceFormat: 'yaml' }
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err)
+    return { ok: false, error: `Not valid JSON or YAML: ${reason}` }
   }
 }
 

@@ -31,6 +31,7 @@ interface ChannelSpec {
   parsed_summary: string
   parsed_endpoints: ParsedEndpoint[]
   endpoint_count: number
+  source_format?: 'json' | 'yaml'
   created_at: string
   acquisition_channels?: { name: string; horizon: Horizon } | null
 }
@@ -115,12 +116,9 @@ export default function ChannelsAdminPage() {
       return
     }
 
-    let parsedJson: unknown
-    try {
-      parsedJson = JSON.parse(specText)
-    } catch {
+    if (!specText.trim()) {
       setSubmitState('error')
-      setSubmitError('That is not valid JSON — paste an OpenAPI doc, webhook config, or UTM config as JSON')
+      setSubmitError('Paste or upload a spec first')
       return
     }
 
@@ -128,6 +126,9 @@ export default function ChannelsAdminPage() {
     setSubmitError(null)
 
     try {
+      // Send the raw text — the server parses it as JSON or YAML (real
+      // OpenAPI docs are frequently authored as YAML) and reports back
+      // whichever format it detected.
       const res = await fetch('/api/channels/spec', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -135,7 +136,7 @@ export default function ChannelsAdminPage() {
           channel_id: selectedChannelId,
           spec_format: specFormat,
           file_name: fileName || undefined,
-          spec: parsedJson,
+          spec_text: specText,
         }),
       })
       const data = await res.json()
@@ -213,8 +214,9 @@ export default function ChannelsAdminPage() {
         <div style={{ marginTop: '32px', marginBottom: '32px' }}>
           <h2 className="text-h2" style={{ marginBottom: '8px' }}>Register an integration spec</h2>
           <p className="text-small text-muted" style={{ marginBottom: '20px' }}>
-            Upload or paste an OpenAPI document, a webhook config, or a UTM link-tracking config for one
-            of the channels above. It is parsed and stored immediately — no external service required.
+            Upload or paste an OpenAPI document (JSON or YAML), a webhook config, or a UTM link-tracking
+            config for one of the channels above. It is parsed and stored immediately — no external
+            service required.
           </p>
 
           <form onSubmit={handleSubmit} className="card">
@@ -254,13 +256,13 @@ export default function ChannelsAdminPage() {
             <div style={{ marginBottom: '16px' }}>
               <label htmlFor="spec-file" style={{ display: 'block', marginBottom: '6px' }}>
                 <span className="text-small font-semibold">Upload a file</span>
-                <span className="text-small text-muted" style={{ marginLeft: '6px' }}>(optional — or paste JSON below)</span>
+                <span className="text-small text-muted" style={{ marginLeft: '6px' }}>(optional — or paste JSON/YAML below)</span>
               </label>
               <input
                 id="spec-file"
                 ref={fileInputRef}
                 type="file"
-                accept=".json,application/json,.yaml,.yml,text/plain"
+                accept=".json,application/json,.yaml,.yml,application/x-yaml,text/plain"
                 onChange={handleFileUpload}
                 className="input-field"
                 style={{ padding: '10px' }}
@@ -269,7 +271,7 @@ export default function ChannelsAdminPage() {
 
             <div style={{ marginBottom: '16px' }}>
               <label htmlFor="spec-text" style={{ display: 'block', marginBottom: '6px' }}>
-                <span className="text-small font-semibold">Spec JSON</span>
+                <span className="text-small font-semibold">Spec JSON or YAML</span>
               </label>
               <textarea
                 id="spec-text"
@@ -297,7 +299,9 @@ export default function ChannelsAdminPage() {
 
           {submitState === 'success' && lastParsed && (
             <div className="card" style={{ marginTop: '16px', borderColor: 'var(--color-success)' }}>
-              <div className="success-banner" style={{ marginBottom: '16px' }}>Parsed and saved — {lastParsed.parsed_summary}</div>
+              <div className="success-banner" style={{ marginBottom: '16px' }}>
+                Parsed{lastParsed.source_format ? ` (detected as ${lastParsed.source_format.toUpperCase()})` : ''} and saved — {lastParsed.parsed_summary}
+              </div>
               <div className="text-small font-semibold text-muted" style={{ marginBottom: '8px' }}>
                 {lastParsed.endpoint_count} endpoint(s)
               </div>
@@ -326,7 +330,7 @@ export default function ChannelsAdminPage() {
                   <div className="flex items-center justify-between" style={{ gap: '8px', flexWrap: 'wrap' }}>
                     <span className="text-small font-semibold">{s.acquisition_channels?.name ?? 'Unknown channel'}</span>
                     <span className="badge" style={{ background: 'var(--color-accent-light)', color: '#a78bfa', fontSize: '0.7rem', padding: '2px 8px' }}>
-                      {s.spec_format}
+                      {s.spec_format}{s.source_format ? ` · ${s.source_format}` : ''}
                     </span>
                   </div>
                   <p className="text-small text-muted" style={{ marginTop: '4px' }}>{s.parsed_summary}</p>

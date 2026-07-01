@@ -17,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span className="logo-badge">Early access</span>
             </a>
             <nav className="site-nav">
+              <a href="/admin/channels">Acquisition channels</a>
               <a href="/onboard">Get Started</a>
             </nav>
           </div>

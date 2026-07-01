@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { parseSpec, SpecFormat } from '@/lib/specParser'
+import { parseSpec, parseSpecSource, SpecFormat } from '@/lib/specParser'
 
 const FORMATS: SpecFormat[] = ['openapi', 'webhook', 'utm']
 
@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
     spec_format?: string
     file_name?: string
     spec?: unknown
+    spec_text?: string
   }
 
   try {
@@ -48,8 +49,25 @@ export async function POST(req: NextRequest) {
   if (!FORMATS.includes(specFormat)) {
     return NextResponse.json({ error: `spec_format must be one of: ${FORMATS.join(', ')}` }, { status: 400 })
   }
-  if (body.spec === undefined || body.spec === null) {
-    return NextResponse.json({ error: 'spec is required (a JSON object)' }, { status: 400 })
+
+  // Uploaded/pasted specs arrive as raw text (spec_text) so both JSON and
+  // YAML documents are accepted — real OpenAPI specs are frequently YAML.
+  // spec (an already-parsed JSON object) is still accepted for API callers
+  // that prefer to send structured JSON directly.
+  let parsedInput: unknown
+  let sourceFormat: 'json' | 'yaml' = 'json'
+
+  if (typeof body.spec_text === 'string' && body.spec_text.trim()) {
+    const sourceResult = parseSpecSource(body.spec_text)
+    if (!sourceResult.ok) {
+      return NextResponse.json({ error: sourceResult.error }, { status: 422 })
+    }
+    parsedInput = sourceResult.value
+    sourceFormat = sourceResult.sourceFormat
+  } else if (body.spec !== undefined && body.spec !== null) {
+    parsedInput = body.spec
+  } else {
+    return NextResponse.json({ error: 'spec_text (raw JSON or YAML) or spec (a JSON object) is required' }, { status: 400 })
   }
 
   // Confirm the channel exists before we attach a spec to it.
@@ -67,7 +85,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unknown channel_id' }, { status: 404 })
   }
 
-  const result = parseSpec(specFormat, body.spec)
+  const result = parseSpec(specFormat, parsedInput)
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 422 })
   }
@@ -78,7 +96,8 @@ export async function POST(req: NextRequest) {
       channel_id: channelId,
       spec_format: specFormat,
       file_name: body.file_name?.trim() || null,
-      raw_spec: body.spec,
+      raw_spec: parsedInput,
+      source_format: sourceFormat,
       parsed_summary: result.parsedSummary,
       parsed_endpoints: result.parsedEndpoints,
       endpoint_count: result.endpointCount,
