@@ -21,6 +21,15 @@ interface BrandResult {
   created_at: string
 }
 
+interface BrandPreview {
+  domain: string
+  companyName: string
+  logoUrl: string | null
+  primaryColor: string
+  secondaryColor: string
+  source: 'brandfetch' | 'favicon' | 'theme-color' | 'fallback'
+}
+
 const PERSONAL_DOMAINS = new Set([
   'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
   'icloud.com', 'protonmail.com', 'mail.com',
@@ -69,6 +78,8 @@ function OnboardForm() {
   const [submitState, setSubmitState] = useState<SubmitState>('idle')
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [brand, setBrand] = useState<BrandResult | null>(null)
+  const [brandPreview, setBrandPreview] = useState<BrandPreview | null>(null)
+  const [previewFetchState, setPreviewFetchState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle')
   const [toast, setToast] = useState<string | null>(null)
   const [logoError, setLogoError] = useState(false)
   const [storeRequestState, setStoreRequestState] = useState<StoreRequestState>('idle')
@@ -123,9 +134,11 @@ function OnboardForm() {
     const raw = e.target.value
     setDomain(raw)
     setBrand(null)
+    setBrandPreview(null)
     setLogoError(false)
     setSubmitState('idle')
     setSubmitError(null)
+    setPreviewFetchState('idle')
 
     const norm = normalise(raw)
     const err = formatValidate(norm)
@@ -204,6 +217,22 @@ function OnboardForm() {
     }
   }
 
+  async function fetchBrandPreview(norm: string) {
+    setPreviewFetchState('loading')
+    try {
+      const res = await fetch(`/api/brand?domain=${encodeURIComponent(norm)}`)
+      const data = await res.json()
+      if (!res.ok) {
+        setPreviewFetchState('error')
+        return
+      }
+      setBrandPreview(data)
+      setPreviewFetchState('loaded')
+    } catch {
+      setPreviewFetchState('error')
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const norm = normalise(domain)
@@ -211,6 +240,13 @@ function OnboardForm() {
     if (err || !norm) return
     if (emailError) return
 
+    // If we don't have a preview yet, fetch it first
+    if (!brandPreview) {
+      await fetchBrandPreview(norm)
+      return
+    }
+
+    // We have a preview, now persist to Supabase
     setSubmitState('submitting')
     setSubmitError(null)
     setBrand(null)
@@ -387,13 +423,20 @@ function OnboardForm() {
             <button
               type="submit"
               className="btn btn-primary btn-full"
-              disabled={!canSubmit}
+              disabled={!canSubmit || previewFetchState === 'loading' || isSubmitting}
               style={{ marginTop: fmtErr || validationMsg ? 0 : undefined }}
             >
-              {isSubmitting ? (
+              {previewFetchState === 'loading' || isSubmitting ? (
                 <>
                   <span className="spinner" style={{ width: 16, height: 16 }} />
-                  Fetching brand assets…
+                  {isSubmitting ? 'Saving…' : 'Fetching brand assets…'}
+                </>
+              ) : brandPreview ? (
+                <>
+                  Continue to Store
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 8h10M9 4l4 4-4 4"/>
+                  </svg>
                 </>
               ) : (
                 <>
@@ -407,7 +450,67 @@ function OnboardForm() {
           </form>
         </div>
 
-        {/* Brand Preview */}
+        {/* Brand Preview from /api/brand (before submit) */}
+        {brandPreview && !brand && previewFetchState === 'loaded' && (
+          <div className="card" style={{ marginBottom: '24px', borderColor: 'var(--color-accent)', borderWidth: '1px' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <div className="text-small text-muted" style={{ marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
+                Brand preview
+              </div>
+              <div className="flex items-center" style={{ gap: '20px', marginBottom: '24px', flexWrap: 'wrap' }}>
+                {/* Logo */}
+                <div style={{
+                  width: '80px', height: '80px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-bg)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, overflow: 'hidden',
+                }}>
+                  {brandPreview.logoUrl && !logoError ? (
+                    <img
+                      src={brandPreview.logoUrl}
+                      alt={`${brandPreview.companyName} logo`}
+                      style={{ width: '60px', height: '60px', objectFit: 'contain' }}
+                      onError={() => setLogoError(true)}
+                    />
+                  ) : (
+                    <span style={{ fontSize: '1.5rem', fontWeight: 800, color: brandPreview.primaryColor }}>
+                      {brandPreview.companyName.charAt(0)}
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <div className="text-h2">{brandPreview.companyName}</div>
+                  <div className="text-small text-muted">{brandPreview.domain}</div>
+                  <div className="text-small text-muted" style={{ marginTop: '4px', fontSize: '0.75rem' }}>
+                    Source: {brandPreview.source}
+                  </div>
+                </div>
+              </div>
+
+              {/* Colors */}
+              <div style={{ marginBottom: '16px' }}>
+                <div className="text-small font-semibold" style={{ marginBottom: '12px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
+                  Brand Colors
+                </div>
+                <div className="flex" style={{ gap: '20px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                  <ColorSwatch color={brandPreview.primaryColor} label="Primary" onCopy={copyHex} />
+                  <ColorSwatch color={brandPreview.secondaryColor} label="Secondary" onCopy={copyHex} />
+                </div>
+
+                {/* Color gradient preview */}
+                <div style={{
+                  height: '8px', borderRadius: '4px',
+                  background: `linear-gradient(to right, ${brandPreview.primaryColor} 0%, ${brandPreview.secondaryColor} 100%)`,
+                }} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Brand Saved (after submit) */}
         {brand && submitState === 'success' && (
           <div className="card" style={{ borderColor: 'var(--color-accent)', borderWidth: '1px' }}>
             <div className="success-banner" style={{ marginBottom: '24px' }}>
