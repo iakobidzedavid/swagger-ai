@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import zlib from 'node:zlib'
+import { supabase } from '@/lib/supabase'
 
 // zlib + Buffer (favicon color extraction) require the Node.js runtime, not Edge.
 export const runtime = 'nodejs'
@@ -10,16 +11,41 @@ export const runtime = 'nodejs'
  * This is the canonical, reusable brand-lookup endpoint for the acquisition
  * funnel: the homepage domain-input widget (`HomepageBrandPreview`) calls it
  * for an instant, read-only preview before a visitor commits to the full
- * `/onboard` flow. It does NOT write to Supabase — the persisted record is
- * still created by `/api/domain/submit` when the user continues on `/onboard`.
+ * `/onboard` flow. It does NOT write the user-facing submission record —
+ * that's still created by `/api/domain/submit` when the user continues on
+ * `/onboard`. It DOES read/write a perf-only `brand_cache` table (see below)
+ * so repeat lookups of the same domain skip redundant external fetches.
  *
  * Brand source, in priority order:
- *   1. Real Brandfetch API (https://api.brandfetch.io/v2/brands/{domain}) —
+ *   1. `brand_cache` (Supabase) — a fresh (<24h) cached result for this exact
+ *      domain, from ANY prior lookup by ANY visitor. Cuts external calls for
+ *      popular/repeat domains. Never a hard dependency: any cache read/write
+ *      failure falls through to fetching live, so Supabase being unreachable
+ *      never breaks this endpoint.
+ *   2. Real Brandfetch API (https://api.brandfetch.io/v2/brands/{domain}) —
  *      used only when BRANDFETCH_API_KEY is set in the environment.
- *   2. Keyless fallback — theme-color meta tag scrape + Clearbit logo check.
+ *   3. Keyless fallback — theme-color meta tag scrape + Clearbit logo check.
  *      Slower (~6-10s worst case) and less accurate for recently rebranded
  *      companies, but requires no credential.
  */
+
+// A company's logo/brand colors change rarely. /onboard and /api/domain/submit
+// still run their own live fetch for the record that actually gets persisted,
+// so a stale preview color for up to 24h has no correctness impact on data
+// that matters — this cache only serves the throwaway homepage preview.
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000
+
+interface BrandCacheRow {
+  domain: string
+  company_name: string
+  logo_url: string | null
+  primary_color: string
+  secondary_color: string
+  source: string
+  raw_brand_data: Record<string, unknown> | null
+  hit_count: number
+  fetched_at: string
+}
 
 interface BrandData {
   domain: string
@@ -31,8 +57,24 @@ interface BrandData {
   raw: Record<string, unknown>
 }
 
-function normalizeDomain(domain: string): string {
+// Matches the format check already used by /api/domain/validate and
+// /api/domain/submit. This route historically skipped it (it only ever did a
+// stateless live fetch), but now that a cache-hit miss persists a row per
+// distinct domain string with no eviction, an unbounded/malformed value would
+// let a caller grow `brand_cache` indefinitely with junk keys that never hit
+// and never expire — so this endpoint validates format before touching cache.
+export const DOMAIN_RE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i
+
+export function normalizeDomain(domain: string): string {
   return domain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+}
+
+/** True when a cache row's `fetched_at` is still within the TTL window as of
+ * `nowMs`. Exported (pure, no I/O) so it's unit-testable without a live
+ * Supabase connection — see tests/brand-cache.test.mjs. */
+export function isCacheFresh(fetchedAtIso: string, nowMs: number): boolean {
+  const age = nowMs - new Date(fetchedAtIso).getTime()
+  return age <= CACHE_TTL_MS
 }
 
 function deriveCompanyName(domain: string): string {
@@ -293,6 +335,87 @@ async function fetchKeyless(domain: string): Promise<BrandData> {
   }
 }
 
+function cacheRowToBrandData(row: BrandCacheRow): BrandData {
+  return {
+    domain: row.domain,
+    companyName: row.company_name,
+    logoUrl: row.logo_url,
+    primaryColor: row.primary_color,
+    secondaryColor: row.secondary_color,
+    // Additive-only annotation — neither existing caller (HomepageBrandPreview,
+    // /onboard) reads `raw`, so merging `cached: true` in cannot break them.
+    source: row.source as BrandData['source'],
+    raw: { ...(row.raw_brand_data ?? {}), cached: true, hitCount: row.hit_count },
+  }
+}
+
+/** Best-effort cache read. Returns null on any failure (missing table, RLS
+ * denial, network blip) or on a stale/missing row — caller always falls
+ * through to a live fetch in every one of those cases. */
+async function readCache(domain: string): Promise<BrandCacheRow | null> {
+  try {
+    const { data, error } = await supabase
+      .from('brand_cache')
+      .select('*')
+      .eq('domain', domain)
+      .maybeSingle()
+    if (error || !data) return null
+    const row = data as BrandCacheRow
+    if (!isCacheFresh(row.fetched_at, Date.now())) return null
+    return row
+  } catch (err) {
+    console.warn('brand_cache read failed (continuing without cache):', err)
+    return null
+  }
+}
+
+/** Fire-and-forget hit-count bump on a cache hit — never awaited by the
+ * request path so a cache hit stays fast even if this write is slow/fails.
+ * Wrapped defensively: this must never throw into the request path even if
+ * the Supabase client construction itself fails synchronously. */
+function bumpHitCount(domain: string, currentHitCount: number) {
+  try {
+    Promise.resolve(
+      supabase
+        .from('brand_cache')
+        .update({ hit_count: currentHitCount + 1 })
+        .eq('domain', domain),
+    )
+      .then((result: { error: unknown }) => {
+        if (result.error) console.warn('brand_cache hit_count bump failed:', result.error)
+      })
+      .catch((err: unknown) => console.warn('brand_cache hit_count bump threw:', err))
+  } catch (err) {
+    console.warn('brand_cache hit_count bump threw synchronously:', err)
+  }
+}
+
+/** Best-effort cache write after a live fetch. Never throws — a cache write
+ * failure must not turn a successful brand fetch into a 500. */
+async function writeCache(brand: BrandData): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('brand_cache')
+      .upsert(
+        {
+          domain: brand.domain,
+          company_name: brand.companyName,
+          logo_url: brand.logoUrl,
+          primary_color: brand.primaryColor,
+          secondary_color: brand.secondaryColor,
+          source: brand.source,
+          raw_brand_data: brand.raw,
+          fetched_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'domain' },
+      )
+    if (error) console.warn('brand_cache write failed (continuing, cache is perf-only):', error)
+  } catch (err) {
+    console.warn('brand_cache write threw (continuing, cache is perf-only):', err)
+  }
+}
+
 export async function GET(req: NextRequest) {
   const domainParam = req.nextUrl.searchParams.get('domain') ?? ''
   if (!domainParam) {
@@ -300,11 +423,20 @@ export async function GET(req: NextRequest) {
   }
 
   const domain = normalizeDomain(domainParam)
-  if (!domain) {
-    return NextResponse.json({ error: 'domain param required' }, { status: 400 })
+  // 253 is the real max length of a DNS name — rejects anything that can't
+  // possibly be a domain before it ever reaches the cache table.
+  if (!domain || domain.length > 253 || !DOMAIN_RE.test(domain)) {
+    return NextResponse.json({ error: 'Enter a valid domain (e.g., acme.com)' }, { status: 400 })
+  }
+
+  const cached = await readCache(domain)
+  if (cached) {
+    bumpHitCount(domain, cached.hit_count)
+    return NextResponse.json(cacheRowToBrandData(cached))
   }
 
   const brand = (await fetchFromBrandfetch(domain)) ?? (await fetchKeyless(domain))
+  await writeCache(brand)
 
   return NextResponse.json(brand)
 }
