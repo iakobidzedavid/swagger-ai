@@ -67,7 +67,11 @@ async function fetchBrandfetchBrandAssets(domain: string): Promise<BrandAssets |
       secondaryColor,
       source: 'brandfetch',
     }
-  } catch {
+  } catch (err) {
+    console.error(
+      `[Brandfetch] Failed to fetch brand for ${domain}:`,
+      err instanceof Error ? err.message : String(err)
+    )
     return null
   }
 }
