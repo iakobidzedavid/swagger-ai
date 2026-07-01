@@ -10,12 +10,25 @@ interface BrandAsset {
   raw?: Record<string, unknown>
 }
 
+interface ProductData {
+  id: string
+  title: string
+  description: string
+  category: string
+  image: string
+  price: number
+  sku: string
+  primaryColor?: string
+  secondaryColor?: string
+}
+
 interface MockupResponse {
   domain: string
   companyName: string
   brandAssets: BrandAsset
   mockupUrl: string
   shareableUrl: string
+  products?: ProductData[]
 }
 
 // Brandfetch API client
@@ -205,12 +218,31 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Fetch products from Printify API with brand colors
+  let products: ProductData[] = []
+  try {
+    const printifyUrl = new URL('/api/printify/products', req.nextUrl.origin)
+    printifyUrl.searchParams.set('domain', brandAssets.domain)
+    printifyUrl.searchParams.set('primaryColor', brandAssets.primaryColor)
+    printifyUrl.searchParams.set('secondaryColor', brandAssets.secondaryColor)
+
+    const productsRes = await fetch(printifyUrl.toString())
+    if (productsRes.ok) {
+      const productsData = await productsRes.json() as { products: ProductData[] }
+      products = productsData.products
+    }
+  } catch (err) {
+    console.warn('Failed to fetch Printify products:', err)
+    // Continue without products — they're optional
+  }
+
   const mockupResponse: MockupResponse = {
     domain: brandAssets.domain,
     companyName: brandAssets.companyName,
     brandAssets,
     mockupUrl: `/design-engine?domain=${encodeURIComponent(brandAssets.domain)}`,
     shareableUrl: `${req.nextUrl.origin}/design-engine?domain=${encodeURIComponent(brandAssets.domain)}`,
+    products,
   }
 
   return NextResponse.json(mockupResponse)

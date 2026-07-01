@@ -14,20 +14,26 @@ interface BrandAsset {
   source: string
 }
 
+interface ProductData {
+  id: string
+  title: string
+  description: string
+  category: string
+  image: string
+  variants: Array<{ id: string; title: string; price: number }>
+  sku: string
+  primaryColor?: string
+  secondaryColor?: string
+}
+
 interface MockupData {
   domain: string
   companyName: string
   brandAssets: BrandAsset
   mockupUrl: string
   shareableUrl: string
+  products?: ProductData[]
 }
-
-const SAMPLE_PRODUCTS = [
-  { name: 'Classic T-Shirt', sku: 'TSHIRT-001', price: '$18' },
-  { name: 'Hoodie', sku: 'HOODIE-001', price: '$42' },
-  { name: 'Coffee Mug', sku: 'MUG-001', price: '$12' },
-  { name: 'Water Bottle', sku: 'BOTTLE-001', price: '$24' },
-]
 
 function DesignEngineContent() {
   const searchParams = useSearchParams()
@@ -193,58 +199,68 @@ function DesignEngineContent() {
                   gap: '20px',
                 }}
               >
-                {SAMPLE_PRODUCTS.map((product, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      border: `1px solid ${brandAssets.secondaryColor}`,
-                      borderRadius: '6px',
-                      overflow: 'hidden',
-                      transition: 'transform 0.2s',
-                    }}
-                  >
-                    {/* Product Image Placeholder */}
+                {mockup?.products && mockup.products.length > 0 ? (
+                  mockup.products.map((product) => (
                     <div
+                      key={product.id}
                       style={{
-                        background: `linear-gradient(135deg, ${brandAssets.primaryColor}, ${brandAssets.secondaryColor})`,
-                        height: '160px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#fff',
-                        fontSize: '36px',
+                        border: `1px solid ${brandAssets.secondaryColor}`,
+                        borderRadius: '6px',
+                        overflow: 'hidden',
+                        transition: 'transform 0.2s',
                       }}
                     >
-                      {product.name.slice(0, 1)}
-                    </div>
-                    <div style={{ padding: '16px' }}>
-                      <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#333' }}>
-                        {product.name}
-                      </h3>
-                      <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#666' }}>
-                        SKU: {product.sku}
-                      </p>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '18px', fontWeight: 'bold', color: brandAssets.primaryColor }}>
-                          {product.price}
-                        </span>
-                        <button
-                          style={{
-                            background: brandAssets.primaryColor,
-                            color: '#fff',
-                            border: 'none',
-                            padding: '6px 12px',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                          }}
-                        >
-                          Add
-                        </button>
+                      {/* Product Image with Brand Colors */}
+                      <div
+                        style={{
+                          background: `linear-gradient(135deg, ${brandAssets.primaryColor}, ${brandAssets.secondaryColor})`,
+                          height: '160px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fff',
+                          fontSize: '36px',
+                          fontWeight: 'bold',
+                          position: 'relative',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {/* Product image fallback */}
+                        <span style={{ zIndex: 1 }}>{product.title.slice(0, 1)}</span>
+                      </div>
+                      <div style={{ padding: '16px' }}>
+                        <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#333' }}>
+                          {product.title}
+                        </h3>
+                        <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#666' }}>
+                          SKU: {product.sku}
+                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '18px', fontWeight: 'bold', color: brandAssets.primaryColor }}>
+                            ${product.variants?.[0]?.price ?? 'TBD'}
+                          </span>
+                          <button
+                            style={{
+                              background: brandAssets.primaryColor,
+                              color: '#fff',
+                              border: 'none',
+                              padding: '6px 12px',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                            }}
+                          >
+                            Add
+                          </button>
+                        </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 20px', color: '#666' }}>
+                    <p>Loading product catalog...</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
