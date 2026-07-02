@@ -107,6 +107,7 @@ function OnboardForm() {
   const [storeRequestError, setStoreRequestError] = useState<string | null>(null)
   const [primaryColor, setPrimaryColor] = useState<string | null>(null)
   const [secondaryColor, setSecondaryColor] = useState<string | null>(null)
+  const [userSelectedSecondaryColor, setUserSelectedSecondaryColor] = useState<string | null>(null)
   const validateTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // First-touch acquisition-channel attribution (DE-18 revenue engine): capture
@@ -163,6 +164,7 @@ function OnboardForm() {
     setPreviewFetchState('idle')
     setPrimaryColor(null)
     setSecondaryColor(null)
+    setUserSelectedSecondaryColor(null)
 
     const norm = normalizeDomain(raw)
     const err = formatValidate(norm)
@@ -222,7 +224,7 @@ function OnboardForm() {
           company_name: brand.company_name,
           logo_url: brand.logo_url,
           primary_color: brand.primary_color,
-          secondary_color: brand.secondary_color,
+          secondary_color: userSelectedSecondaryColor || brand.secondary_color,
           contact_name: contactName.trim() || undefined,
           contact_email: contactEmail.trim() || undefined,
         }),
@@ -523,13 +525,13 @@ function OnboardForm() {
                 </div>
                 <div className="flex" style={{ gap: '20px', flexWrap: 'wrap', marginBottom: '12px' }}>
                   <ColorSwatch color={primaryColor || brandPreview.primaryColor} label="Primary" onCopy={copyHex} />
-                  <ColorSwatch color={secondaryColor || brandPreview.secondaryColor} label="Secondary" onCopy={copyHex} />
+                  <ColorSwatch color={userSelectedSecondaryColor || secondaryColor || brandPreview.secondaryColor} label="Secondary" onCopy={copyHex} />
                 </div>
 
                 {/* Color gradient preview */}
                 <div style={{
                   height: '8px', borderRadius: '4px',
-                  background: `linear-gradient(to right, ${primaryColor || brandPreview.primaryColor} 0%, ${secondaryColor || brandPreview.secondaryColor} 100%)`,
+                  background: `linear-gradient(to right, ${primaryColor || brandPreview.primaryColor} 0%, ${userSelectedSecondaryColor || secondaryColor || brandPreview.secondaryColor} 100%)`,
                   marginBottom: '20px',
                 }} />
 
@@ -553,6 +555,33 @@ function OnboardForm() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Secondary color picker when fewer than 2 colors are available */}
+                {brandPreview.colors && brandPreview.colors.length < 2 && (
+                  <div style={{ marginTop: '16px', padding: '12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                    <label htmlFor="secondary-color-picker" style={{ display: 'block', marginBottom: '8px' }}>
+                      <div className="text-small text-muted" style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        Choose Secondary Color
+                      </div>
+                      <p className="text-small text-muted" style={{ fontSize: '0.8rem', marginTop: '4px' }}>
+                        We found only {brandPreview.colors.length} color{brandPreview.colors.length !== 1 ? 's' : ''}. Select a secondary color to complete your palette.
+                      </p>
+                    </label>
+                    <input
+                      id="secondary-color-picker"
+                      type="color"
+                      value={userSelectedSecondaryColor || (secondaryColor || brandPreview.secondaryColor)}
+                      onChange={(e) => setUserSelectedSecondaryColor(e.target.value)}
+                      style={{ width: '60px', height: '60px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', cursor: 'pointer' }}
+                      title="Select a secondary color"
+                    />
+                    {userSelectedSecondaryColor && (
+                      <div style={{ marginTop: '12px', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                        Selected: <code style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--color-text)' }}>{userSelectedSecondaryColor}</code>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -632,13 +661,13 @@ function OnboardForm() {
               </div>
               <div className="flex" style={{ gap: '20px', flexWrap: 'wrap', marginBottom: '16px' }}>
                 <ColorSwatch color={brand.primary_color} label="Primary" onCopy={copyHex} />
-                <ColorSwatch color={brand.secondary_color} label="Secondary" onCopy={copyHex} />
+                <ColorSwatch color={userSelectedSecondaryColor || brand.secondary_color} label="Secondary" onCopy={copyHex} />
               </div>
 
               {/* Color gradient preview */}
               <div style={{
                 height: '8px', borderRadius: '4px',
-                background: `linear-gradient(to right, ${brand.primary_color} 0%, ${brand.secondary_color} 100%)`,
+                background: `linear-gradient(to right, ${brand.primary_color} 0%, ${userSelectedSecondaryColor || brand.secondary_color} 100%)`,
                 marginBottom: '16px',
               }} />
             </div>
