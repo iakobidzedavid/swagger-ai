@@ -5,6 +5,9 @@ import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 
+// Hex color validation pattern
+const HEX_COLOR_REGEX = /^#[0-9A-F]{6}$/i
+
 interface BrandAsset {
   logoUrl: string | null
   primaryColor: string
@@ -45,6 +48,9 @@ function DesignEngineContent() {
   const [error, setError] = useState<string | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [copiedLink, setCopiedLink] = useState(false)
+  const [editingSecondaryColor, setEditingSecondaryColor] = useState(false)
+  const [secondaryColorInput, setSecondaryColorInput] = useState('')
+  const [colorCopied, setColorCopied] = useState<string | null>(null)
 
   useEffect(() => {
     if (!domain) {
@@ -61,6 +67,7 @@ function DesignEngineContent() {
         }
         const data = (await response.json()) as MockupData
         setMockup(data)
+        setSecondaryColorInput(data.brandAssets.secondaryColor)
 
         // Generate QR code
         try {
@@ -78,6 +85,50 @@ function DesignEngineContent() {
 
     fetchMockup()
   }, [domain])
+
+  const handleSecondaryColorChange = (newColor: string) => {
+    if (mockup) {
+      setMockup({
+        ...mockup,
+        brandAssets: {
+          ...mockup.brandAssets,
+          secondaryColor: newColor,
+        },
+      })
+    }
+  }
+
+  const handleSecondaryColorInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSecondaryColorInput(value)
+    // Live update if it looks like a valid hex color
+    if (HEX_COLOR_REGEX.test(value)) {
+      handleSecondaryColorChange(value)
+    }
+  }
+
+  const handleSecondaryColorInputBlur = () => {
+    // Validate and apply color on blur
+    if (HEX_COLOR_REGEX.test(secondaryColorInput)) {
+      handleSecondaryColorChange(secondaryColorInput)
+    } else {
+      // Reset to current value if invalid
+      setSecondaryColorInput(mockup?.brandAssets.secondaryColor || '')
+    }
+    setEditingSecondaryColor(false)
+  }
+
+  const handleCopyColor = (color: string) => {
+    navigator.clipboard
+      .writeText(color)
+      .then(() => {
+        setColorCopied(color)
+        setTimeout(() => setColorCopied(null), 2000)
+      })
+      .catch((err) => {
+        console.error('Failed to copy color:', err)
+      })
+  }
 
   const handleCopyLink = async () => {
     if (mockup?.shareableUrl) {
@@ -122,7 +173,20 @@ function DesignEngineContent() {
           color: '#fff',
         }}
       >
-        <div style={{ fontSize: '18px', fontWeight: 'bold' }}>Design Preview</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ fontSize: '18px', fontWeight: 'bold' }}>Design Preview</div>
+          <div
+            style={{
+              fontSize: '12px',
+              background: 'rgba(255,255,255,0.3)',
+              padding: '4px 8px',
+              borderRadius: '3px',
+              opacity: 0.8,
+            }}
+          >
+            Live Editing Enabled
+          </div>
+        </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button
             onClick={handleCopyLink}
@@ -302,10 +366,12 @@ function DesignEngineContent() {
                 borderRadius: '8px',
                 padding: '20px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                border: editingSecondaryColor ? `2px solid ${brandAssets.secondaryColor}` : '1px solid transparent',
+                transition: 'border-color 0.3s ease',
               }}
             >
               <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 'bold', color: '#333' }}>
-                Brand Assets
+                Brand Assets {editingSecondaryColor && <span style={{ fontSize: '12px', color: brandAssets.secondaryColor }}>● Editing</span>}
               </h3>
 
               {/* Logo */}
@@ -357,10 +423,28 @@ function DesignEngineContent() {
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '8px' }}>
-                  Secondary Color
+                <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '8px', fontWeight: 'bold' }}>
+                  Secondary Color (Customizable)
                 </label>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                  <input
+                    type="color"
+                    value={mockup?.brandAssets.secondaryColor || '#000000'}
+                    onChange={(e) => {
+                      const newColor = e.target.value.toUpperCase()
+                      handleSecondaryColorChange(newColor)
+                      setSecondaryColorInput(newColor)
+                    }}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '4px',
+                      border: '1px solid #ddd',
+                      cursor: 'pointer',
+                      padding: '2px',
+                    }}
+                    title="Click to adjust secondary color"
+                  />
                   <div
                     style={{
                       width: '40px',
@@ -368,12 +452,45 @@ function DesignEngineContent() {
                       background: brandAssets.secondaryColor,
                       borderRadius: '4px',
                       border: '1px solid #ddd',
+                      transition: 'background-color 0.2s ease',
                     }}
                   />
-                  <code style={{ fontSize: '12px', color: '#666' }}>
-                    {brandAssets.secondaryColor}
-                  </code>
+                  <button
+                    onClick={() => handleCopyColor(brandAssets.secondaryColor)}
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '11px',
+                      background: colorCopied === brandAssets.secondaryColor ? '#4CAF50' : '#f5f5f5',
+                      border: '1px solid #ddd',
+                      borderRadius: '3px',
+                      cursor: 'pointer',
+                      color: colorCopied === brandAssets.secondaryColor ? '#fff' : '#333',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {colorCopied === brandAssets.secondaryColor ? '✓ Copied' : 'Copy'}
+                  </button>
                 </div>
+                <input
+                  type="text"
+                  value={secondaryColorInput}
+                  onChange={handleSecondaryColorInputChange}
+                  onFocus={() => setEditingSecondaryColor(true)}
+                  onBlur={handleSecondaryColorInputBlur}
+                  placeholder="#000000"
+                  style={{
+                    width: '100%',
+                    padding: '6px 8px',
+                    fontSize: '12px',
+                    fontFamily: 'monospace',
+                    border: `1px solid ${HEX_COLOR_REGEX.test(secondaryColorInput) ? '#ddd' : '#e74c3c'}`,
+                    borderRadius: '3px',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <p style={{ margin: '6px 0 0 0', fontSize: '10px', color: '#999' }}>
+                  Enter hex code or use color picker to customize
+                </p>
               </div>
 
               {/* Domain Info */}
