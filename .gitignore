@@ -46,3 +46,9 @@ build/
 .mcp.json
 .claude/
 .gstack/
+
+# Gstack — ephemeral/build paths (auto-excluded)
+.pica-*/
+.hyperfx-*/
+.composio-*/
+.googleads-*/
