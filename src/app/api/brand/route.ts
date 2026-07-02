@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import zlib from 'node:zlib'
 import { supabase } from '@/lib/supabase'
 import { DOMAIN_RE, normalizeDomain, isCacheFresh } from '@/lib/brand'
+import { fetchFromBrandfetch } from '@/lib/brandfetch'
 
 // zlib + Buffer (favicon color extraction) require the Node.js runtime, not Edge.
 export const runtime = 'nodejs'
@@ -187,68 +188,10 @@ async function fetchFaviconBrand(domain: string): Promise<{ logoUrl: string; col
   }
 }
 
-/** Real Brandfetch API client. Returns null (never throws) when the key is
- * unset, the request fails, or the response doesn't parse — caller falls
- * back to the keyless path in every one of those cases. */
-async function fetchFromBrandfetch(domain: string): Promise<BrandData | null> {
-  const apiKey = process.env.BRANDFETCH_API_KEY
-  if (!apiKey) return null
-
-  try {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 5000)
-
-    const response = await fetch(`https://api.brandfetch.io/v2/brands/${domain}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Accept': 'application/json',
-      },
-      signal: controller.signal,
-    })
-
-    clearTimeout(timer)
-
-    if (!response.ok) {
-      console.warn(`Brandfetch request failed for ${domain}: ${response.status}`)
-      return null
-    }
-
-    const data = await response.json() as {
-      name?: string
-      logos?: Array<{ src?: string }>
-      colors?: Array<{ hex?: string }>
-      fonts?: Array<{ name?: string }>
-    }
-
-    const logoUrl = data.logos?.[0]?.src ?? null
-    // Only trust hex strings shaped like a real color — Brandfetch is a
-    // third-party response body; a malformed/non-hex value here must not
-    // reach lightenColor() (which assumes #rrggbb and would otherwise emit
-    // "#NaNNaNNaN" as the secondary color).
-    const isHex = (v: string | undefined): v is string => !!v && /^#[0-9a-f]{6}$/i.test(v)
-    const colors = data.colors?.map(c => c.hex).filter(isHex) ?? []
-    const primaryColor = colors?.[0] ?? '#7c3aed'
-    const secondaryColor = colors?.[1] ?? (colors?.[0] ? lightenColor(colors[0]) : '#8fa3b8')
-    const companyName = data.name ?? deriveCompanyName(domain)
-    const fonts = data.fonts?.map(f => f.name).filter((n): n is string => !!n).slice(0, 5) ?? []
-
-    return {
-      domain,
-      companyName,
-      logoUrl,
-      primaryColor,
-      secondaryColor,
-      source: 'brandfetch',
-      colors: colors.length > 0 ? colors : undefined,
-      fonts: fonts.length > 0 ? fonts : undefined,
-      raw: data,
-    }
-  } catch (error) {
-    console.warn('Brandfetch fetch error:', error)
-    return null
-  }
-}
+// Brandfetch API client is imported from @/lib/brandfetch and reused across
+// both the brand preview cache (/api/brand) and domain submissions (/api/domain/submit)
+// for consistency and maintainability. The library version has comprehensive logo
+// extraction (SVG-first preference) and full palette + font support.
 
 async function fetchThemeColor(domain: string): Promise<string | null> {
   try {
