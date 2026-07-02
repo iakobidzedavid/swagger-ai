@@ -2,15 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import zlib from 'node:zlib'
 import { supabase } from '@/lib/supabase'
 import { classifyAttribution, sanitizeAttribution } from '@/lib/attribution'
+import { fetchFromBrandfetch, isPersonalDomain, deriveCompanyName, lightenColor } from '@/lib/brandfetch'
 
 // zlib + Buffer require the Node.js runtime (not Edge).
 export const runtime = 'nodejs'
 
-const PERSONAL_DOMAINS = new Set([
-  'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
-  'icloud.com', 'protonmail.com', 'mail.com', 'zoho.com', 'yandex.com',
-  'gmx.com', 'live.com', 'msn.com', 'me.com', 'mac.com',
-])
+// Personal domains list imported from brandfetch.ts via isPersonalDomain()
 
 const DOMAIN_RE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i
 
@@ -163,18 +160,7 @@ async function fetchThemeColor(domain: string): Promise<string | null> {
   return null
 }
 
-function lighten(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  const f = 0.6
-  return `#${Math.round(r + (255 - r) * f).toString(16).padStart(2, '0')}${Math.round(g + (255 - g) * f).toString(16).padStart(2, '0')}${Math.round(b + (255 - b) * f).toString(16).padStart(2, '0')}`
-}
-
-function companyName(domain: string): string {
-  const n = domain.replace(/^www\./, '').split('.')[0]
-  return n.charAt(0).toUpperCase() + n.slice(1)
-}
+// lightenColor and deriveCompanyName are imported from /lib/brandfetch.ts
 
 export async function POST(req: NextRequest) {
   let body: {
@@ -199,7 +185,7 @@ export async function POST(req: NextRequest) {
 
   if (!raw) return NextResponse.json({ error: 'domain is required' }, { status: 400 })
   if (!DOMAIN_RE.test(raw)) return NextResponse.json({ error: 'Invalid domain format' }, { status: 400 })
-  if (PERSONAL_DOMAINS.has(raw)) return NextResponse.json({ error: 'Please enter a company domain' }, { status: 400 })
+  if (isPersonalDomain(raw)) return NextResponse.json({ error: 'Please enter a company domain' }, { status: 400 })
 
   // Revenue-engine attribution (DE-18): trust nothing from the client beyond
   // length-clipped strings — classify server-side into the same taxonomy the
@@ -233,32 +219,54 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to save submission' }, { status: 500 })
   }
 
-  // Derive brand: color from the logo first (accurate), theme-color as a fallback.
-  const [brand, themeColor] = await Promise.all([
-    fetchBrand(raw),
-    fetchThemeColor(raw),
-  ])
+  // Brandfetch-first approach: try Brandfetch API, fall back to keyless (favicon + theme-color)
+  let brandData = await fetchFromBrandfetch(raw)
 
-  const primaryColor = brand.color ?? themeColor ?? NEUTRAL
-  const secondaryColor = lighten(primaryColor)
-  const logoUrl = brand.logoUrl
-  const colorSource = brand.color ? 'logo' : themeColor ? 'theme-color' : 'default'
-  const name = companyName(raw)
+  if (!brandData) {
+    // Keyless fallback: use existing favicon + theme-color extraction
+    const [brand, themeColor] = await Promise.all([
+      fetchBrand(raw),
+      fetchThemeColor(raw),
+    ])
 
-  // Update record with fetched brand data
+    const primaryColor = brand.color ?? themeColor ?? NEUTRAL
+    const secondaryColor = lightenColor(primaryColor)
+    const logoUrl = brand.logoUrl
+    const colorSource = brand.color ? 'logo' : themeColor ? 'theme-color' : 'default'
+    const name = deriveCompanyName(raw)
+
+    brandData = {
+      domain: raw,
+      companyName: name,
+      logoUrl,
+      primaryColor,
+      secondaryColor,
+      source: colorSource === 'default' ? 'fallback' : (brand.color ? 'favicon' : 'theme-color'),
+      raw: {
+        logoSource: 'favicon',
+        colorSource,
+        themeColorFound: !!themeColor,
+      },
+    }
+  }
+
+  // Update record with fetched brand data (Brandfetch or keyless)
   const { data: updated, error: updateErr } = await supabase
     .from('domain_submissions')
     .update({
       status: 'detected',
-      company_name: name,
-      logo_url: logoUrl,
-      primary_color: primaryColor,
-      secondary_color: secondaryColor,
+      company_name: brandData.companyName,
+      logo_url: brandData.logoUrl,
+      primary_color: brandData.primaryColor,
+      secondary_color: brandData.secondaryColor,
+      brand_source: brandData.source,
+      color_count: brandData.colors?.length ?? 0,
+      font_count: brandData.fonts?.length ?? 0,
       raw_brand_data: {
-        logoSource: 'favicon',
-        colorSource,
-        themeColorFound: !!themeColor,
-        source: colorSource === 'default' ? 'fallback' : colorSource,
+        ...brandData.raw,
+        source: brandData.source,
+        colors: brandData.colors,
+        fonts: brandData.fonts,
         contact_name: contactName,
         contact_email: contactEmail,
       },
@@ -274,10 +282,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       id: inserted.id,
       domain: raw,
-      company_name: name,
-      logo_url: logoUrl,
-      primary_color: primaryColor,
-      secondary_color: secondaryColor,
+      company_name: brandData.companyName,
+      logo_url: brandData.logoUrl,
+      primary_color: brandData.primaryColor,
+      secondary_color: brandData.secondaryColor,
       status: 'detected',
       created_at: inserted.created_at,
     })

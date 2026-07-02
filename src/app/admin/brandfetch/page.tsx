@@ -20,8 +20,17 @@ interface BrandData {
   secondary_color: string
   status: string
   created_at: string
+  brand_source?: string
+  color_count?: number
+  font_count?: number
   raw_brand_data?: {
     source?: string
+    colors?: string[]
+    fonts?: string[]
+    brandfetchId?: string
+    brandfetchModified?: string
+    colorCount?: number
+    fontCount?: number
     [key: string]: unknown
   }
 }
@@ -293,7 +302,55 @@ export default function BrandfetchAdminPage() {
                 background: `linear-gradient(to right, ${brand.primary_color} 0%, ${brand.secondary_color} 100%)`,
                 marginBottom: '16px',
               }} />
+
+              {/* Full color palette from Brandfetch */}
+              {brand.raw_brand_data?.colors && brand.raw_brand_data.colors.length > 0 && (
+                <div style={{ marginTop: '16px', padding: '12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)' }}>
+                  <div className="text-small text-muted" style={{ marginBottom: '8px', fontSize: '0.75rem' }}>
+                    Full Palette ({brand.raw_brand_data.colors.length})
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {brand.raw_brand_data.colors.map((color, i) => (
+                      <div key={i} title={color} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{
+                          width: '28px', height: '28px',
+                          borderRadius: '4px',
+                          background: color,
+                          border: '1px solid var(--color-border)',
+                        }} />
+                        <span className="text-small" style={{ fontSize: '0.75rem', fontFamily: 'monospace', minWidth: '70px' }}>
+                          {color}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Fonts */}
+            {brand.raw_brand_data?.fonts && brand.raw_brand_data.fonts.length > 0 && (
+              <div style={{ marginBottom: '24px' }}>
+                <div className="text-small font-semibold" style={{ marginBottom: '16px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
+                  Brand Fonts ({brand.raw_brand_data.fonts.length})
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
+                  {brand.raw_brand_data.fonts.map((font, i) => (
+                    <div key={i} style={{
+                      padding: '12px',
+                      background: 'var(--color-bg)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)',
+                    }}>
+                      <div className="text-small font-semibold">{font}</div>
+                      <div style={{ fontFamily: font, fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                        The quick brown fox
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Metadata */}
             <div style={{
@@ -315,11 +372,11 @@ export default function BrandfetchAdminPage() {
                   <div className="text-small text-muted">Status</div>
                   <div className="text-small font-semibold">{brand.status}</div>
                 </div>
-                {brand.raw_brand_data?.source && (
+                {brand.brand_source && (
                   <div>
-                    <div className="text-small text-muted">Source</div>
+                    <div className="text-small text-muted">Brand Source</div>
                     <div className="text-small font-semibold" style={{ textTransform: 'capitalize' }}>
-                      {String(brand.raw_brand_data.source)}
+                      {brand.brand_source === 'brandfetch' ? '🚀 Brandfetch API' : brand.brand_source}
                     </div>
                   </div>
                 )}
@@ -329,6 +386,26 @@ export default function BrandfetchAdminPage() {
                     {new Date(brand.created_at).toLocaleString()}
                   </div>
                 </div>
+                {(brand.color_count || 0) > 0 && (
+                  <div>
+                    <div className="text-small text-muted">Color Palette</div>
+                    <div className="text-small font-semibold">{brand.color_count} colors</div>
+                  </div>
+                )}
+                {(brand.font_count || 0) > 0 && (
+                  <div>
+                    <div className="text-small text-muted">Brand Fonts</div>
+                    <div className="text-small font-semibold">{brand.font_count} fonts</div>
+                  </div>
+                )}
+                {brand.raw_brand_data?.brandfetchId && (
+                  <div>
+                    <div className="text-small text-muted">Brandfetch ID</div>
+                    <div className="text-small font-semibold" style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                      {brand.raw_brand_data.brandfetchId.slice(0, 8)}…
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
