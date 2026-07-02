@@ -238,13 +238,109 @@ To enable real Printify API calls:
    - Future: Build OAuth flow to link Swagger AI accounts to Printify accounts
    - Store Printify shop ID in user profile or session
 
+## OAuth Integration (NEW)
+
+The Printify OAuth integration is now implemented. Users can connect their Printify accounts without manual shop ID entry.
+
+### OAuth Flow
+
+**Endpoint 1: `/api/auth/printify/authorize?domain=acme.com`**
+- Initiates the OAuth flow
+- Redirects user to Printify's authorization page
+- Stores domain in state for CSRF protection
+
+**Endpoint 2: `/api/auth/printify/callback?code=...&state=...`**
+- Handles Printify's OAuth callback
+- Exchanges authorization code for access token
+- Fetches user's Printify shops
+- Stores connection in `printify_accounts` table
+- Redirects to `/connect-shop` with success/error status
+
+**Page: `/connect-shop`**
+- UI for initiating OAuth flow
+- Displays connected shop information
+- Allows disconnecting Printify accounts
+
+### Database Schema
+
+**printify_accounts table**
+```sql
+CREATE TABLE printify_accounts (
+  id              uuid PRIMARY KEY
+  domain          text UNIQUE -- company domain (e.g., acme.com)
+  shop_id         text NOT NULL -- Printify shop ID
+  shop_title      text -- Printify shop name
+  access_token    text -- OAuth access token
+  refresh_token   text -- OAuth refresh token
+  token_expires_at timestamptz -- When token expires
+  is_active       boolean DEFAULT true
+  created_at, updated_at timestamptz
+)
+```
+
+### Required Environment Variables
+
+To enable Printify OAuth:
+
+```
+PRINTIFY_OAUTH_CLIENT_ID=<your-client-id>
+PRINTIFY_OAUTH_CLIENT_SECRET=<your-client-secret>
+NEXT_PUBLIC_APP_URL=https://your-domain.com
+```
+
+Get credentials from: https://dashboard.printify.com/apps
+
+### Usage Flow
+
+1. User enters domain at `/connect-shop?domain=acme.com`
+2. Clicks "Connect with Printify"
+3. Redirected to `http://localhost:3000/api/auth/printify/authorize?domain=acme.com`
+4. Redirected to Printify OAuth consent screen
+5. After authorization, Printify redirects to `/api/auth/printify/callback?code=...&state=...`
+6. Tokens are exchanged and stored
+7. User is redirected back to `/connect-shop` with success message
+8. Connected account is available for all storefront generation requests
+
+### API Integration
+
+The `/api/printify/shop` endpoint now checks the `printify_accounts` table:
+
+```javascript
+GET /api/printify/shop?domain=acme.com
+```
+
+**Response (with OAuth connection):**
+```json
+{
+  "shopId": "123456",
+  "shopTitle": "My Printify Shop",
+  "domain": "acme.com",
+  "status": "connected",
+  "message": "Shop connected via OAuth"
+}
+```
+
+**Response (without OAuth, mock mode):**
+```json
+{
+  "shopId": "mock-shop-acme-com",
+  "domain": "acme.com",
+  "status": "mock",
+  "message": "Running in mock mode..."
+}
+```
+
 ## Limitations & Future Work
 
-1. **OAuth Integration Not Yet Implemented**
-   - Currently, users must provide their Printify shop ID manually
-   - Future: Implement Printify OAuth flow to auto-link accounts
+1. **Token Refresh Not Yet Implemented**
+   - Tokens are stored but not automatically refreshed when expired
+   - Future: Implement refresh token flow when access token expires
 
-2. **Real Product Mockups Not Generated**
+2. **Multiple Shops Per Domain Not Supported**
+   - Currently, only the first Printify shop is used
+   - Future: Allow users to select from multiple shops
+
+3. **Real Product Mockups Not Generated**
    - Current: Placeholder images from via.placeholder.com
    - Future: Generate actual branded mockups using Printify design service
 

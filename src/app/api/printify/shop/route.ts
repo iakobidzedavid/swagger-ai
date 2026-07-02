@@ -12,12 +12,12 @@ export const runtime = 'nodejs'
  * Query params:
  *   - domain: The company domain (e.g., acme.com)
  *
- * In production, this would:
- * 1. Check if domain has a cached shop ID in the database
- * 2. If not, use Printify OAuth to get the shop ID
- * 3. Cache the shop ID for future requests
+ * This endpoint:
+ * 1. Checks if the domain has a connected Printify account via OAuth
+ * 2. Returns the shop ID if found
+ * 3. Falls back to mock mode if not connected
  *
- * NOTE: Requires PRINTIFY_API_KEY environment variable
+ * NOTE: Requires OAuth setup for real Printify integration
  */
 export async function GET(req: NextRequest) {
   const domain = req.nextUrl.searchParams.get('domain')
@@ -26,40 +26,57 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'domain query parameter is required' }, { status: 400 })
   }
 
-  const printifyClient = getPrintifyClient()
-
-  if (printifyClient.isMockMode()) {
-    // In mock mode, generate a consistent mock shop ID based on domain
-    const mockShopId = `mock-shop-${domain.replace(/\./g, '-')}`
-    return NextResponse.json(
-      {
-        shopId: mockShopId,
-        domain,
-        status: 'mock',
-        message:
-          'Running in mock mode. Set PRINTIFY_API_KEY to use real Printify shops.',
-      },
-      { status: 200 }
-    )
-  }
-
   try {
-    // TODO: In production, this would:
-    // 1. Check if the user has authorized Printify via OAuth
-    // 2. Get their real Printify shop ID
-    // 3. Cache it in the database
-    //
-    // For now, we cannot get the real shop ID without OAuth
+    // Check if this domain has a connected Printify account
+    const { data: account, error } = await supabase
+      .from('printify_accounts')
+      .select('shop_id, shop_title, is_active')
+      .eq('domain', domain)
+      .eq('is_active', true)
+      .single()
+
+    if (!error && account) {
+      // Domain has a connected OAuth account
+      return NextResponse.json(
+        {
+          shopId: account.shop_id,
+          shopTitle: account.shop_title,
+          domain,
+          status: 'connected',
+          message: 'Shop connected via OAuth',
+        },
+        { status: 200 }
+      )
+    }
+
+    // No OAuth connection found, check if we're in mock mode
+    const printifyClient = getPrintifyClient()
+
+    if (printifyClient.isMockMode()) {
+      // In mock mode, generate a consistent mock shop ID based on domain
+      const mockShopId = `mock-shop-${domain.replace(/\./g, '-')}`
+      return NextResponse.json(
+        {
+          shopId: mockShopId,
+          domain,
+          status: 'mock',
+          message: 'Running in mock mode. Set PRINTIFY_API_KEY and OAuth to use real Printify shops.',
+        },
+        { status: 200 }
+      )
+    }
+
+    // Real API key is set but no OAuth connection found
     return NextResponse.json(
       {
-        error: 'Printify OAuth not yet configured. PRINTIFY_API_KEY is set but OAuth integration is required.',
-        message:
-          'To use real Printify shops, set up OAuth authentication and user account linking.',
+        error: 'No Printify shop connected',
+        message: 'Please connect your Printify account first',
+        connectUrl: `/connect-shop?domain=${encodeURIComponent(domain)}`,
       },
-      { status: 501 }
+      { status: 401 }
     )
   } catch (error) {
     console.error('Error getting Printify shop:', error)
-    return NextResponse.json({ error: 'Failed to get or create shop' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to get shop' }, { status: 500 })
   }
 }
