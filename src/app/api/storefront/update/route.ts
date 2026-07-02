@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { verifyAuth, hasStorefrontAccess } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 
@@ -29,7 +30,10 @@ interface StorefrontUpdateResponse {
  * PATCH /api/storefront/update
  *
  * Update storefront branding properties (secondary color, primary color, company name, logo).
- * This allows stores to modify their colors and branding after initial creation.
+ * This allows authenticated users to modify colors and branding of their own storefronts after creation.
+ *
+ * REQUIRES: Authorization: Bearer <JWT_TOKEN>
+ * AUTHORIZATION: Only the storefront owner can update their own storefront
  *
  * Request body:
  * {
@@ -41,6 +45,15 @@ interface StorefrontUpdateResponse {
  * }
  */
 export async function PATCH(req: NextRequest) {
+  // Verify authentication
+  const auth = await verifyAuth(req)
+  if (!auth.success) {
+    return NextResponse.json<StorefrontUpdateResponse>(
+      { success: false, error: auth.error || 'Unauthorized' },
+      { status: 401 }
+    )
+  }
+
   let body: StorefrontUpdateRequest
 
   try {
@@ -77,6 +90,28 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
+    // First, fetch the storefront to verify ownership
+    const { data: storefront, error: fetchError } = await supabase
+      .from('storefront_requests')
+      .select('id, domain, primary_color, secondary_color, company_name, logo_url, owner_id')
+      .eq('id', storefrontRequestId)
+      .single()
+
+    if (fetchError || !storefront) {
+      return NextResponse.json<StorefrontUpdateResponse>(
+        { success: false, error: 'Storefront not found' },
+        { status: fetchError?.code === 'PGRST116' ? 404 : 500 }
+      )
+    }
+
+    // Verify user owns this storefront
+    if (!hasStorefrontAccess(auth.userId!, storefront.owner_id)) {
+      return NextResponse.json<StorefrontUpdateResponse>(
+        { success: false, error: 'Forbidden: you can only update your own storefronts' },
+        { status: 403 }
+      )
+    }
+
     // Build update object with only provided fields
     const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),

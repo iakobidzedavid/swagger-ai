@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { getPrintifyClient } from '@/lib/printify'
+import { verifyAuth } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 
@@ -40,17 +41,29 @@ interface StorefrontCreateResponse {
  * POST /api/storefront/create
  *
  * Orchestrate the complete storefront creation flow:
- * 1. Create a storefront_requests record
- * 2. Create a Printify shop (or get existing)
- * 3. Create all selected products in Printify
- * 4. Generate a storefront URL
+ * 1. Verify user authentication (JWT token required)
+ * 2. Create a storefront_requests record linked to the authenticated user
+ * 3. Create a Printify shop (or get existing)
+ * 4. Create all selected products in Printify
+ * 5. Generate a storefront URL
  *
  * This is the primary entry point for the products-selection flow.
+ * REQUIRES: Authorization: Bearer <JWT_TOKEN>
  *
  * Requires:
+ * - Valid JWT token in Authorization header
  * - PRINTIFY_API_KEY for real Printify integration
  */
 export async function POST(req: NextRequest) {
+  // Verify authentication
+  const auth = await verifyAuth(req)
+  if (!auth.success) {
+    return NextResponse.json(
+      { success: false, message: auth.error || 'Unauthorized' },
+      { status: 401 }
+    )
+  }
+
   let body: StorefrontCreateRequest
 
   try {
@@ -97,10 +110,11 @@ export async function POST(req: NextRequest) {
   try {
     const printifyClient = getPrintifyClient()
 
-    // Step 1: Create a storefront_requests record
+    // Step 1: Create a storefront_requests record linked to the authenticated user
     const { data: storefrontRequest, error: storefrontError } = await supabase
       .from('storefront_requests')
       .insert({
+        owner_id: auth.userId, // Link storefront to authenticated user
         domain_submission_id: domainSubmissionId || null,
         domain,
         company_name: companyName,
