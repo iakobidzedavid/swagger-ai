@@ -20,6 +20,7 @@ interface StorefrontCreateRequest {
   logoUrl: string | null
   primaryColor: string
   secondaryColor: string
+  designTemplate?: string
   products: ProductSelection[]
 }
 
@@ -68,6 +69,7 @@ export async function POST(req: NextRequest) {
     logoUrl,
     primaryColor,
     secondaryColor,
+    designTemplate,
     products,
   } = body
 
@@ -105,6 +107,7 @@ export async function POST(req: NextRequest) {
         logo_url: logoUrl,
         primary_color: primaryColor,
         secondary_color: secondaryColor,
+        design_template: designTemplate || 'minimal',
         status: 'processing',
       })
       .select()

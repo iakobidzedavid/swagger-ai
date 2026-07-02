@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation'
 import { normalizeDomain } from '@/lib/brand'
 
 type LoadingState = 'idle' | 'loading' | 'loaded' | 'error'
-type CreatingState = 'idle' | 'creating' | 'success' | 'error'
 
 interface BrandData {
   id: string
@@ -52,9 +51,6 @@ function ProductsForm() {
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set())
   const [loadingState, setLoadingState] = useState<LoadingState>('loading')
   const [loadingError, setLoadingError] = useState<string | null>(null)
-  const [creatingState, setCreatingState] = useState<CreatingState>('idle')
-  const [creatingError, setCreatingError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   // Fetch brand data from Supabase via API
   const fetchBrandData = async (domain: string) => {
@@ -146,49 +142,13 @@ function ProductsForm() {
 
   const handleCreateStore = async () => {
     if (!brand || selectedProductIds.size < 4) {
-      setCreatingError('Please select at least 4 products')
       return
     }
 
-    setCreatingState('creating')
-    setCreatingError(null)
-
-    try {
-      const selectedProducts = products.filter(p => selectedProductIds.has(p.id))
-      const res = await fetch('/api/storefront/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          domainSubmissionId: brand.id,
-          domain: brand.domain,
-          companyName: brand.company_name,
-          logoUrl: brand.logo_url,
-          primaryColor: brand.primary_color,
-          secondaryColor: brand.secondary_color,
-          products: selectedProducts.map(p => ({
-            productId: p.id,
-            productName: p.title,
-            productCategory: p.category,
-            productImage: p.mockupImage || p.image,
-            productPrice: p.variants[0]?.price || 0,
-            productSku: p.sku,
-          })),
-        }),
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.message || 'Failed to create storefront')
-      }
-
-      const data = await res.json()
-
-      setCreatingState('success')
-      setSuccessMessage(`Storefront created! ID: ${data.storefrontRequest?.id?.slice(0, 8)}`)
-    } catch (err) {
-      setCreatingState('error')
-      setCreatingError(err instanceof Error ? err.message : 'Failed to create storefront')
-    }
+    // Navigate to preview page with selected products
+    const selectedProductIdArray = Array.from(selectedProductIds).join(',')
+    const previewUrl = `/preview?domain=${encodeURIComponent(brand.domain)}&id=${encodeURIComponent(brand.id)}&products=${encodeURIComponent(selectedProductIdArray)}`
+    window.location.href = previewUrl
   }
 
   const selectedCount = selectedProductIds.size
@@ -199,25 +159,12 @@ function ProductsForm() {
         {/* Header */}
         <div style={{ marginBottom: '40px' }}>
           <h1 className="text-h1" style={{ marginBottom: '10px' }}>
-            {creatingState === 'success' ? 'Store Created!' : 'Select Your Swag'}
+            Select Your Swag
           </h1>
           <p className="text-body text-muted">
-            {creatingState === 'success'
-              ? 'Your storefront has been created and is ready to share with your team.'
-              : 'Choose at least 4 branded products for your team.'}
+            Choose at least 4 branded products for your team.
           </p>
         </div>
-
-        {/* Success message */}
-        {creatingState === 'success' && successMessage && (
-          <div className="success-banner" style={{ marginBottom: '24px' }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4" />
-              <path d="M5 8l2.5 2.5 4-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            {successMessage}
-          </div>
-        )}
 
         {/* Error states */}
         {loadingState === 'error' && (
@@ -227,16 +174,6 @@ function ProductsForm() {
               <path d="M8 4v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
             {loadingError}
-          </div>
-        )}
-
-        {creatingError && (
-          <div className="error-banner" style={{ marginBottom: '24px' }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4" />
-              <path d="M8 4v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-            {creatingError}
           </div>
         )}
 
@@ -399,37 +336,22 @@ function ProductsForm() {
                 </div>
               </div>
 
-              {/* Create store button */}
+              {/* Preview store button */}
               <button
                 onClick={handleCreateStore}
-                disabled={selectedCount < 4 || creatingState === 'creating' || creatingState === 'success'}
+                disabled={selectedCount < 4}
                 className="btn btn-primary btn-full"
                 style={{
                   opacity: selectedCount < 4 ? 0.5 : 1,
                   cursor: selectedCount < 4 ? 'not-allowed' : 'pointer',
                 }}
               >
-                {creatingState === 'creating' ? (
-                  <>
-                    <span className="spinner" style={{ width: 16, height: 16 }} />
-                    Creating…
-                  </>
-                ) : creatingState === 'success' ? (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4" />
-                      <path d="M5 8l2.5 2.5 4-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    Created!
-                  </>
-                ) : (
-                  <>
-                    Create Store
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 8h10M9 4l4 4-4 4" />
-                    </svg>
-                  </>
-                )}
+                <>
+                  Preview & Customize
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 8h10M9 4l4 4-4 4" />
+                  </svg>
+                </>
               </button>
 
               {/* Back link */}
