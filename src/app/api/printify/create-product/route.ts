@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getPrintifyClient } from '@/lib/printify'
+
+export const runtime = 'nodejs'
 
 interface CreateProductRequest {
   storefrontRequestId: string
+  shopId: string
   productId: string
   productName: string
   productCategory: string
@@ -28,19 +32,18 @@ interface CreateProductResponse {
  * POST /api/printify/create-product
  *
  * Create a branded product in Printify and store it in the database.
- * This endpoint would integrate with Printify's API to:
- * 1. Create a new product in the user's Printify shop
- * 2. Apply brand colors via design templates
- * 3. Set up print areas and mockups
- * 4. Store the created product in our database
  *
- * NOTE: This is a stub implementation. In production, this would:
- * - Require a valid Printify OAuth token from the user
- * - Call Printify API to create the actual product
- * - Generate mockup images with brand colors
- * - Return real Printify product IDs
+ * This endpoint:
+ * 1. Calls Printify API to create a new product in the user's shop
+ * 2. Applies brand colors via product variants and description
+ * 3. Stores the created product metadata in our database
+ * 4. Returns the Printify product ID and our local record ID
  *
- * Current status: NEEDS_HUMAN_APPROVAL for Printify API credentials
+ * Falls back to mock mode when PRINTIFY_API_KEY is not configured.
+ *
+ * Requires:
+ * - PRINTIFY_API_KEY environment variable (for real API calls)
+ * - Valid shopId from /api/printify/shop endpoint
  */
 export async function POST(req: NextRequest) {
   let body: CreateProductRequest
@@ -56,6 +59,7 @@ export async function POST(req: NextRequest) {
 
   const {
     storefrontRequestId,
+    shopId,
     productId,
     productName,
     productCategory,
@@ -67,38 +71,75 @@ export async function POST(req: NextRequest) {
   } = body
 
   // Validate required fields
-  if (!storefrontRequestId || !productId || !productName) {
+  if (!storefrontRequestId || !shopId || !productId || !productName) {
     return NextResponse.json(
-      { success: false, message: 'Missing required fields: storefrontRequestId, productId, productName' },
+      {
+        success: false,
+        message: 'Missing required fields: storefrontRequestId, shopId, productId, productName',
+      },
       { status: 400 }
     )
   }
 
   try {
-    // In production, this would call the Printify API:
-    // const printifyResponse = await fetch('https://api.printify.com/v1/shops/{shop_id}/products', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Authorization': `Bearer ${PRINTIFY_API_TOKEN}`,
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({
-    //     title: productName,
-    //     description: `Branded with ${primaryColor}`,
-    //     images: [{ src: productImage }],
-    //     variants: [...],
-    //     print_areas: [...],
-    //   }),
-    // })
+    const printifyClient = getPrintifyClient()
 
-    // For now, simulate success and store locally
+    // Prepare product data for Printify
+    const productData = {
+      title: productName,
+      description: `${productName} - Branded with colors: ${primaryColor}, ${secondaryColor}`,
+      images: [{ src: productImage }],
+      variants: [
+        {
+          id: 1,
+          title: 'Default',
+          price: Math.round(productPrice * 100), // Printify uses cents
+          sku: productSku,
+        },
+      ],
+      print_areas: [
+        {
+          id: 'front',
+          title: 'Front Print',
+        },
+      ],
+    }
+
+    // Call Printify API to create the product (or mock it)
+    let printifyResponse
+    try {
+      printifyResponse = await printifyClient.createProduct(shopId, productData)
+    } catch (printifyError) {
+      // If Printify API fails and we're not in mock mode, return error
+      if (!printifyClient.isMockMode()) {
+        console.error('Printify API error:', printifyError)
+        return NextResponse.json(
+          {
+            success: false,
+            message: `Printify API error: ${printifyError instanceof Error ? printifyError.message : 'Unknown error'}`,
+          },
+          { status: 500 }
+        )
+      }
+      // In mock mode, use the mock response
+      printifyResponse = {
+        id: `mock-product-${productId}-${Date.now()}`,
+        title: productName,
+        description: productData.description,
+        images: productData.images,
+        variants: productData.variants,
+        status: 'draft',
+      }
+    }
+
+    // Store the created product in our database
     const { data, error } = await supabase
       .from('printify_products')
       .insert({
         storefront_request_id: storefrontRequestId,
-        printify_id: `printify-${productId}-${Date.now()}`, // Simulated ID
+        printify_id: printifyResponse.id,
         name: productName,
-        description: `Branded product with ${primaryColor}`,
+        description: productData.description,
         category: productCategory,
         image_url: productImage,
         price_usd: productPrice,
@@ -113,7 +154,7 @@ export async function POST(req: NextRequest) {
     if (error || !data) {
       console.error('Supabase product insert error:', error)
       return NextResponse.json(
-        { success: false, message: 'Failed to save product' },
+        { success: false, message: 'Failed to save product to database' },
         { status: 500 }
       )
     }
@@ -121,7 +162,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: 'Product created successfully (mock)',
+        message: `Product created successfully${printifyClient.isMockMode() ? ' (mock mode)' : ''}`,
         product: {
           id: data.id,
           printifyId: data.printify_id,
