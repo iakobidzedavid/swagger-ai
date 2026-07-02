@@ -1,7 +1,7 @@
--- Orders table: tracks completed purchases
+-- Orders table: tracks completed purchases (idempotent migration)
 CREATE TABLE IF NOT EXISTS orders (
   id                    uuid        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  storefront_id         uuid        NOT NULL,
+  storefront_id         uuid        NOT NULL REFERENCES storefront_requests(id) ON DELETE RESTRICT,
   domain                text        NOT NULL,
   customer_email        text        NOT NULL,
   customer_name         text,
@@ -11,10 +11,10 @@ CREATE TABLE IF NOT EXISTS orders (
   shipping_state        text,
   shipping_zip          text,
   shipping_country      text,
-  total_amount_cents    integer     NOT NULL,
+  total_amount_cents    integer     NOT NULL CHECK (total_amount_cents > 0),
   currency              text        NOT NULL DEFAULT 'usd',
-  swagger_fee_cents     integer     NOT NULL,
-  vendor_payout_cents   integer     NOT NULL,
+  swagger_fee_cents     integer     NOT NULL CHECK (swagger_fee_cents >= 0),
+  vendor_payout_cents   integer     NOT NULL CHECK (vendor_payout_cents >= 0),
   payment_method        text,
   transaction_id        text,
   printify_order_id     text,
