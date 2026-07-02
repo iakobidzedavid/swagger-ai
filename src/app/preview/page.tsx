@@ -191,15 +191,22 @@ function PreviewContent() {
         }),
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        const data = await res.json()
         throw new Error(data.message || 'Failed to create storefront')
       }
 
+      const storefrontRequestId = data.storefrontRequest?.id
+
       setCreatingState('success')
-      // Redirect to store created page after a brief delay
+      // Redirect to products created page to show and sync products
       setTimeout(() => {
-        window.location.href = `/store-created?domain=${encodeURIComponent(brand.domain)}`
+        if (storefrontRequestId) {
+          window.location.href = `/products-created?storefrontRequestId=${encodeURIComponent(storefrontRequestId)}`
+        } else {
+          window.location.href = `/store-created?domain=${encodeURIComponent(brand.domain)}`
+        }
       }, 1500)
     } catch (err) {
       setCreatingState('error')

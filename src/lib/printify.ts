@@ -158,6 +158,56 @@ export class PrintifyClient {
   }
 
   /**
+   * Get a specific product from Printify by ID
+   */
+  async getProduct(shopId: string, productId: string): Promise<PrintifyProduct> {
+    if (this.mockMode) {
+      return {
+        id: productId,
+        title: 'Mock Product',
+        description: 'This is a mock product',
+        images: [],
+        variants: [],
+        print_areas: [],
+      }
+    }
+
+    return this.request<PrintifyProduct>('GET', `/shops/${shopId}/products/${productId}`)
+  }
+
+  /**
+   * Update a product in Printify
+   */
+  async updateProduct(
+    shopId: string,
+    productId: string,
+    productData: Partial<{
+      title: string
+      description: string
+      images: Array<{ src: string }>
+      variants: Array<{
+        id: string | number
+        title: string
+        price: number
+        sku: string
+      }>
+    }>
+  ): Promise<PrintifyProductResponse> {
+    if (this.mockMode) {
+      return {
+        id: productId,
+        title: productData.title || 'Mock Product',
+        description: productData.description || '',
+        images: productData.images || [],
+        variants: (productData.variants || []) as Array<{ id: string; title: string; price: number; sku: string }>,
+        status: 'draft',
+      }
+    }
+
+    return this.request<PrintifyProductResponse>('PUT', `/shops/${shopId}/products/${productId}`, productData)
+  }
+
+  /**
    * Get catalog of available base products (templates)
    */
   async getCatalogProducts(limit = 100): Promise<Array<{ id: string; title: string; description: string }>> {
