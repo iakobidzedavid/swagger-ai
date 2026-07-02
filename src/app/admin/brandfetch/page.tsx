@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import { DOMAIN_RE, normalizeDomain } from '@/lib/brand'
 
 type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid'
 type FetchState = 'idle' | 'fetching' | 'success' | 'error'
@@ -9,7 +10,6 @@ const PERSONAL_DOMAINS = new Set([
   'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
   'icloud.com', 'protonmail.com', 'mail.com', 'zoho.com', 'yandex.com',
 ])
-const DOMAIN_RE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i
 
 interface BrandData {
   id: string
@@ -24,10 +24,6 @@ interface BrandData {
     source?: string
     [key: string]: unknown
   }
-}
-
-function normalise(v: string) {
-  return v.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
 }
 
 function formatValidate(domain: string): string | null {
@@ -77,7 +73,7 @@ export default function BrandfetchAdminPage() {
     setFetchState('idle')
     setFetchError(null)
 
-    const norm = normalise(raw)
+    const norm = normalizeDomain(raw)
     const err = formatValidate(norm)
     setFormatError(err)
 
@@ -94,7 +90,7 @@ export default function BrandfetchAdminPage() {
 
   const handleBlur = useCallback(() => {
     if (validateTimer.current) clearTimeout(validateTimer.current)
-    const norm = normalise(domain)
+    const norm = normalizeDomain(domain)
     const err = formatValidate(norm)
     if (!err && norm && validationState === 'idle') {
       runApiValidation(norm)
@@ -121,7 +117,7 @@ export default function BrandfetchAdminPage() {
 
   async function handleFetchBrand(e: React.FormEvent) {
     e.preventDefault()
-    const norm = normalise(domain)
+    const norm = normalizeDomain(domain)
     const err = formatValidate(norm)
     if (err || !norm) return
 
@@ -152,7 +148,7 @@ export default function BrandfetchAdminPage() {
     }
   }
 
-  const norm = normalise(domain)
+  const norm = normalizeDomain(domain)
   const fmtErr = formatValidate(norm)
   const canFetch = !!norm && !fmtErr && validationState !== 'invalid' && fetchState !== 'fetching'
 

@@ -16,7 +16,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 // tsx lets node:test load a .ts module directly without a build step.
-const { DOMAIN_RE, normalizeDomain, isCacheFresh } = await import('../src/app/api/brand/route.ts')
+const { DOMAIN_RE, normalizeDomain, isCacheFresh } = await import('../src/lib/brand.ts')
 
 test('DOMAIN_RE accepts real-shaped domains', () => {
   assert.equal(DOMAIN_RE.test('acme.com'), true)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import zlib from 'node:zlib'
 import { supabase } from '@/lib/supabase'
+import { DOMAIN_RE, normalizeDomain, isCacheFresh } from '@/lib/brand'
 
 // zlib + Buffer (favicon color extraction) require the Node.js runtime, not Edge.
 export const runtime = 'nodejs'
@@ -29,12 +30,6 @@ export const runtime = 'nodejs'
  *      companies, but requires no credential.
  */
 
-// A company's logo/brand colors change rarely. /onboard and /api/domain/submit
-// still run their own live fetch for the record that actually gets persisted,
-// so a stale preview color for up to 24h has no correctness impact on data
-// that matters — this cache only serves the throwaway homepage preview.
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000
-
 interface BrandCacheRow {
   domain: string
   company_name: string
@@ -55,26 +50,6 @@ interface BrandData {
   secondaryColor: string
   source: 'brandfetch' | 'favicon' | 'theme-color' | 'fallback'
   raw: Record<string, unknown>
-}
-
-// Matches the format check already used by /api/domain/validate and
-// /api/domain/submit. This route historically skipped it (it only ever did a
-// stateless live fetch), but now that a cache-hit miss persists a row per
-// distinct domain string with no eviction, an unbounded/malformed value would
-// let a caller grow `brand_cache` indefinitely with junk keys that never hit
-// and never expire — so this endpoint validates format before touching cache.
-export const DOMAIN_RE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i
-
-export function normalizeDomain(domain: string): string {
-  return domain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
-}
-
-/** True when a cache row's `fetched_at` is still within the TTL window as of
- * `nowMs`. Exported (pure, no I/O) so it's unit-testable without a live
- * Supabase connection — see tests/brand-cache.test.mjs. */
-export function isCacheFresh(fetchedAtIso: string, nowMs: number): boolean {
-  const age = nowMs - new Date(fetchedAtIso).getTime()
-  return age <= CACHE_TTL_MS
 }
 
 function deriveCompanyName(domain: string): string {

@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { captureAttribution, getAttribution } from '@/lib/attribution'
+import { DOMAIN_RE, normalizeDomain } from '@/lib/brand'
 
 type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid'
 type SubmitState = 'idle' | 'submitting' | 'success' | 'error'
@@ -34,11 +35,6 @@ const PERSONAL_DOMAINS = new Set([
   'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
   'icloud.com', 'protonmail.com', 'mail.com',
 ])
-const DOMAIN_RE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i
-
-function normalise(v: string) {
-  return v.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
-}
 
 function formatValidate(domain: string): string | null {
   if (!domain) return null
@@ -99,7 +95,7 @@ function OnboardForm() {
   useEffect(() => {
     const fromQuery = searchParams.get('domain')
     if (!fromQuery) return
-    const norm = normalise(fromQuery)
+    const norm = normalizeDomain(fromQuery)
     if (!norm || formatValidate(norm)) return
     setDomain(norm)
     runApiValidation(norm)
@@ -140,7 +136,7 @@ function OnboardForm() {
     setSubmitError(null)
     setPreviewFetchState('idle')
 
-    const norm = normalise(raw)
+    const norm = normalizeDomain(raw)
     const err = formatValidate(norm)
     setFormatError(err)
 
@@ -158,7 +154,7 @@ function OnboardForm() {
 
   const handleBlur = useCallback(() => {
     if (validateTimer.current) clearTimeout(validateTimer.current)
-    const norm = normalise(domain)
+    const norm = normalizeDomain(domain)
     const err = formatValidate(norm)
     if (!err && norm && validationState === 'idle') {
       runApiValidation(norm)
@@ -235,7 +231,7 @@ function OnboardForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const norm = normalise(domain)
+    const norm = normalizeDomain(domain)
     const err = formatValidate(norm)
     if (err || !norm) return
     if (emailError) return
@@ -277,7 +273,7 @@ function OnboardForm() {
     }
   }
 
-  const norm = normalise(domain)
+  const norm = normalizeDomain(domain)
   const fmtErr = formatValidate(norm)
   const canSubmit = !!norm && !fmtErr && !emailError && validationState !== 'invalid' && submitState !== 'submitting'
   const isSubmitting = submitState === 'submitting'
