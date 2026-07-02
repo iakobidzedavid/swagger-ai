@@ -49,6 +49,8 @@ interface BrandData {
   primaryColor: string
   secondaryColor: string
   source: 'brandfetch' | 'favicon' | 'theme-color' | 'fallback'
+  colors?: string[]
+  fonts?: string[]
   raw: Record<string, unknown>
 }
 
@@ -216,6 +218,7 @@ async function fetchFromBrandfetch(domain: string): Promise<BrandData | null> {
       name?: string
       logos?: Array<{ src?: string }>
       colors?: Array<{ hex?: string }>
+      fonts?: Array<{ name?: string }>
     }
 
     const logoUrl = data.logos?.[0]?.src ?? null
@@ -224,10 +227,11 @@ async function fetchFromBrandfetch(domain: string): Promise<BrandData | null> {
     // reach lightenColor() (which assumes #rrggbb and would otherwise emit
     // "#NaNNaNNaN" as the secondary color).
     const isHex = (v: string | undefined): v is string => !!v && /^#[0-9a-f]{6}$/i.test(v)
-    const colors = data.colors?.map(c => c.hex).filter(isHex)
+    const colors = data.colors?.map(c => c.hex).filter(isHex) ?? []
     const primaryColor = colors?.[0] ?? '#7c3aed'
     const secondaryColor = colors?.[1] ?? (colors?.[0] ? lightenColor(colors[0]) : '#8fa3b8')
     const companyName = data.name ?? deriveCompanyName(domain)
+    const fonts = data.fonts?.map(f => f.name).filter((n): n is string => !!n).slice(0, 5) ?? []
 
     return {
       domain,
@@ -236,6 +240,8 @@ async function fetchFromBrandfetch(domain: string): Promise<BrandData | null> {
       primaryColor,
       secondaryColor,
       source: 'brandfetch',
+      colors: colors.length > 0 ? colors : undefined,
+      fonts: fonts.length > 0 ? fonts : undefined,
       raw: data,
     }
   } catch (error) {
@@ -311,16 +317,19 @@ async function fetchKeyless(domain: string): Promise<BrandData> {
 }
 
 function cacheRowToBrandData(row: BrandCacheRow): BrandData {
+  const rawData = row.raw_brand_data ?? {}
   return {
     domain: row.domain,
     companyName: row.company_name,
     logoUrl: row.logo_url,
     primaryColor: row.primary_color,
     secondaryColor: row.secondary_color,
+    colors: (rawData as any)?.colors,
+    fonts: (rawData as any)?.fonts,
     // Additive-only annotation — neither existing caller (HomepageBrandPreview,
     // /onboard) reads `raw`, so merging `cached: true` in cannot break them.
     source: row.source as BrandData['source'],
-    raw: { ...(row.raw_brand_data ?? {}), cached: true, hitCount: row.hit_count },
+    raw: { ...rawData, cached: true, hitCount: row.hit_count },
   }
 }
 

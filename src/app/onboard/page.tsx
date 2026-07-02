@@ -29,6 +29,9 @@ interface BrandPreview {
   primaryColor: string
   secondaryColor: string
   source: 'brandfetch' | 'favicon' | 'theme-color' | 'fallback'
+  colors?: string[]
+  fonts?: string[]
+  raw?: Record<string, unknown>
 }
 
 const PERSONAL_DOMAINS = new Set([
@@ -62,6 +65,27 @@ function ColorSwatch({ color, label, onCopy }: { color: string; label: string; o
   )
 }
 
+function PaletteColor({ color, onSelect, isSelected }: { color: string; onSelect: () => void; isSelected?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      title={`Select as primary color: ${color}`}
+      style={{
+        width: '48px',
+        height: '48px',
+        borderRadius: 'var(--radius-md)',
+        background: color,
+        border: isSelected ? `3px solid var(--color-accent)` : '1px solid var(--color-border)',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        padding: 0,
+      }}
+      aria-label={`Select color ${color}`}
+    />
+  )
+}
+
 function OnboardForm() {
   const searchParams = useSearchParams()
   const [contactName, setContactName] = useState('')
@@ -81,6 +105,8 @@ function OnboardForm() {
   const [storeRequestState, setStoreRequestState] = useState<StoreRequestState>('idle')
   const [storeRequestId, setStoreRequestId] = useState<string | null>(null)
   const [storeRequestError, setStoreRequestError] = useState<string | null>(null)
+  const [primaryColor, setPrimaryColor] = useState<string | null>(null)
+  const [secondaryColor, setSecondaryColor] = useState<string | null>(null)
   const validateTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // First-touch acquisition-channel attribution (DE-18 revenue engine): capture
@@ -135,6 +161,8 @@ function OnboardForm() {
     setSubmitState('idle')
     setSubmitError(null)
     setPreviewFetchState('idle')
+    setPrimaryColor(null)
+    setSecondaryColor(null)
 
     const norm = normalizeDomain(raw)
     const err = formatValidate(norm)
@@ -223,6 +251,8 @@ function OnboardForm() {
         return
       }
       setBrandPreview(data)
+      setPrimaryColor(data.primaryColor)
+      setSecondaryColor(data.secondaryColor)
       setPreviewFetchState('loaded')
     } catch {
       setPreviewFetchState('error')
@@ -487,21 +517,69 @@ function OnboardForm() {
               </div>
 
               {/* Colors */}
-              <div style={{ marginBottom: '16px' }}>
+              <div style={{ marginBottom: '24px' }}>
                 <div className="text-small font-semibold" style={{ marginBottom: '12px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
                   Brand Colors
                 </div>
                 <div className="flex" style={{ gap: '20px', flexWrap: 'wrap', marginBottom: '12px' }}>
-                  <ColorSwatch color={brandPreview.primaryColor} label="Primary" onCopy={copyHex} />
-                  <ColorSwatch color={brandPreview.secondaryColor} label="Secondary" onCopy={copyHex} />
+                  <ColorSwatch color={primaryColor || brandPreview.primaryColor} label="Primary" onCopy={copyHex} />
+                  <ColorSwatch color={secondaryColor || brandPreview.secondaryColor} label="Secondary" onCopy={copyHex} />
                 </div>
 
                 {/* Color gradient preview */}
                 <div style={{
                   height: '8px', borderRadius: '4px',
-                  background: `linear-gradient(to right, ${brandPreview.primaryColor} 0%, ${brandPreview.secondaryColor} 100%)`,
+                  background: `linear-gradient(to right, ${primaryColor || brandPreview.primaryColor} 0%, ${secondaryColor || brandPreview.secondaryColor} 100%)`,
+                  marginBottom: '20px',
                 }} />
+
+                {/* Full color palette from Brandfetch */}
+                {brandPreview.colors && brandPreview.colors.length > 0 && (
+                  <div style={{ marginTop: '16px', padding: '12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)' }}>
+                    <div className="text-small text-muted" style={{ marginBottom: '8px', fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      Full Palette ({brandPreview.colors.length}) — click to select primary
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {brandPreview.colors.map((color, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <PaletteColor
+                            color={color}
+                            isSelected={primaryColor === color}
+                            onSelect={() => setPrimaryColor(color)}
+                          />
+                          <span className="text-small" style={{ fontSize: '0.75rem', fontFamily: 'monospace', minWidth: '70px', cursor: 'pointer' }} onClick={() => copyHex(color)}>
+                            {color}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Fonts from Brandfetch */}
+              {brandPreview.fonts && brandPreview.fonts.length > 0 && (
+                <div style={{ marginBottom: '16px' }}>
+                  <div className="text-small font-semibold" style={{ marginBottom: '12px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
+                    Brand Fonts ({brandPreview.fonts.length})
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
+                    {brandPreview.fonts.map((font, i) => (
+                      <div key={i} style={{
+                        padding: '12px',
+                        background: 'var(--color-bg)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-md)',
+                      }}>
+                        <div className="text-small font-semibold" style={{ marginBottom: '4px' }}>{font}</div>
+                        <div style={{ fontFamily: font, fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                          The quick brown fox
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
