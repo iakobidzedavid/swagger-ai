@@ -1,5 +1,11 @@
--- Orders table: tracks completed purchases (idempotent migration)
-CREATE TABLE IF NOT EXISTS orders (
+-- Orders table: tracks completed purchases (self-healing migration)
+-- Drop existing tables if they exist to ensure clean recreation
+-- (handles stale/incomplete schema from earlier runs)
+DROP TABLE IF EXISTS order_items CASCADE;
+DROP TABLE IF EXISTS orders CASCADE;
+
+-- Create orders table with all required columns and constraints
+CREATE TABLE orders (
   id                    uuid        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   storefront_id         uuid        NOT NULL REFERENCES storefront_requests(id) ON DELETE RESTRICT,
   domain                text        NOT NULL,
@@ -24,15 +30,16 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at            timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS orders_storefront_id_idx ON orders (storefront_id);
-CREATE INDEX IF NOT EXISTS orders_domain_idx ON orders (domain);
-CREATE INDEX IF NOT EXISTS orders_customer_email_idx ON orders (customer_email);
-CREATE INDEX IF NOT EXISTS orders_status_idx ON orders (status);
-CREATE INDEX IF NOT EXISTS orders_created_at_idx ON orders (created_at DESC);
+-- Create indexes for query performance
+CREATE INDEX orders_storefront_id_idx ON orders (storefront_id);
+CREATE INDEX orders_domain_idx ON orders (domain);
+CREATE INDEX orders_customer_email_idx ON orders (customer_email);
+CREATE INDEX orders_status_idx ON orders (status);
+CREATE INDEX orders_created_at_idx ON orders (created_at DESC);
 
+-- Enable RLS and grant service_role full access
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS orders_service_all ON orders;
 CREATE POLICY orders_service_all
   ON orders
   FOR ALL
@@ -41,7 +48,7 @@ CREATE POLICY orders_service_all
   WITH CHECK (true);
 
 -- Order items table: tracks what products were in each order
-CREATE TABLE IF NOT EXISTS order_items (
+CREATE TABLE order_items (
   id                    uuid        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   order_id              uuid        NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   product_id            text        NOT NULL,
@@ -55,12 +62,13 @@ CREATE TABLE IF NOT EXISTS order_items (
   created_at            timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS order_items_order_id_idx ON order_items (order_id);
-CREATE INDEX IF NOT EXISTS order_items_product_id_idx ON order_items (product_id);
+-- Create indexes for query performance
+CREATE INDEX order_items_order_id_idx ON order_items (order_id);
+CREATE INDEX order_items_product_id_idx ON order_items (product_id);
 
+-- Enable RLS and grant service_role full access
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS order_items_service_all ON order_items;
 CREATE POLICY order_items_service_all
   ON order_items
   FOR ALL
