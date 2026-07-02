@@ -601,28 +601,15 @@ function OnboardForm() {
                 <a href="/onboard" className="btn btn-secondary btn-sm" onClick={(e) => { e.preventDefault(); setBrand(null); setDomain(''); setValidationState('idle'); setSubmitState('idle'); setStoreRequestState('idle'); setStoreRequestId(null); }}>
                   Try another domain
                 </a>
-                {storeRequestState !== 'queued' && (
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    onClick={handleGenerateStore}
-                    disabled={storeRequestState === 'requesting'}
-                  >
-                    {storeRequestState === 'requesting' ? (
-                      <>
-                        <span className="spinner" style={{ width: 14, height: 14 }} />
-                        Queuing…
-                      </>
-                    ) : (
-                      <>
-                        Generate My Store
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M3 8h10M9 4l4 4-4 4"/>
-                        </svg>
-                      </>
-                    )}
-                  </button>
-                )}
+                <a
+                  href={`/products?domain=${encodeURIComponent(brand.domain)}&id=${encodeURIComponent(brand.id)}`}
+                  className="btn btn-primary btn-sm"
+                >
+                  Select Products
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 8h10M9 4l4 4-4 4"/>
+                  </svg>
+                </a>
               </div>
             </div>
           </div>
