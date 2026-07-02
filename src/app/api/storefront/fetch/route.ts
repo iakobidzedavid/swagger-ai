@@ -28,39 +28,54 @@ interface StorefrontData {
 }
 
 /**
- * GET /api/storefront/fetch?domain=acme.com
+ * GET /api/storefront/fetch?id=<request_id> or ?domain=acme.com
  *
- * Fetch a published storefront by domain.
- * Returns storefront configuration, brand assets, and product catalog.
+ * Fetch a storefront request by ID (any status) or by domain (complete only).
+ * For store-created confirmation, use ID query to show the queued request immediately.
+ * Returns storefront configuration and brand assets.
  */
 export async function GET(req: NextRequest) {
+  const idParam = req.nextUrl.searchParams.get('id')
   const domainParam = req.nextUrl.searchParams.get('domain')
 
-  if (!domainParam) {
-    return NextResponse.json(
-      { success: false, error: 'Missing domain parameter' },
-      { status: 400 }
-    )
-  }
-
-  const domain = normalizeDomain(domainParam)
-  if (!domain) {
-    return NextResponse.json(
-      { success: false, error: 'Invalid domain format' },
-      { status: 400 }
-    )
-  }
+  let storefrontRequest: any = null
+  let storefrontError: any = null
 
   try {
-    // Fetch storefront request by domain (most recent published)
-    const { data: storefrontRequest, error: storefrontError } = await supabase
-      .from('storefront_requests')
-      .select('*')
-      .eq('domain', domain)
-      .eq('status', 'complete')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
+    if (idParam) {
+      // Fetch by request ID (any status — for store-created confirmation page)
+      const result = await supabase
+        .from('storefront_requests')
+        .select('*')
+        .eq('id', idParam)
+        .single()
+      storefrontRequest = result.data
+      storefrontError = result.error
+    } else if (domainParam) {
+      // Fetch by domain (only complete status — for published storefront access)
+      const domain = normalizeDomain(domainParam)
+      if (!domain) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid domain format' },
+          { status: 400 }
+        )
+      }
+      const result = await supabase
+        .from('storefront_requests')
+        .select('*')
+        .eq('domain', domain)
+        .eq('status', 'complete')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      storefrontRequest = result.data
+      storefrontError = result.error
+    } else {
+      return NextResponse.json(
+        { success: false, error: 'Missing id or domain parameter' },
+        { status: 400 }
+      )
+    }
 
     if (storefrontError || !storefrontRequest) {
       return NextResponse.json(
@@ -69,7 +84,12 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Fetch products for this storefront from Printify cache
+    // For store-created page (queued status), return just the request without products
+    if (idParam && storefrontRequest.status === 'queued') {
+      return NextResponse.json(storefrontRequest, { status: 200 })
+    }
+
+    // For published storefronts, fetch products
     const { data: printifyProducts, error: productsError } = await supabase
       .from('printify_products')
       .select('*')

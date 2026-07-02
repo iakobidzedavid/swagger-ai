@@ -3,38 +3,78 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
+interface StorefrontRequest {
+  id: string
+  domain: string
+  company_name: string
+  logo_url: string | null
+  primary_color: string
+  secondary_color: string
+  status: string
+  created_at: string
+}
+
 interface StoreInfo {
+  id: string
   domain: string
   companyName: string
+  logoUrl: string | null
+  primaryColor: string
+  secondaryColor: string
   storeUrl: string
-  productCount: number
+  createdAt: string
 }
 
 function StoreCreatedContent() {
   const searchParams = useSearchParams()
-  const domain = searchParams.get('domain') || ''
+  const requestId = searchParams.get('id') || ''
 
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    // In a real scenario, you'd fetch store details from the API
-    // For now, we'll create a mock store info based on the domain
-    if (domain) {
-      const companyName = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1)
-      const storeUrl = `https://${domain.replace(/\./g, '-')}.swagger.shop`
+    async function fetchStoreInfo() {
+      if (!requestId) {
+        setError('No store request ID provided')
+        setLoading(false)
+        return
+      }
 
-      setStoreInfo({
-        domain,
-        companyName,
-        storeUrl,
-        productCount: 8,
-      })
+      try {
+        const res = await fetch(`/api/storefront/fetch?id=${encodeURIComponent(requestId)}`)
+        if (!res.ok) {
+          setError('Failed to load store information')
+          setLoading(false)
+          return
+        }
+        const data: StorefrontRequest = await res.json()
+
+        // Generate store URL based on domain
+        const storeUrl = `https://${data.domain.replace(/\./g, '-')}.swagger.shop`
+
+        setStoreInfo({
+          id: data.id,
+          domain: data.domain,
+          companyName: data.company_name || data.domain.split('.')[0].charAt(0).toUpperCase() + data.domain.split('.')[0].slice(1),
+          logoUrl: data.logo_url,
+          primaryColor: data.primary_color,
+          secondaryColor: data.secondary_color,
+          storeUrl,
+          createdAt: data.created_at,
+        })
+        setError(null)
+      } catch (err) {
+        console.error('Error fetching store info:', err)
+        setError('Failed to load store information')
+      } finally {
+        setLoading(false)
+      }
     }
 
-    setLoading(false)
-  }, [domain])
+    fetchStoreInfo()
+  }, [requestId])
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -57,7 +97,7 @@ function StoreCreatedContent() {
     )
   }
 
-  if (!storeInfo) {
+  if (error || !storeInfo) {
     return (
       <div className="section">
         <div className="container content-narrow">
@@ -66,10 +106,10 @@ function StoreCreatedContent() {
               <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4" />
               <path d="M8 4v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
-            No store information available
+            {error || 'No store information available'}
           </div>
-          <a href="/" className="btn btn-secondary btn-full">
-            Return Home
+          <a href="/onboard" className="btn btn-secondary btn-full">
+            Create Another Store
           </a>
         </div>
       </div>
@@ -85,36 +125,93 @@ function StoreCreatedContent() {
             <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4" />
             <path d="M5 8l2.5 2.5 4-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          Store created successfully!
+          Store request created successfully!
         </div>
 
         {/* Header */}
         <div style={{ marginBottom: '32px' }}>
           <h1 className="text-h1" style={{ marginBottom: '10px' }}>
-            Your Swag Store is Live 🎉
+            Your Swag Store is on the Way! 🎉
           </h1>
           <p className="text-body text-muted">
-            Your branded storefront has been created and is ready to share with your team.
+            We're setting up your branded storefront. You'll receive a confirmation email shortly with your store link.
           </p>
         </div>
 
         {/* Store Details Card */}
-        <div className="card" style={{ marginBottom: '32px' }}>
+        <div className="card" style={{ marginBottom: '32px', borderColor: storeInfo.primaryColor, borderWidth: '1px' }}>
           <div style={{ marginBottom: '24px' }}>
-            <div className="text-small font-semibold text-muted" style={{ marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
-              Store Details
+            {/* Logo and Company Name */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+              <div style={{
+                width: '80px', height: '80px',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-bg)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, overflow: 'hidden',
+              }}>
+                {storeInfo.logoUrl ? (
+                  <img
+                    src={storeInfo.logoUrl}
+                    alt={`${storeInfo.companyName} logo`}
+                    style={{ width: '60px', height: '60px', objectFit: 'contain' }}
+                  />
+                ) : (
+                  <span style={{ fontSize: '2rem', fontWeight: 800, color: storeInfo.primaryColor }}>
+                    {storeInfo.companyName.charAt(0)}
+                  </span>
+                )}
+              </div>
+              <div>
+                <div className="text-h2">{storeInfo.companyName}</div>
+                <div className="text-small text-muted">{storeInfo.domain}</div>
+              </div>
             </div>
 
-            {/* Store Name */}
+            <div className="text-small font-semibold text-muted" style={{ marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
+              Store Configuration
+            </div>
+
+            {/* Brand Colors */}
             <div style={{ marginBottom: '16px' }}>
-              <div className="text-small text-muted" style={{ marginBottom: '4px' }}>
-                Company
+              <div className="text-small text-muted" style={{ marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
+                Brand Colors
               </div>
-              <div className="text-h2">{storeInfo.companyName}</div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div
+                    style={{
+                      width: '40px', height: '40px',
+                      borderRadius: 'var(--radius-md)',
+                      background: storeInfo.primaryColor,
+                      border: '1px solid var(--color-border)',
+                    }}
+                  />
+                  <div>
+                    <div className="text-small text-muted">Primary</div>
+                    <code style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>{storeInfo.primaryColor}</code>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div
+                    style={{
+                      width: '40px', height: '40px',
+                      borderRadius: 'var(--radius-md)',
+                      background: storeInfo.secondaryColor,
+                      border: '1px solid var(--color-border)',
+                    }}
+                  />
+                  <div>
+                    <div className="text-small text-muted">Secondary</div>
+                    <code style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>{storeInfo.secondaryColor}</code>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Store URL */}
-            <div style={{ marginBottom: '16px' }}>
+            <div>
               <div className="text-small text-muted" style={{ marginBottom: '4px' }}>
                 Store URL
               </div>
@@ -144,6 +241,7 @@ function StoreCreatedContent() {
                     fontSize: '12px',
                     fontWeight: 600,
                     transition: 'all 0.2s',
+                    whiteSpace: 'nowrap',
                   }}
                   onMouseEnter={(e) => {
                     ;(e.target as HTMLElement).style.background = 'var(--color-accent)'
@@ -157,14 +255,6 @@ function StoreCreatedContent() {
                   {copied ? '✓ Copied' : 'Copy'}
                 </button>
               </div>
-            </div>
-
-            {/* Product Count */}
-            <div>
-              <div className="text-small text-muted" style={{ marginBottom: '4px' }}>
-                Products Available
-              </div>
-              <div className="text-h3">{storeInfo.productCount}</div>
             </div>
           </div>
         </div>

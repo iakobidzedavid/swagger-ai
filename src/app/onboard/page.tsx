@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { captureAttribution, getAttribution } from '@/lib/attribution'
 import { DOMAIN_RE, normalizeDomain } from '@/lib/brand'
 
@@ -87,6 +87,7 @@ function PaletteColor({ color, onSelect, isSelected }: { color: string; onSelect
 }
 
 function OnboardForm() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [contactName, setContactName] = useState('')
   const [contactEmail, setContactEmail] = useState('')
@@ -237,6 +238,10 @@ function OnboardForm() {
       }
       setStoreRequestId(data.id)
       setStoreRequestState('queued')
+      // Redirect to store-created page with the request ID
+      setTimeout(() => {
+        router.push(`/store-created?id=${encodeURIComponent(data.id)}`)
+      }, 500)
     } catch {
       setStoreRequestState('error')
       setStoreRequestError('Network error. Please try again.')
