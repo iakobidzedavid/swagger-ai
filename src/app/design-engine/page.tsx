@@ -20,6 +20,7 @@ interface ProductData {
   description: string
   category: string
   image: string
+  mockupImage?: string
   variants: Array<{ id: string; title: string; price: number }>
   sku: string
   primaryColor?: string
@@ -210,11 +211,11 @@ function DesignEngineContent() {
                         transition: 'transform 0.2s',
                       }}
                     >
-                      {/* Product Image with Brand Colors */}
+                      {/* Product Image — Branded Mockup */}
                       <div
                         style={{
-                          background: `linear-gradient(135deg, ${brandAssets.primaryColor}, ${brandAssets.secondaryColor})`,
-                          height: '160px',
+                          background: `linear-gradient(135deg, ${brandAssets.primaryColor}0a, ${brandAssets.secondaryColor}0a)`,
+                          height: '240px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -225,8 +226,21 @@ function DesignEngineContent() {
                           overflow: 'hidden',
                         }}
                       >
-                        {/* Product image fallback */}
-                        <span style={{ zIndex: 1 }}>{product.title.slice(0, 1)}</span>
+                        {product.mockupImage ? (
+                          <img
+                            src={product.mockupImage}
+                            alt={product.title}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                            }}
+                          />
+                        ) : (
+                          <span style={{ zIndex: 1, opacity: 0.5 }}>
+                            {product.title.slice(0, 1)}
+                          </span>
+                        )}
                       </div>
                       <div style={{ padding: '16px' }}>
                         <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#333' }}>

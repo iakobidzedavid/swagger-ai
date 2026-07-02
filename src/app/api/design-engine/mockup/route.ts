@@ -218,13 +218,17 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Fetch products from Printify API with brand colors
+  // Fetch products from Printify API with brand colors and mockup generation
   let products: ProductData[] = []
   try {
     const printifyUrl = new URL('/api/printify/products', req.nextUrl.origin)
     printifyUrl.searchParams.set('domain', brandAssets.domain)
     printifyUrl.searchParams.set('primaryColor', brandAssets.primaryColor)
     printifyUrl.searchParams.set('secondaryColor', brandAssets.secondaryColor)
+    printifyUrl.searchParams.set('companyName', brandAssets.companyName)
+    if (brandAssets.logoUrl) {
+      printifyUrl.searchParams.set('logoUrl', brandAssets.logoUrl)
+    }
 
     const productsRes = await fetch(printifyUrl.toString())
     if (productsRes.ok) {

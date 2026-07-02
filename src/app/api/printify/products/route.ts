@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { generateMockup } from '@/lib/mockup-generator'
 
 interface ProductVariant {
   id: string
@@ -12,6 +13,7 @@ interface PrintifyProduct {
   description: string
   category: string
   image: string
+  mockupImage?: string
   variants: ProductVariant[]
   sku: string
   primaryColor?: string
@@ -128,21 +130,21 @@ export interface ProductsResponse {
  *
  * Fetch AI-curated Printify products for a domain/store.
  * Returns 8-12 products prioritized by apparel and drinkware categories.
+ * Each product includes a branded mockup image.
  *
  * Query parameters:
  *   - domain (optional): company domain to fetch products for
  *   - primaryColor (optional): brand primary color for mockup
  *   - secondaryColor (optional): brand secondary color for mockup
- *
- * NOTE: This is a mock implementation. In production, this would:
- * 1. Call Printify API with a valid OAuth token
- * 2. Filter/curate products based on brand guidelines
- * 3. Generate branded mockups using Printify's design service
+ *   - companyName (optional): company name for mockup
+ *   - logoUrl (optional): company logo URL for mockup
  */
 export async function GET(req: NextRequest) {
   const domain = req.nextUrl.searchParams.get('domain') ?? ''
   const primaryColor = req.nextUrl.searchParams.get('primaryColor') ?? '#7c3aed'
   const secondaryColor = req.nextUrl.searchParams.get('secondaryColor') ?? '#8fa3b8'
+  const companyName = req.nextUrl.searchParams.get('companyName') ?? domain.split('.')[0]
+  const logoUrl = req.nextUrl.searchParams.get('logoUrl') ?? null
 
   // Priority ordering: apparel first (t-shirts, hoodies, etc.), then drinkware
   const prioritized = [...CURATED_PRODUCTS].sort((a, b) => {
@@ -151,12 +153,26 @@ export async function GET(req: NextRequest) {
     return aPriority - bPriority
   })
 
-  // Return 8-12 products (all of them for now)
-  const products = prioritized.slice(0, 12).map(p => ({
-    ...p,
-    primaryColor,
-    secondaryColor,
-  }))
+  // Return 8-12 products with generated mockups
+  const products = prioritized.slice(0, 12).map(p => {
+    // Generate branded mockup for each product
+    const mockup = generateMockup({
+      productId: p.id,
+      productTitle: p.title,
+      productCategory: p.category as 'apparel' | 'drinkware' | 'accessories',
+      logoUrl,
+      primaryColor,
+      secondaryColor,
+      companyName,
+    })
+
+    return {
+      ...p,
+      primaryColor,
+      secondaryColor,
+      mockupImage: mockup.dataUrl, // Include the generated mockup
+    }
+  })
 
   const response: ProductsResponse = {
     products,
