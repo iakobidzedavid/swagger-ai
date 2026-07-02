@@ -592,6 +592,12 @@ function OnboardForm() {
                 Saved to Swagger AI · {new Date(brand.created_at).toLocaleString()}
               </div>
               <div className="flex" style={{ gap: '10px', flexWrap: 'wrap' }}>
+                <a
+                  href={`/design/recommendations?domain=${encodeURIComponent(brand.domain)}`}
+                  className="btn btn-secondary btn-sm"
+                >
+                  View Design Kit
+                </a>
                 <a href="/onboard" className="btn btn-secondary btn-sm" onClick={(e) => { e.preventDefault(); setBrand(null); setDomain(''); setValidationState('idle'); setSubmitState('idle'); setStoreRequestState('idle'); setStoreRequestId(null); }}>
                   Try another domain
                 </a>
