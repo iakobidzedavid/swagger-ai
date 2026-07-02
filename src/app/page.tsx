@@ -26,6 +26,12 @@ export default function LandingPage() {
             View sample mockup
           </Link>
         </div>
+
+        <div style={{ marginTop: '24px', textAlign: 'center' }}>
+          <Link href="/pricing" className="text-body" style={{ textDecoration: 'none', color: 'var(--color-accent)', fontSize: '0.9375rem' }}>
+            View Pricing →
+          </Link>
+        </div>
       </div>
     </section>
   )
