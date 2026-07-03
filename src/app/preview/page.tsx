@@ -3,6 +3,8 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { normalizeDomain } from '@/lib/brand'
+import { useAuth } from '@/lib/useAuth'
+import { SigninModal } from '@/components/SigninModal'
 
 type LoadingState = 'idle' | 'loading' | 'loaded' | 'error'
 type CreatingState = 'idle' | 'creating' | 'success' | 'error'
@@ -81,6 +83,9 @@ function PreviewContent() {
   const domain = searchParams.get('domain') || ''
   const brandId = searchParams.get('id') || ''
   const productIdsParam = searchParams.get('products') || ''
+
+  const { isSignedIn, token, signin, error: authError, isLoading: authLoading } = useAuth()
+  const [showSigninModal, setShowSigninModal] = useState(false)
 
   const [brand, setBrand] = useState<BrandData | null>(null)
   const [products, setProducts] = useState<Product[]>([])
@@ -162,7 +167,7 @@ function PreviewContent() {
     fetchProducts()
   }, [brand])
 
-  const handleCreateStore = async () => {
+  const createStorefrontWithToken = async (authToken: string) => {
     if (!brand) return
 
     setCreatingState('creating')
@@ -171,7 +176,10 @@ function PreviewContent() {
     try {
       const res = await fetch('/api/storefront/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
         body: JSON.stringify({
           domainSubmissionId: brand.id,
           domain: brand.domain,
@@ -211,6 +219,46 @@ function PreviewContent() {
     } catch (err) {
       setCreatingState('error')
       setCreatingError(err instanceof Error ? err.message : 'Failed to create storefront')
+    }
+  }
+
+  const handleCreateStore = async () => {
+    if (!brand) return
+
+    // Check if user is signed in
+    if (!isSignedIn) {
+      setShowSigninModal(true)
+      return
+    }
+
+    // User is signed in, proceed with store creation
+    if (token) {
+      await createStorefrontWithToken(token)
+    }
+  }
+
+  const handleSignin = async (email: string, companyName?: string) => {
+    if (!brand) return
+
+    try {
+      await signin(email, companyName)
+      setShowSigninModal(false)
+      // After signin, the useAuth hook has updated its state with the token.
+      // We need to read the token from the hook's returned value.
+      // However, useState updates are not synchronous to the caller.
+      // So we wait for the next render cycle where the hook will have the new token.
+      // In practice, signin() in the hook already updated state, so we can access
+      // it via the component's token from the useAuth() call above.
+      // Since handleSignin is async and signin already completed, token should be available.
+      // Use setTimeout(0) to let React process the state update and re-render.
+      setTimeout(() => {
+        // After signin succeeds, the token should now be in state
+        // Re-invoke handleCreateStore which will see isSignedIn=true
+        handleCreateStore()
+      }, 0)
+    } catch (err) {
+      // Error is already set by the signin function
+      console.error('Signin failed:', err)
     }
   }
 
@@ -258,6 +306,14 @@ function PreviewContent() {
 
   return (
     <div className="section">
+      <SigninModal
+        isOpen={showSigninModal}
+        onSignin={handleSignin}
+        onClose={() => setShowSigninModal(false)}
+        isLoading={authLoading}
+        error={authError}
+        domain={brand?.domain}
+      />
       <div className="container">
         {/* Header */}
         <div style={{ marginBottom: '40px' }}>
