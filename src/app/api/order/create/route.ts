@@ -179,8 +179,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateOrderRe
     }
 
     // Step 7: Send order confirmation email
-    // Calculate totals for the email
-    const subtotalCents = totalCents - swaggerFeeCents
     const emailResult = await sendOrderConfirmation({
       orderId,
       customerName: shippingInfo.name,
@@ -192,8 +190,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateOrderRe
         unitPrice: item.unitPrice,
       })),
       totalAmount: totalCents / 100,
-      subtotal: subtotalCents / 100,
-      swaggerFee: swaggerFeeCents / 100,
       itemCount: items.length,
     })
 

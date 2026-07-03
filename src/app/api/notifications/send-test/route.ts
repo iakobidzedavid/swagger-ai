@@ -79,10 +79,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         )
       }
 
-      // Calculate totals
       const totalAmount = body.totalAmount
-      const subtotal = totalAmount * (100 / 118) // Back-calculate subtotal from total with 18% fee
-      const swaggerFee = totalAmount - subtotal
 
       result = await sendOrderConfirmation({
         orderId: 'test-' + Date.now(),
@@ -91,8 +88,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         domain: body.domain,
         items: body.items,
         totalAmount,
-        subtotal,
-        swaggerFee,
         itemCount: body.items.reduce((sum, item) => sum + item.quantity, 0),
       })
     } else if (body.type === 'fulfillment_update') {

@@ -24,8 +24,6 @@ interface OrderConfirmationData {
   domain: string
   items: OrderItem[]
   totalAmount: number
-  subtotal: number
-  swaggerFee: number
   itemCount: number
 }
 
@@ -243,8 +241,6 @@ function generateOrderConfirmationHtml(data: OrderConfirmationData): string {
     )
     .join('')
 
-  const subtotalCents = Math.round(data.subtotal * 100)
-  const feeCents = Math.round(data.swaggerFee * 100)
   const totalCents = Math.round(data.totalAmount * 100)
 
   return `
@@ -283,19 +279,11 @@ function generateOrderConfirmationHtml(data: OrderConfirmationData): string {
           </table>
         </div>
 
-        <!-- Order Summary -->
+        <!-- Order Total -->
         <div style="margin: 24px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 16px 0;">
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
-              <td style="padding: 8px 0; color: #666; font-size: 14px;">Subtotal</td>
-              <td style="padding: 8px 0; color: #666; font-size: 14px; text-align: right;">$${(subtotalCents / 100).toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #666; font-size: 14px;">Processing Fee (18%)</td>
-              <td style="padding: 8px 0; color: #666; font-size: 14px; text-align: right;">$${(feeCents / 100).toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #333; font-size: 16px; font-weight: 600;">Total</td>
+              <td style="padding: 8px 0; color: #333; font-size: 16px; font-weight: 600;">Order Total</td>
               <td style="padding: 8px 0; color: #333; font-size: 16px; font-weight: 600; text-align: right;">$${(totalCents / 100).toFixed(2)}</td>
             </tr>
           </table>
