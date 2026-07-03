@@ -11,7 +11,14 @@
  *  - Typography (fonts used in brand)
  *  - Company name, description, website
  *  - Brand guidelines metadata
+ *
+ * `fetchBrandData()` below is the SINGLE canonical entrypoint for brand
+ * extraction anywhere in the app: Brandfetch first, keyless fallback second.
+ * Every route that needs brand data (`/api/brand`, `/api/domain/submit`,
+ * `/api/design-engine/mockup`) calls this one function so behavior never
+ * drifts between them again.
  */
+import { fetchKeylessBrand } from './keyless-brand'
 
 export interface BrandfetchLogoData {
   src?: string
@@ -225,4 +232,31 @@ export function deriveCompanyName(domain: string): string {
  */
 export function isPersonalDomain(domain: string): boolean {
   return PERSONAL_DOMAINS.has(domain)
+}
+
+/**
+ * Canonical brand-extraction entrypoint: Brandfetch API first (when
+ * BRANDFETCH_API_KEY is set and the domain is found), keyless fallback
+ * (favicon + PNG dominant color + theme-color scrape) otherwise. Never
+ * throws and never returns null — the keyless path always resolves to at
+ * least a neutral-slate fallback, so callers can rely on getting a BrandData
+ * back unconditionally.
+ */
+export async function fetchBrandData(domain: string): Promise<BrandData> {
+  const brandfetchResult = await fetchFromBrandfetch(domain)
+  if (brandfetchResult) return brandfetchResult
+
+  const keyless = await fetchKeylessBrand(domain)
+  return {
+    domain: keyless.domain,
+    companyName: keyless.companyName,
+    logoUrl: keyless.logoUrl,
+    primaryColor: keyless.primaryColor,
+    secondaryColor: keyless.secondaryColor,
+    source: keyless.source,
+    raw: {
+      logoSource: 'favicon',
+      colorSource: keyless.colorSource,
+    },
+  }
 }
