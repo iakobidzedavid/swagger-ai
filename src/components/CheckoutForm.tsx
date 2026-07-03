@@ -218,36 +218,62 @@ function CheckoutFormContent() {
           <p className="text-body text-muted">Complete your order</p>
         </div>
 
-        {/* Progress */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px', gap: '12px' }}>
-          {(['shipping', 'payment', 'review'] as const).map((s, i) => (
-            <div key={s} style={{ flex: 1, textAlign: 'center' }}>
-              <div
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  background:
-                    s === step
-                      ? 'var(--color-accent)'
-                      : ['shipping', 'payment', 'review'].indexOf(s) < ['shipping', 'payment', 'review'].indexOf(step)
-                        ? 'var(--color-accent)'
-                        : 'var(--color-border)',
-                  color: 'var(--color-on-accent)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 8px',
-                  fontWeight: 'bold',
-                }}
-              >
-                {i + 1}
-              </div>
-              <div className="text-small" style={{ textTransform: 'capitalize' }}>
-                {s}
-              </div>
-            </div>
-          ))}
+        {/* Premium Step Indicator */}
+        <div style={{ marginBottom: '48px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
+            {['shipping', 'payment', 'review'].map((s, i) => {
+              const stepOrder = ['shipping', 'payment', 'review']
+              const currentIndex = stepOrder.indexOf(step as any)
+              const isCompleted = stepOrder.indexOf(s) < currentIndex
+              const isActive = s === step
+              const isUpcoming = stepOrder.indexOf(s) > currentIndex
+
+              return (
+                <div key={s} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '50%',
+                      background: isActive ? 'var(--color-accent)' : isCompleted ? 'var(--color-accent)' : 'var(--color-border)',
+                      color: isActive || isCompleted ? 'var(--color-on-accent)' : 'var(--color-text-muted)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 'bold',
+                      fontSize: '1rem',
+                      transition: 'all 200ms ease',
+                      flexShrink: 0,
+                      boxShadow: isActive ? '0 0 0 4px rgba(124, 58, 237, 0.15)' : 'none',
+                    }}
+                  >
+                    {isCompleted ? '✓' : i + 1}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="text-small" style={{
+                      textTransform: 'uppercase',
+                      fontSize: '0.75rem',
+                      fontWeight: '600',
+                      letterSpacing: '0.5px',
+                      color: isActive ? 'var(--color-accent)' : isCompleted ? 'var(--color-success)' : 'var(--color-text-muted)',
+                      transition: 'color 200ms ease',
+                    }}>
+                      {s}
+                    </div>
+                  </div>
+                  {i < 2 && (
+                    <div style={{
+                      flex: 1,
+                      height: '2px',
+                      background: isCompleted || isActive ? 'var(--color-accent)' : 'var(--color-border)',
+                      marginLeft: '8px',
+                      transition: 'background 200ms ease',
+                    }} />
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
 
         {error && (
