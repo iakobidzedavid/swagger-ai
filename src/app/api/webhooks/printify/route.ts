@@ -359,13 +359,25 @@ async function handleShipmentEvent(
       return
     }
 
-    // Update order with shipment status
+    // Update order with shipment status and tracking information
+    const updateData: any = {
+      status: orderStatus,
+      updated_at: new Date().toISOString(),
+      tracking_number: shipmentData.number,
+      tracking_carrier: shipmentData.carrier,
+      tracking_url: shipmentData.url,
+    }
+
+    // Add timestamp based on shipment status
+    if (shipmentData.status === 'in_transit') {
+      updateData.shipped_at = new Date().toISOString()
+    } else if (shipmentData.status === 'delivered') {
+      updateData.delivered_at = new Date().toISOString()
+    }
+
     const updateResult = await supabase
       .from('orders')
-      .update({
-        status: orderStatus,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', orderResult.data.id)
 
     if (updateResult.error) {

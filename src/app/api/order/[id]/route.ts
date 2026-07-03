@@ -19,6 +19,11 @@ interface OrderData {
   status: string
   createdAt: string
   items: OrderItemData[]
+  trackingNumber?: string
+  trackingCarrier?: string
+  trackingUrl?: string
+  shippedAt?: string
+  deliveredAt?: string
 }
 
 interface GetOrderResponse {
@@ -87,6 +92,23 @@ export async function GET(
         quantity: item.quantity,
         totalPrice: item.total_price_cents / 100,
       })),
+    }
+
+    // Add tracking information if available
+    if (order.tracking_number) {
+      orderData.trackingNumber = order.tracking_number
+    }
+    if (order.tracking_carrier) {
+      orderData.trackingCarrier = order.tracking_carrier
+    }
+    if (order.tracking_url) {
+      orderData.trackingUrl = order.tracking_url
+    }
+    if (order.shipped_at) {
+      orderData.shippedAt = new Date(order.shipped_at).toLocaleDateString()
+    }
+    if (order.delivered_at) {
+      orderData.deliveredAt = new Date(order.delivered_at).toLocaleDateString()
     }
 
     return NextResponse.json({

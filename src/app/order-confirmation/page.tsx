@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { getStatusBadge } from '@/lib/order-status'
 
 interface OrderData {
   id: string
@@ -18,9 +19,78 @@ interface OrderData {
     quantity: number
     totalPrice: number
   }>
+  trackingNumber?: string
+  trackingCarrier?: string
+  trackingUrl?: string
+  shippedAt?: string
+  deliveredAt?: string
 }
 
 type LoadingState = 'loading' | 'loaded' | 'error'
+
+// Timeline component
+function OrderTimeline({ order }: { order: OrderData }) {
+  const steps = [
+    { label: 'Order Placed', date: order.createdAt, completed: true },
+    { label: 'Processing', date: undefined, completed: order.status !== 'pending' },
+    { label: 'Shipped', date: order.shippedAt, completed: order.status === 'completed' || !!order.deliveredAt },
+    { label: 'Delivered', date: order.deliveredAt, completed: !!order.deliveredAt },
+  ]
+
+  return (
+    <div style={{ marginBottom: '32px' }}>
+      <h3 className="text-h3" style={{ marginBottom: '24px' }}>
+        Order Status Timeline
+      </h3>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+        {steps.map((step, idx) => (
+          <div key={idx} style={{ display: 'flex', gap: '16px', paddingBottom: '24px' }}>
+            {/* Timeline dot and line */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '40px', flexShrink: 0 }}>
+              <div
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  background: step.completed ? 'var(--color-success)' : 'var(--color-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  color: step.completed ? 'white' : 'var(--color-text-muted)',
+                }}
+              >
+                {step.completed ? '✓' : idx + 1}
+              </div>
+              {idx < steps.length - 1 && (
+                <div
+                  style={{
+                    width: '2px',
+                    height: '40px',
+                    background: steps[idx + 1].completed ? 'var(--color-success)' : 'var(--color-border)',
+                    marginTop: '8px',
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Timeline content */}
+            <div style={{ flex: 1, paddingTop: '2px' }}>
+              <div className="text-h3" style={{ marginBottom: '2px', color: step.completed ? 'var(--color-text)' : 'var(--color-text-muted)' }}>
+                {step.label}
+              </div>
+              {step.date && (
+                <div className="text-small text-muted">{step.date}</div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 function OrderConfirmationContent() {
   const searchParams = useSearchParams()
@@ -29,6 +99,7 @@ function OrderConfirmationContent() {
   const [order, setOrder] = useState<OrderData | null>(null)
   const [loadingState, setLoadingState] = useState<LoadingState>('loading')
   const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (!orderId) {
@@ -60,6 +131,14 @@ function OrderConfirmationContent() {
         setLoadingState('error')
       })
   }, [orderId])
+
+  const handleCopyId = async () => {
+    if (order) {
+      await navigator.clipboard.writeText(order.id)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
 
   if (loadingState === 'error') {
     return (
@@ -95,9 +174,11 @@ function OrderConfirmationContent() {
     return null
   }
 
+  const statusInfo = getStatusBadge(order.status)
+
   return (
     <div className="section">
-      <div className="container" style={{ maxWidth: '600px' }}>
+      <div className="container" style={{ maxWidth: '680px' }}>
         {/* Success Banner */}
         <div className="success-banner" style={{ marginBottom: '32px' }}>
           <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
@@ -108,14 +189,114 @@ function OrderConfirmationContent() {
         </div>
 
         {/* Header */}
-        <div style={{ marginBottom: '32px' }}>
-          <h1 className="text-h1" style={{ marginBottom: '10px' }}>
+        <div style={{ marginBottom: '40px' }}>
+          <h1 className="text-h1" style={{ marginBottom: '12px' }}>
             Thank You! 🎉
           </h1>
           <p className="text-body text-muted">
-            Your order has been received and is being processed. You'll receive a shipping confirmation email shortly.
+            Your order has been received and is being processed. Check your email for updates and tracking information.
           </p>
         </div>
+
+        {/* Order Status Timeline */}
+        <div className="card" style={{ marginBottom: '32px', padding: '24px' }}>
+          <OrderTimeline order={order} />
+        </div>
+
+        {/* Tracking Information (if available) */}
+        {order.trackingNumber && order.trackingCarrier && (
+          <div
+            className="card"
+            style={{
+              marginBottom: '32px',
+              padding: '24px',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <div style={{ marginBottom: '16px' }}>
+              <div className="text-small font-semibold text-muted" style={{ marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
+                Shipping Tracking
+              </div>
+
+              {/* Carrier and Number */}
+              <div style={{ marginBottom: '16px' }}>
+                <div className="text-small text-muted" style={{ marginBottom: '4px' }}>
+                  Tracking Number
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px',
+                      background: 'var(--color-bg)',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--color-border)',
+                    }}
+                  >
+                    <code style={{ flex: 1, fontSize: '14px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                      {order.trackingNumber}
+                    </code>
+                  </div>
+                  <button
+                    onClick={handleCopyId}
+                    style={{
+                      padding: '8px 12px',
+                      background: 'transparent',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)',
+                      color: 'var(--color-accent)',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {copied ? '✓ Copied' : 'Copy'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Carrier */}
+              <div style={{ marginBottom: '16px' }}>
+                <div className="text-small text-muted" style={{ marginBottom: '4px' }}>
+                  Carrier
+                </div>
+                <div className="text-body">{order.trackingCarrier}</div>
+              </div>
+
+              {/* Tracking Link */}
+              {order.trackingUrl && (
+                <div>
+                  <div className="text-small text-muted" style={{ marginBottom: '4px' }}>
+                    View Shipment
+                  </div>
+                  <a
+                    href={order.trackingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      color: 'var(--color-accent)',
+                      textDecoration: 'none',
+                      fontWeight: 600,
+                      transition: 'color 0.2s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-accent-hover)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-accent)')}
+                  >
+                    Track shipment →
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Order Details Card */}
         <div className="card" style={{ marginBottom: '32px' }}>
@@ -144,15 +325,12 @@ function OrderConfirmationContent() {
                   {order.id}
                 </code>
                 <button
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(order.id)
-                    alert('Order ID copied!')
-                  }}
+                  onClick={handleCopyId}
                   style={{
                     padding: '8px 12px',
                     background: 'transparent',
                     border: '1px solid var(--color-border)',
-                    borderRadius: '4px',
+                    borderRadius: 'var(--radius-md)',
                     color: 'var(--color-accent)',
                     cursor: 'pointer',
                     fontSize: '12px',
@@ -160,25 +338,27 @@ function OrderConfirmationContent() {
                     transition: 'all 0.2s',
                   }}
                 >
-                  Copy
+                  {copied ? '✓ Copied' : 'Copy'}
                 </button>
               </div>
             </div>
 
-            {/* Date */}
-            <div style={{ marginBottom: '16px' }}>
-              <div className="text-small text-muted" style={{ marginBottom: '4px' }}>
-                Date
+            {/* Grid: Date and Email */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div>
+                <div className="text-small text-muted" style={{ marginBottom: '4px' }}>
+                  Order Date
+                </div>
+                <div className="text-body">{order.createdAt}</div>
               </div>
-              <div className="text-body">{order.createdAt}</div>
-            </div>
-
-            {/* Email */}
-            <div style={{ marginBottom: '16px' }}>
-              <div className="text-small text-muted" style={{ marginBottom: '4px' }}>
-                Confirmation Email
+              <div>
+                <div className="text-small text-muted" style={{ marginBottom: '4px' }}>
+                  Email
+                </div>
+                <div className="text-body" style={{ wordBreak: 'break-all' }}>
+                  {order.customerEmail}
+                </div>
               </div>
-              <div className="text-body">{order.customerEmail}</div>
             </div>
 
             {/* Status */}
@@ -188,17 +368,20 @@ function OrderConfirmationContent() {
               </div>
               <div
                 style={{
-                  display: 'inline-block',
-                  padding: '4px 12px',
-                  background: 'rgba(59, 130, 246, 0.1)',
-                  color: 'var(--color-info)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  background: statusInfo.bg,
+                  color: statusInfo.color,
                   borderRadius: '12px',
                   fontSize: '12px',
                   fontWeight: 600,
                   textTransform: 'capitalize',
                 }}
               >
-                {order.status}
+                <span>{statusInfo.icon}</span>
+                {statusInfo.label}
               </div>
             </div>
           </div>
@@ -207,7 +390,7 @@ function OrderConfirmationContent() {
         {/* Order Items */}
         <div className="card" style={{ marginBottom: '32px' }}>
           <div className="text-small font-semibold text-muted" style={{ marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
-            Items
+            Items Ordered
           </div>
 
           {order.items.map((item, idx) => (
@@ -229,7 +412,7 @@ function OrderConfirmationContent() {
                   SKU: {item.productSku} • Qty: {item.quantity}
                 </div>
               </div>
-              <div className="text-body font-semibold">
+              <div className="text-body font-semibold" style={{ whiteSpace: 'nowrap', marginLeft: '16px' }}>
                 ${item.totalPrice.toFixed(2)}
               </div>
             </div>
@@ -252,7 +435,7 @@ function OrderConfirmationContent() {
               borderBottom: '1px solid var(--color-border)',
             }}
           >
-            <span className="text-small text-muted">Processing Fee</span>
+            <span className="text-small text-muted">Processing Fee (18%)</span>
             <span className="text-small text-muted">${order.swaggerFee.toFixed(2)}</span>
           </div>
 
@@ -265,28 +448,34 @@ function OrderConfirmationContent() {
         </div>
 
         {/* Next Steps */}
-        <div className="card" style={{ marginBottom: '24px', background: 'var(--color-surface)' }}>
+        <div className="card" style={{ marginBottom: '32px', background: 'var(--color-surface)' }}>
           <div style={{ marginBottom: '16px' }}>
-            <h3 className="text-h3" style={{ marginBottom: '12px' }}>
+            <h3 className="text-h3" style={{ marginBottom: '16px' }}>
               What's Next?
             </h3>
-            <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <li style={{ color: 'var(--color-text)', fontSize: '14px', lineHeight: 1.6, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                <span style={{ marginTop: '2px' }}>✓</span>
+                <span style={{ marginTop: '2px', fontSize: '16px' }}>📧</span>
                 <span>
-                  <strong>Confirmation email sent</strong> — Check your inbox for order details and tracking info
+                  <strong>Confirmation email sent</strong> — Check your inbox for order details and receipt
                 </span>
               </li>
               <li style={{ color: 'var(--color-text)', fontSize: '14px', lineHeight: 1.6, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                <span style={{ marginTop: '2px' }}>✓</span>
+                <span style={{ marginTop: '2px', fontSize: '16px' }}>⚙️</span>
                 <span>
                   <strong>Processing in progress</strong> — Your items will ship within 5–7 business days
                 </span>
               </li>
               <li style={{ color: 'var(--color-text)', fontSize: '14px', lineHeight: 1.6, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                <span style={{ marginTop: '2px' }}>✓</span>
+                <span style={{ marginTop: '2px', fontSize: '16px' }}>📦</span>
                 <span>
-                  <strong>Track your shipment</strong> — You'll receive a shipping confirmation with tracking number
+                  <strong>Track your shipment</strong> — You'll receive a tracking number and link via email
+                </span>
+              </li>
+              <li style={{ color: 'var(--color-text)', fontSize: '14px', lineHeight: 1.6, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                <span style={{ marginTop: '2px', fontSize: '16px' }}>🚚</span>
+                <span>
+                  <strong>Delivery updates</strong> — Real-time notifications as your order makes its way to you
                 </span>
               </li>
             </ul>
@@ -301,6 +490,12 @@ function OrderConfirmationContent() {
           <button
             onClick={() => window.print()}
             className="btn btn-secondary"
+            style={{
+              cursor: 'pointer',
+              background: 'transparent',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text)',
+            }}
           >
             Print Receipt
           </button>
