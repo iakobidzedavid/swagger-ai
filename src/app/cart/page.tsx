@@ -1,7 +1,6 @@
 'use client'
 
 import { useSearchParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Suspense } from 'react'
 import { useCart } from '@/context/CartContext'
 
@@ -28,7 +27,7 @@ function CartContent() {
       <div className="container" style={{ maxWidth: '900px' }}>
         {/* Header */}
         <div style={{ marginBottom: '32px' }}>
-          <h1 className="text-h1" style={{ marginBottom: '10px' }}>
+          <h1 className="text-h1" style={{ marginBottom: '8px' }}>
             Shopping Cart
           </h1>
           <p className="text-body text-muted">
@@ -70,7 +69,7 @@ function CartContent() {
                 <div
                   key={`${item.productId}-${item.variantId}`}
                   className="card"
-                  style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: '120px 1fr', gap: '20px', padding: '20px' }}
+                  style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: '120px 1fr', gap: '20px' }}
                 >
                   {/* Item Image */}
                   <div
@@ -78,11 +77,12 @@ function CartContent() {
                       width: '100%',
                       height: '120px',
                       background: 'var(--color-canvas-surface)',
-                      borderRadius: '8px',
+                      borderRadius: 'var(--radius-md)',
                       overflow: 'hidden',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      flexShrink: 0,
                     }}
                   >
                     <img
@@ -95,49 +95,37 @@ function CartContent() {
                   {/* Item Details */}
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
-                      <h3 className="text-h3" style={{ margin: '0 0 4px', fontSize: '18px' }}>
+                      <h3 className="text-h3" style={{ margin: '0 0 4px' }}>
                         {item.product.title}
                       </h3>
-                      <p className="text-small text-muted" style={{ margin: '0 0 8px' }}>
+                      <p className="text-small text-muted" style={{ margin: '0 0 16px' }}>
                         SKU: {item.product.sku}
                       </p>
 
-                      {/* Variant Selection */}
-                      <div style={{ marginBottom: '12px' }}>
-                        <select
-                          value={item.variantId}
-                          onChange={e => {
-                            const variant = item.product.variants.find(v => v.id === e.target.value)
-                            if (variant) {
-                              removeFromCart(item.productId, item.variantId)
-                              const cart = require('@/context/CartContext')
-                              // This would require refactoring; for now just show selection is locked
-                            }
-                          }}
-                          disabled
-                          style={{
-                            padding: '6px 10px',
-                            borderRadius: '4px',
-                            border: '1px solid var(--color-border)',
-                            background: 'var(--color-bg)',
-                            color: 'var(--color-text)',
-                            fontSize: '12px',
-                            fontFamily: 'inherit',
-                            cursor: 'not-allowed',
-                          }}
-                        >
-                          {item.product.variants.map(v => (
-                            <option key={v.id} value={v.id}>
-                              {v.title}
-                            </option>
-                          ))}
-                        </select>
+                      {/* Variant Display */}
+                      <div style={{ marginBottom: '16px' }}>
+                        <p className="text-small text-muted" style={{ margin: '0 0 4px' }}>
+                          Variant
+                        </p>
+                        <p className="text-body" style={{ margin: '0' }}>
+                          {item.product.variants.find(v => v.id === item.variantId)?.title || 'Unknown variant'}
+                        </p>
                       </div>
 
-                      {/* Quantity and Price */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <label className="text-small text-muted">Qty:</label>
+                      {/* Pricing Details */}
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px', marginBottom: '16px' }}>
+                        <div>
+                          <p className="text-small text-muted" style={{ margin: '0 0 4px' }}>
+                            Unit Price
+                          </p>
+                          <p className="text-body" style={{ margin: '0' }}>
+                            ${item.unitPrice.toFixed(2)}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-small text-muted" style={{ display: 'block', marginBottom: '4px' }}>
+                            Qty
+                          </label>
                           <input
                             type="number"
                             min="1"
@@ -149,20 +137,20 @@ function CartContent() {
                                 updateQuantity(item.productId, item.variantId, newQty)
                               }
                             }}
+                            className="input-field"
                             style={{
-                              width: '60px',
-                              padding: '6px 8px',
-                              borderRadius: '4px',
-                              border: '1px solid var(--color-border)',
-                              background: 'var(--color-bg)',
-                              color: 'var(--color-text)',
-                              fontSize: '14px',
-                              fontFamily: 'inherit',
+                              width: '70px',
+                              padding: '8px 10px',
                             }}
                           />
                         </div>
-                        <div className="text-h3" style={{ marginLeft: 'auto' }}>
-                          ${(item.unitPrice * item.quantity).toFixed(2)}
+                        <div style={{ marginLeft: 'auto' }}>
+                          <p className="text-small text-muted" style={{ margin: '0 0 4px' }}>
+                            Line Total
+                          </p>
+                          <p className="text-h3" style={{ margin: '0', color: 'var(--color-accent)' }}>
+                            ${(item.unitPrice * item.quantity).toFixed(2)}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -171,16 +159,19 @@ function CartContent() {
                     <button
                       onClick={() => removeFromCart(item.productId, item.variantId)}
                       style={{
-                        marginTop: '12px',
+                        marginTop: '8px',
                         background: 'none',
                         border: 'none',
                         color: 'var(--color-danger)',
                         cursor: 'pointer',
-                        fontSize: '14px',
+                        fontSize: '0.875rem',
                         fontWeight: 500,
-                        padding: 0,
+                        padding: '4px 0',
                         textAlign: 'left',
+                        transition: 'opacity 0.15s',
                       }}
+                      onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+                      onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
                     >
                       Remove from Cart
                     </button>
@@ -189,27 +180,27 @@ function CartContent() {
               ))}
             </div>
 
-            {/* Order Summary */}
-            <div style={{ position: 'sticky', top: '20px', height: 'fit-content' }}>
+            {/* Order Summary Sidebar */}
+            <div style={{ position: 'sticky', top: '80px', height: 'fit-content' }}>
               <div className="card">
-                <div style={{ marginBottom: '20px' }}>
-                  <div className="text-small font-semibold text-muted" style={{ marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
+                <div style={{ marginBottom: '24px' }}>
+                  <div className="text-small font-semibold text-muted" style={{ marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                     Order Summary
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <span className="text-body">Subtotal ({cart.totalItems} items)</span>
-                    <span className="text-body font-semibold">${cart.totalPrice.toFixed(2)}</span>
+                  {/* Subtotal */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span className="text-body">Subtotal</span>
+                    <span className="text-body">${cart.totalPrice.toFixed(2)}</span>
                   </div>
 
-                  <div
-                    style={{
-                      borderTop: '1px solid var(--color-border)',
-                      paddingTop: '12px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                    }}
-                  >
+                  {/* Item count */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
+                    <span className="text-small text-muted">{cart.totalItems} item{cart.totalItems !== 1 ? 's' : ''}</span>
+                  </div>
+
+                  {/* Total */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
                     <span className="text-h3">Total</span>
                     <span className="text-h3" style={{ color: 'var(--color-accent)' }}>
                       ${cart.totalPrice.toFixed(2)}
@@ -224,7 +215,6 @@ function CartContent() {
                 <button
                   onClick={handleContinueShopping}
                   className="btn btn-secondary btn-full"
-                  style={{}}
                 >
                   Continue Shopping
                 </button>
