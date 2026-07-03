@@ -22,7 +22,7 @@ export default function LandingPage() {
           <Link href="/onboard" className="btn btn-secondary btn-lg">
             Get started
           </Link>
-          <Link href="/design-engine?domain=stripe.com" className="btn btn-primary btn-lg" style={{ backgroundColor: '#6b21a8' }}>
+          <Link href="/design-engine?domain=stripe.com" className="btn btn-primary btn-lg" style={{ backgroundColor: 'var(--color-accent-hover)' }}>
             View sample mockup
           </Link>
         </div>

@@ -114,27 +114,18 @@ export default function PricingPage() {
 
         {/* Error Banner */}
         {error && (
-          <div style={{
-            backgroundColor: 'rgba(220, 38, 38, 0.1)',
-            borderLeft: '4px solid #dc2626',
-            padding: '16px',
-            marginBottom: '40px',
-            borderRadius: '4px',
-            color: '#fca5a5',
-          }}>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <svg width="20" height="20" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: '2px' }}>
-                <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4" />
-                <path d="M8 4v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
-              <div>
-                <div className="text-small font-semibold" style={{ marginBottom: '4px' }}>
-                  Something went wrong
-                </div>
-                <p className="text-small text-muted" style={{ margin: 0 }}>
-                  {error}. Please try again or contact support.
-                </p>
+          <div className="error-banner" style={{ marginBottom: '40px', alignItems: 'flex-start' }}>
+            <svg width="20" height="20" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: '2px' }}>
+              <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4" />
+              <path d="M8 4v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+            <div>
+              <div className="text-small font-semibold" style={{ marginBottom: '4px' }}>
+                Something went wrong
               </div>
+              <p className="text-small" style={{ margin: 0 }}>
+                {error}. Please try again or contact support.
+              </p>
             </div>
           </div>
         )}
@@ -153,7 +144,7 @@ export default function PricingPage() {
               style={{
                 position: 'relative',
                 border: tier.highlighted ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
-                backgroundColor: tier.highlighted ? 'rgba(167, 139, 250, 0.05)' : 'var(--color-surface)',
+                backgroundColor: tier.highlighted ? 'var(--color-accent-subtle)' : 'var(--color-surface)',
                 transform: tier.highlighted ? 'scale(1.05)' : 'scale(1)',
                 transition: 'all 0.3s ease',
               }}
@@ -167,7 +158,7 @@ export default function PricingPage() {
                   backgroundColor: 'var(--color-accent)',
                   color: '#fff',
                   padding: '6px 12px',
-                  borderRadius: '4px',
+                  borderRadius: 'var(--radius-sm)',
                   fontSize: '0.75rem',
                   fontWeight: 600,
                   textTransform: 'uppercase',
@@ -253,9 +244,9 @@ export default function PricingPage() {
         <div style={{
           maxWidth: '700px',
           margin: '0 auto',
-          backgroundColor: 'rgba(167, 139, 250, 0.05)',
+          backgroundColor: 'var(--color-accent-subtle)',
           border: '1px solid var(--color-border)',
-          borderRadius: '8px',
+          borderRadius: 'var(--radius-lg)',
           padding: '40px',
         }}>
           <h3 className="text-h3" style={{ marginBottom: '24px', textAlign: 'center' }}>

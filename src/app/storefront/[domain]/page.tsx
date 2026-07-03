@@ -165,7 +165,7 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
           color: '#fff',
           padding: '48px 24px',
           marginBottom: '60px',
-          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.15)',
+          boxShadow: 'var(--shadow-card)',
         }}
       >
         <div className="container">
@@ -232,7 +232,7 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
               {cartCount > 0 && (
                 <span
                   style={{
-                    background: '#ef4444',
+                    background: 'var(--color-danger)',
                     color: '#fff',
                     borderRadius: '50%',
                     width: '20px',
@@ -300,7 +300,7 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
                   }}
                   onMouseEnter={e => {
                     const card = e.currentTarget as HTMLElement
-                    card.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.2)'
+                    card.style.boxShadow = 'var(--shadow-elevated)'
                     card.style.transform = 'translateY(-4px)'
                   }}
                   onMouseLeave={e => {
@@ -439,15 +439,7 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
       {/* Toast Notification */}
       {toast && (
         <div
-          className="toast"
-          style={{
-            background: toast.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-            border: `1px solid ${toast.type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-            color: toast.type === 'success' ? '#10b981' : '#ef4444',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
+          className={toast.type === 'success' ? 'toast success-banner' : 'toast error-banner'}
         >
           {toast.type === 'success' ? (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

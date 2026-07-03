@@ -8,6 +8,7 @@
   --color-accent: #7c3aed;
   --color-accent-hover: #6d28d9;
   --color-accent-light: rgba(124, 58, 237, 0.12);
+  --color-accent-subtle: rgba(124, 58, 237, 0.05);
   --color-danger: #ef4444;
   --color-danger-light: rgba(239, 68, 68, 0.12);
   --color-success: #10b981;
