@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -11,6 +11,7 @@ interface SigninModalProps {
   isLoading?: boolean
   error?: string | null
   domain?: string
+  companyName?: string
 }
 
 export function SigninModal({
@@ -20,11 +21,18 @@ export function SigninModal({
   isLoading = false,
   error = null,
   domain,
+  companyName: initialCompanyName = '',
 }: SigninModalProps) {
   const [email, setEmail] = useState('')
-  const [companyName, setCompanyName] = useState('')
+  const [companyName, setCompanyName] = useState(initialCompanyName)
   const [emailError, setEmailError] = useState<string | null>(null)
   const [signingIn, setSigningIn] = useState(false)
+
+  useEffect(() => {
+    if (initialCompanyName) {
+      setCompanyName(initialCompanyName)
+    }
+  }, [initialCompanyName])
 
   if (!isOpen) return null
 

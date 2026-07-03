@@ -88,6 +88,7 @@ function PreviewContent() {
   const [showSigninModal, setShowSigninModal] = useState(false)
 
   const [brand, setBrand] = useState<BrandData | null>(null)
+  const [companyNameOverride, setCompanyNameOverride] = useState<string>('')
   const [products, setProducts] = useState<Product[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<string>('minimal')
   const [loadingState, setLoadingState] = useState<LoadingState>('loading')
@@ -98,6 +99,7 @@ function PreviewContent() {
   const selectedProductIds = new Set(productIdsParam.split(',').filter(id => id))
   const selectedProducts = products.filter(p => selectedProductIds.has(p.id))
   const template = DESIGN_TEMPLATES.find(t => t.id === selectedTemplate) || DESIGN_TEMPLATES[0]
+  const displayCompanyName = companyNameOverride || brand?.company_name || ''
 
   // Fetch brand data
   useEffect(() => {
@@ -183,7 +185,7 @@ function PreviewContent() {
         body: JSON.stringify({
           domainSubmissionId: brand.id,
           domain: brand.domain,
-          companyName: brand.company_name,
+          companyName: displayCompanyName,
           logoUrl: brand.logo_url,
           primaryColor: brand.primary_color,
           secondaryColor: brand.secondary_color,
@@ -313,6 +315,7 @@ function PreviewContent() {
         isLoading={authLoading}
         error={authError}
         domain={brand?.domain}
+        companyName={displayCompanyName}
       />
       <div className="container">
         {/* Header */}
@@ -376,13 +379,13 @@ function PreviewContent() {
                   {brand.logo_url && (
                     <img
                       src={brand.logo_url}
-                      alt={brand.company_name}
+                      alt={displayCompanyName}
                       style={{ width: '50px', height: '50px', objectFit: 'contain' }}
                     />
                   )}
                   <div>
                     <h2 style={{ margin: 0, color: brand.primary_color, fontSize: '24px', fontWeight: 600 }}>
-                      {brand.company_name}
+                      {displayCompanyName}
                     </h2>
                     <p style={{ margin: '4px 0 0 0', color: 'var(--color-canvas-text-muted)', fontSize: '14px' }}>
                       Team & Culture Swag
@@ -569,14 +572,37 @@ function PreviewContent() {
                 >
                   <img
                     src={brand.logo_url}
-                    alt={brand.company_name}
+                    alt={displayCompanyName}
                     style={{ maxWidth: '50px', maxHeight: '50px', objectFit: 'contain' }}
                   />
                 </div>
               )}
-              <div className="text-h3" style={{ marginBottom: '4px' }}>
-                {brand.company_name}
+
+              {/* Company Name Input */}
+              <div style={{ marginBottom: '16px' }}>
+                <label htmlFor="companyNameInput" className="text-small font-semibold" style={{ display: 'block', marginBottom: '4px' }}>
+                  Company Name
+                </label>
+                <input
+                  id="companyNameInput"
+                  type="text"
+                  value={companyNameOverride}
+                  onChange={(e) => setCompanyNameOverride(e.target.value)}
+                  placeholder={brand.company_name || 'Company Name'}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    background: 'var(--color-bg)',
+                    color: 'var(--color-text)',
+                    boxSizing: 'border-box',
+                  }}
+                />
               </div>
+
               <div className="text-small text-muted">{brand.domain}</div>
 
               {/* Colors */}
