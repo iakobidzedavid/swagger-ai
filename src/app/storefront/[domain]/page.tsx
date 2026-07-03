@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { normalizeDomain } from '@/lib/brand'
 import { useCart } from '@/context/CartContext'
+import { VariantSelector } from '@/components/VariantSelector'
 
 interface StorefrontProduct {
   id: string
@@ -381,33 +382,12 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
                     )}
 
                     {/* Variant Selection */}
-                    <div style={{ marginBottom: '16px' }}>
-                      <label
-                        htmlFor={`variant-${product.id}`}
-                        className="text-small font-semibold"
-                        style={{
-                          display: 'block',
-                          marginBottom: '8px',
-                          color: 'var(--color-text)',
-                        }}
-                      >
-                        Size / Option
-                      </label>
-                      <select
-                        id={`variant-${product.id}`}
-                        value={selectedVariants[product.id] || ''}
-                        onChange={e => handleVariantSelect(product.id, e.target.value)}
-                        className="input-field"
-                        style={{ marginBottom: 0 }}
-                      >
-                        <option value="">Select an option</option>
-                        {product.variants.map(variant => (
-                          <option key={variant.id} value={variant.id}>
-                            {variant.title} — ${(variant.price / 100).toFixed(2)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <VariantSelector
+                      variants={product.variants}
+                      selectedVariantId={selectedVariants[product.id] || ''}
+                      onSelectVariant={(variantId) => handleVariantSelect(product.id, variantId)}
+                      label="Size / Option"
+                    />
 
                     {/* Add to Cart Button */}
                     <button
