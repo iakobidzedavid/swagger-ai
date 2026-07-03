@@ -27,9 +27,24 @@ interface OrderData {
   createdAtDisplay: string
 }
 
+interface StorefrontData {
+  id: string
+  domain: string
+  companyName: string
+  status: string
+  createdAt: string
+  logoUrl: string | null
+  primaryColor: string | null
+  secondaryColor: string | null
+  gmvCents: number
+  gmvDisplay: string
+  orderCount: number
+}
+
 interface DashboardState {
   metrics: Metrics | null
   orders: OrderData[]
+  storefronts: StorefrontData[]
   totalOrderCount: number
   loadingState: 'idle' | 'loading' | 'loaded' | 'error'
   error: string | null
@@ -38,12 +53,14 @@ interface DashboardState {
   sortBy: string
   sortDir: 'asc' | 'desc'
   selectedStorefront: string | 'all'
+  activeTab: 'overview' | 'brands' | 'orders'
 }
 
 function DashboardContent() {
   const [state, setState] = useState<DashboardState>({
     metrics: null,
     orders: [],
+    storefronts: [],
     totalOrderCount: 0,
     loadingState: 'loading',
     error: null,
@@ -51,10 +68,11 @@ function DashboardContent() {
     dateTo: '',
     sortBy: 'created_at',
     sortDir: 'desc',
-    selectedStorefront: 'all'
+    selectedStorefront: 'all',
+    activeTab: 'overview'
   })
 
-  // Fetch metrics and orders
+  // Fetch metrics, orders, and storefronts
   const fetchData = async (filterParams?: Partial<DashboardState>) => {
     try {
       setState(prev => ({ ...prev, loadingState: 'loading' }))
@@ -78,12 +96,15 @@ function DashboardContent() {
         ordersParams.append('storefrontId', params.selectedStorefront)
       }
 
-      // Fetch metrics and orders in parallel
-      const [metricsRes, ordersRes] = await Promise.all([
+      // Fetch metrics, orders, and storefronts in parallel
+      const [metricsRes, ordersRes, storefrontsRes] = await Promise.all([
         fetch(`/api/dashboard/metrics?${metricsParams}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
         fetch(`/api/dashboard/orders?${ordersParams}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch(`/api/dashboard/storefronts`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
       ])
@@ -94,11 +115,13 @@ function DashboardContent() {
 
       const metricsData = await metricsRes.json()
       const ordersData = await ordersRes.json()
+      const storefrontsData = storefrontsRes.ok ? await storefrontsRes.json() : { storefronts: [] }
 
       setState(prev => ({
         ...prev,
         metrics: metricsData.metrics,
         orders: ordersData.orders,
+        storefronts: storefrontsData.storefronts || [],
         totalOrderCount: ordersData.totalCount,
         loadingState: 'loaded',
         error: null,
@@ -162,209 +185,447 @@ function DashboardContent() {
       {/* Header */}
       <div style={{ marginBottom: '40px' }}>
         <h1 className="text-display" style={{ marginBottom: '8px' }}>Admin Dashboard</h1>
-        <p className="text-body text-muted">Monitor orders and monetization metrics</p>
+        <p className="text-body text-muted">Monitor orders, brand extractions, and monetization metrics</p>
       </div>
 
-      {/* Key Metrics */}
-      {state.metrics && (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: '16px',
-          marginBottom: '40px'
-        }}>
-          <MetricCard
-            label="Total GMV (All-Time)"
-            value={state.metrics.gmv}
-            subtext={`${state.totalOrderCount} orders`}
-          />
-          <MetricCard
-            label="Swagger Revenue"
-            value={state.metrics.revenue}
-            subtext={state.metrics.margin}
-            accent
-          />
-          <MetricCard
-            label="Vendor Payout"
-            value={state.metrics.vendorPayout}
-            subtext="to Printify"
-          />
-          <MetricCard
-            label="Avg Order Value"
-            value={state.metrics.avgOrderValue}
-            subtext={state.metrics.orders > 0 ? `${state.metrics.orders} orders` : 'No orders'}
-          />
+      {/* Tab Navigation */}
+      <div style={{
+        display: 'flex',
+        gap: '16px',
+        marginBottom: '40px',
+        borderBottom: '1px solid var(--color-border)',
+        paddingBottom: '16px'
+      }}>
+        <button
+          onClick={() => setState(prev => ({ ...prev, activeTab: 'overview' }))}
+          style={{
+            padding: '8px 16px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: state.activeTab === 'overview' ? 'var(--color-text)' : 'var(--color-text-muted)',
+            fontWeight: state.activeTab === 'overview' ? 600 : 400,
+            fontSize: '1rem',
+            borderBottom: state.activeTab === 'overview' ? '2px solid var(--color-accent)' : '2px solid transparent',
+            marginBottom: '-17px'
+          }}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => setState(prev => ({ ...prev, activeTab: 'brands' }))}
+          style={{
+            padding: '8px 16px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: state.activeTab === 'brands' ? 'var(--color-text)' : 'var(--color-text-muted)',
+            fontWeight: state.activeTab === 'brands' ? 600 : 400,
+            fontSize: '1rem',
+            borderBottom: state.activeTab === 'brands' ? '2px solid var(--color-accent)' : '2px solid transparent',
+            marginBottom: '-17px'
+          }}
+        >
+          Brand Extractions ({state.storefronts.length})
+        </button>
+        <button
+          onClick={() => setState(prev => ({ ...prev, activeTab: 'orders' }))}
+          style={{
+            padding: '8px 16px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: state.activeTab === 'orders' ? 'var(--color-text)' : 'var(--color-text-muted)',
+            fontWeight: state.activeTab === 'orders' ? 600 : 400,
+            fontSize: '1rem',
+            borderBottom: state.activeTab === 'orders' ? '2px solid var(--color-accent)' : '2px solid transparent',
+            marginBottom: '-17px'
+          }}
+        >
+          Orders ({state.totalOrderCount})
+        </button>
+      </div>
+
+      {/* Content based on active tab */}
+      {state.activeTab === 'overview' && (
+        <>
+          {/* Key Metrics */}
+          {state.metrics && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: '16px',
+              marginBottom: '40px'
+            }}>
+              <MetricCard
+                label="Total GMV (All-Time)"
+                value={state.metrics.gmv}
+                subtext={`${state.totalOrderCount} orders`}
+              />
+              <MetricCard
+                label="Swagger Revenue"
+                value={state.metrics.revenue}
+                subtext={state.metrics.margin}
+                accent
+              />
+              <MetricCard
+                label="Vendor Payout"
+                value={state.metrics.vendorPayout}
+                subtext="to Printify"
+              />
+              <MetricCard
+                label="Avg Order Value"
+                value={state.metrics.avgOrderValue}
+                subtext={state.metrics.orders > 0 ? `${state.metrics.orders} orders` : 'No orders'}
+              />
+            </div>
+          )}
+
+          {/* Quick Stats */}
+          <div style={{
+            padding: '24px',
+            backgroundColor: 'var(--color-surface)',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--color-border)',
+            marginBottom: '40px'
+          }}>
+            <h3 style={{ marginBottom: '16px', fontSize: '1rem', fontWeight: 600 }}>Key Metrics</h3>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '16px'
+            }}>
+              <div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>Active Storefronts</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 600 }}>{state.storefronts.length}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>Total Orders</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 600 }}>{state.totalOrderCount}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>Brands Extracted</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 600 }}>{state.storefronts.filter(s => s.primaryColor).length}</div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Brand Extractions Tab */}
+      {state.activeTab === 'brands' && (
+        <div>
+          <h2 className="text-h2" style={{ marginBottom: '24px', fontSize: '1.25rem' }}>Brand Extractions</h2>
+
+          {state.storefronts.length === 0 ? (
+            <div style={{
+              padding: '40px',
+              textAlign: 'center',
+              backgroundColor: 'var(--color-surface)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--color-border)'
+            }}>
+              <p className="text-body text-muted">No storefronts created yet. Start by creating one to extract brand data.</p>
+              <Link href="/onboard" className="btn btn-primary" style={{ marginTop: '16px' }}>
+                Create Storefront
+              </Link>
+            </div>
+          ) : (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: '16px'
+            }}>
+              {state.storefronts.map((sf) => (
+                <div
+                  key={sf.id}
+                  style={{
+                    padding: '20px',
+                    backgroundColor: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-lg)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px'
+                  }}
+                >
+                  {/* Brand Logo and Colors */}
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    {sf.logoUrl ? (
+                      <img
+                        src={sf.logoUrl}
+                        alt={sf.companyName}
+                        style={{ width: '48px', height: '48px', borderRadius: '4px', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '4px',
+                        backgroundColor: 'var(--color-border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.75rem',
+                        color: 'var(--color-text-muted)'
+                      }}>
+                        No logo
+                      </div>
+                    )}
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '1rem' }}>{sf.companyName}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{sf.domain}</div>
+                    </div>
+                  </div>
+
+                  {/* Color Swatches */}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {sf.primaryColor && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '4px',
+                            backgroundColor: sf.primaryColor || 'var(--color-border)',
+                            border: '1px solid var(--color-border)',
+                            cursor: 'pointer'
+                          }}
+                          title={sf.primaryColor || 'No color'}
+                          aria-label={`Primary brand color: ${sf.primaryColor || 'not set'}`}
+                          role="img"
+                        />
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Primary</span>
+                      </div>
+                    )}
+                    {sf.secondaryColor && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '4px',
+                            backgroundColor: sf.secondaryColor || 'var(--color-border)',
+                            border: '1px solid var(--color-border)',
+                            cursor: 'pointer'
+                          }}
+                          title={sf.secondaryColor || 'No color'}
+                          aria-label={`Secondary brand color: ${sf.secondaryColor || 'not set'}`}
+                          role="img"
+                        />
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Secondary</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Stats */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    paddingTop: '12px',
+                    borderTop: '1px solid var(--color-border)',
+                    fontSize: '0.875rem'
+                  }}>
+                    <div>
+                      <div style={{ color: 'var(--color-text-muted)' }}>Orders</div>
+                      <div style={{ fontWeight: 600 }}>{sf.orderCount}</div>
+                    </div>
+                    <div>
+                      <div style={{ color: 'var(--color-text-muted)' }}>GMV</div>
+                      <div style={{ fontWeight: 600 }}>{sf.gmvDisplay}</div>
+                    </div>
+                  </div>
+
+                  {/* Status */}
+                  <div style={{
+                    padding: '6px 8px',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    textAlign: 'center',
+                    backgroundColor: sf.status === 'complete' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 114, 128, 0.1)',
+                    color: sf.status === 'complete' ? '#10b981' : '#6b7280'
+                  }}>
+                    {sf.status}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Filters */}
-      <div style={{
-        marginBottom: '30px',
-        padding: '16px',
-        backgroundColor: 'var(--color-surface)',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--color-border)'
-      }}>
-        <div style={{
-          display: 'flex',
-          gap: '16px',
-          alignItems: 'flex-end',
-          flexWrap: 'wrap'
-        }}>
-          <div>
-            <label style={{
-              display: 'block',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              marginBottom: '8px',
-              color: 'var(--color-text-muted)'
-            }}>
-              From Date
-            </label>
-            <input
-              type="date"
-              value={state.dateFrom}
-              onChange={(e) => handleDateChange('dateFrom', e.target.value)}
-              style={{
-                padding: '8px 12px',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--color-border)',
-                backgroundColor: 'var(--color-bg)',
-                color: 'var(--color-text)',
-                fontSize: '0.875rem'
-              }}
-            />
-          </div>
-          <div>
-            <label style={{
-              display: 'block',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              marginBottom: '8px',
-              color: 'var(--color-text-muted)'
-            }}>
-              To Date
-            </label>
-            <input
-              type="date"
-              value={state.dateTo}
-              onChange={(e) => handleDateChange('dateTo', e.target.value)}
-              style={{
-                padding: '8px 12px',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--color-border)',
-                backgroundColor: 'var(--color-bg)',
-                color: 'var(--color-text)',
-                fontSize: '0.875rem'
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Orders Table */}
-      <div>
-        <h2 className="text-h2" style={{ marginBottom: '16px', fontSize: '1.25rem' }}>Orders</h2>
-
-        {state.orders.length === 0 ? (
+      {/* Orders Tab */}
+      {state.activeTab === 'orders' && (
+        <div>
+          {/* Filters */}
           <div style={{
-            padding: '40px',
-            textAlign: 'center',
+            marginBottom: '30px',
+            padding: '16px',
             backgroundColor: 'var(--color-surface)',
             borderRadius: 'var(--radius-lg)',
             border: '1px solid var(--color-border)'
           }}>
-            <p className="text-body text-muted">No orders found. Start by creating a storefront.</p>
-            <Link href="/onboard" className="btn btn-primary" style={{ marginTop: '16px' }}>
-              Create Storefront
-            </Link>
+            <div style={{
+              display: 'flex',
+              gap: '16px',
+              alignItems: 'flex-end',
+              flexWrap: 'wrap'
+            }}>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  marginBottom: '8px',
+                  color: 'var(--color-text-muted)'
+                }}>
+                  From Date
+                </label>
+                <input
+                  type="date"
+                  value={state.dateFrom}
+                  onChange={(e) => handleDateChange('dateFrom', e.target.value)}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--color-border)',
+                    backgroundColor: 'var(--color-bg)',
+                    color: 'var(--color-text)',
+                    fontSize: '0.875rem'
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  marginBottom: '8px',
+                  color: 'var(--color-text-muted)'
+                }}>
+                  To Date
+                </label>
+                <input
+                  type="date"
+                  value={state.dateTo}
+                  onChange={(e) => handleDateChange('dateTo', e.target.value)}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--color-border)',
+                    backgroundColor: 'var(--color-bg)',
+                    color: 'var(--color-text)',
+                    fontSize: '0.875rem'
+                  }}
+                />
+              </div>
+            </div>
           </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                  <th style={tableHeaderStyle}>
-                    <button
-                      onClick={() => handleSort('created_at')}
-                      style={sortButtonStyle}
-                    >
-                      Date {state.sortBy === 'created_at' && (state.sortDir === 'desc' ? '↓' : '↑')}
-                    </button>
-                  </th>
-                  <th style={tableHeaderStyle}>Company</th>
-                  <th style={tableHeaderStyle}>Customer</th>
-                  <th style={{ ...tableHeaderStyle, textAlign: 'right' }}>
-                    <button
-                      onClick={() => handleSort('total_amount_cents')}
-                      style={sortButtonStyle}
-                    >
-                      GMV {state.sortBy === 'total_amount_cents' && (state.sortDir === 'desc' ? '↓' : '↑')}
-                    </button>
-                  </th>
-                  <th style={{ ...tableHeaderStyle, textAlign: 'right' }}>
-                    <button
-                      onClick={() => handleSort('swagger_fee_cents')}
-                      style={sortButtonStyle}
-                    >
-                      Swagger Fee {state.sortBy === 'swagger_fee_cents' && (state.sortDir === 'desc' ? '↓' : '↑')}
-                    </button>
-                  </th>
-                  <th style={{ ...tableHeaderStyle, textAlign: 'right' }}>Margin</th>
-                  <th style={tableHeaderStyle}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {state.orders.map((order) => (
-                  <tr key={order.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                    <td style={tableCellStyle}>{order.createdAtDisplay}</td>
-                    <td style={tableCellStyle}>
-                      <div style={{ fontWeight: 600 }}>{order.companyName}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                        {order.domain}
-                      </div>
-                    </td>
-                    <td style={tableCellStyle}>
-                      <div style={{ fontSize: '0.875rem' }}>{order.customerName}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                        {order.customerEmail}
-                      </div>
-                    </td>
-                    <td style={{ ...tableCellStyle, textAlign: 'right', fontWeight: 600 }}>
-                      {order.gmvDisplay}
-                    </td>
-                    <td style={{ ...tableCellStyle, textAlign: 'right', fontWeight: 600, color: 'var(--color-accent)' }}>
-                      {order.swaggerFeeDisplay}
-                    </td>
-                    <td style={{ ...tableCellStyle, textAlign: 'right' }}>
-                      <span style={{
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        color: 'var(--color-accent)'
-                      }}>
-                        {order.marginPercentage}%
-                      </span>
-                    </td>
-                    <td style={tableCellStyle}>
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '4px 8px',
-                        borderRadius: 'var(--radius-sm)',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        backgroundColor: order.status === 'completed' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 114, 128, 0.1)',
-                        color: order.status === 'completed' ? '#10b981' : '#6b7280'
-                      }}>
-                        {order.status}
-                      </span>
-                    </td>
+
+          {/* Orders Table */}
+          <h2 className="text-h2" style={{ marginBottom: '16px', fontSize: '1.25rem' }}>All Orders</h2>
+
+          {state.orders.length === 0 ? (
+            <div style={{
+              padding: '40px',
+              textAlign: 'center',
+              backgroundColor: 'var(--color-surface)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--color-border)'
+            }}>
+              <p className="text-body text-muted">No orders found. Start by creating a storefront and processing orders.</p>
+              <Link href="/onboard" className="btn btn-primary" style={{ marginTop: '16px' }}>
+                Create Storefront
+              </Link>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    <th style={tableHeaderStyle}>
+                      <button
+                        onClick={() => handleSort('created_at')}
+                        style={sortButtonStyle}
+                      >
+                        Date {state.sortBy === 'created_at' && (state.sortDir === 'desc' ? '↓' : '↑')}
+                      </button>
+                    </th>
+                    <th style={tableHeaderStyle}>Company</th>
+                    <th style={tableHeaderStyle}>Customer</th>
+                    <th style={{ ...tableHeaderStyle, textAlign: 'right' }}>
+                      <button
+                        onClick={() => handleSort('total_amount_cents')}
+                        style={sortButtonStyle}
+                      >
+                        GMV {state.sortBy === 'total_amount_cents' && (state.sortDir === 'desc' ? '↓' : '↑')}
+                      </button>
+                    </th>
+                    <th style={{ ...tableHeaderStyle, textAlign: 'right' }}>
+                      <button
+                        onClick={() => handleSort('swagger_fee_cents')}
+                        style={sortButtonStyle}
+                      >
+                        Swagger Fee {state.sortBy === 'swagger_fee_cents' && (state.sortDir === 'desc' ? '↓' : '↑')}
+                      </button>
+                    </th>
+                    <th style={{ ...tableHeaderStyle, textAlign: 'right' }}>Margin</th>
+                    <th style={tableHeaderStyle}>Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                </thead>
+                <tbody>
+                  {state.orders.map((order) => (
+                    <tr key={order.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                      <td style={tableCellStyle}>{order.createdAtDisplay}</td>
+                      <td style={tableCellStyle}>
+                        <div style={{ fontWeight: 600 }}>{order.companyName}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                          {order.domain}
+                        </div>
+                      </td>
+                      <td style={tableCellStyle}>
+                        <div style={{ fontSize: '0.875rem' }}>{order.customerName}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                          {order.customerEmail}
+                        </div>
+                      </td>
+                      <td style={{ ...tableCellStyle, textAlign: 'right', fontWeight: 600 }}>
+                        {order.gmvDisplay}
+                      </td>
+                      <td style={{ ...tableCellStyle, textAlign: 'right', fontWeight: 600, color: 'var(--color-accent)' }}>
+                        {order.swaggerFeeDisplay}
+                      </td>
+                      <td style={{ ...tableCellStyle, textAlign: 'right' }}>
+                        <span style={{
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                          color: 'var(--color-accent)'
+                        }}>
+                          {order.marginPercentage}%
+                        </span>
+                      </td>
+                      <td style={tableCellStyle}>
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '4px 8px',
+                          borderRadius: 'var(--radius-sm)',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          backgroundColor: order.status === 'completed' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 114, 128, 0.1)',
+                          color: order.status === 'completed' ? '#10b981' : '#6b7280'
+                        }}>
+                          {order.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

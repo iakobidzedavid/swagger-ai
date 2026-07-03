@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     const userId = authHeader.replace('Bearer ', '')
 
-    // Fetch user's storefronts with aggregated order stats
+    // Fetch user's storefronts with aggregated order stats and brand data
     const { data: storefronts, error: storefrontError } = await supabase
       .from('storefront_requests')
       .select(
@@ -24,6 +24,9 @@ export async function GET(request: NextRequest) {
         id,
         domain,
         company_name,
+        logo_url,
+        primary_color,
+        secondary_color,
         status,
         created_at,
         orders:orders(id, total_amount_cents, swagger_fee_cents, status)
@@ -47,6 +50,9 @@ export async function GET(request: NextRequest) {
         id: sf.id,
         domain: sf.domain,
         companyName: sf.company_name,
+        logoUrl: sf.logo_url,
+        primaryColor: sf.primary_color,
+        secondaryColor: sf.secondary_color,
         status: sf.status,
         createdAt: sf.created_at,
         gmvCents: totalGmv,
