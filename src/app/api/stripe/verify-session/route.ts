@@ -1,92 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
-
-// Initialize Supabase admin client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-)
-
-async function getStripeCheckoutSession(sessionId: string) {
-  const response = await fetch(`https://api.stripe.com/v1/checkout/sessions/${sessionId}`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-    },
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to retrieve Stripe session')
-  }
-
-  return response.json()
-}
-
-async function getStripeSubscription(subscriptionId: string) {
-  const response = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionId}`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-    },
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to retrieve Stripe subscription')
-  }
-
-  return response.json()
-}
+import { supabase } from '@/lib/supabase'
+import { getStripeSecretKey, retrieveCheckoutSession, retrieveSubscription } from '@/lib/stripe'
+import { syncStripeSubscription } from '@/lib/subscriptionSync'
 
 export async function POST(request: NextRequest) {
   try {
-    if (!STRIPE_SECRET_KEY) {
-      return NextResponse.json(
-        { error: 'Stripe configuration missing' },
-        { status: 500 }
-      )
+    if (!getStripeSecretKey()) {
+      return NextResponse.json({ error: 'Stripe configuration missing' }, { status: 500 })
     }
 
-    const { sessionId } = await request.json()
-
+    const { sessionId } = await request.json().catch(() => ({}))
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Session ID required' }, { status: 400 })
     }
 
-    // Get checkout session details
-    const session = await getStripeCheckoutSession(sessionId)
+    const session = await retrieveCheckoutSession(sessionId)
+    const subscriptionId: string | undefined =
+      typeof session?.subscription === 'string' ? session.subscription : session?.subscription?.id
 
-    if (!session || !session.subscription) {
-      return NextResponse.json(
-        { error: 'No subscription found in session' },
-        { status: 400 }
-      )
+    if (!session || !subscriptionId) {
+      return NextResponse.json({ error: 'No subscription found in session' }, { status: 400 })
     }
 
-    // Get subscription details
-    const subscription = await getStripeSubscription(session.subscription)
+    const subscription = await retrieveSubscription(subscriptionId)
+    const price = subscription?.items?.data?.[0]?.price
 
-    if (!subscription || !subscription.items?.data?.[0]?.price) {
-      return NextResponse.json(
-        { error: 'Invalid subscription data' },
-        { status: 400 }
-      )
+    if (!subscription || !price) {
+      return NextResponse.json({ error: 'Invalid subscription data' }, { status: 400 })
     }
 
-    // In production, create/update subscription record in database
-    // For now, just return the subscription info
+    const customerId: string | undefined =
+      typeof session.customer === 'string' ? session.customer : session.customer?.id
+    const customerEmail: string | null =
+      session.customer_details?.email || session.customer_email || subscription.metadata?.company_email || null
+
+    // Persist immediately so the UI reflects Pro status without waiting on
+    // the async webhook — the webhook remains the source of truth for later
+    // lifecycle events (renewals, cancellations, payment failures).
+    const sync = customerId
+      ? await syncStripeSubscription(supabase, {
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscription.id,
+          stripePriceId: price.id,
+          status: subscription.status,
+          currentPeriodStart: subscription.current_period_start,
+          currentPeriodEnd: subscription.current_period_end,
+          customerEmail,
+        })
+      : ({ ok: false, reason: 'user_not_found' } as const)
+
+    if (!sync.ok) {
+      console.warn(`verify-session: could not link subscription ${subscription.id} to a user (${sync.reason})`)
+    }
+
     return NextResponse.json({
-      customer_id: session.customer,
+      customer_id: customerId,
       subscription_id: subscription.id,
       status: subscription.status,
       current_period_start: subscription.current_period_start,
       current_period_end: subscription.current_period_end,
-      amount: subscription.items.data[0].price.unit_amount,
-      currency: subscription.items.data[0].price.currency,
+      amount: price.unit_amount,
+      currency: price.currency,
+      linked: sync.ok,
     })
   } catch (error) {
     console.error('Session verification error:', error)
