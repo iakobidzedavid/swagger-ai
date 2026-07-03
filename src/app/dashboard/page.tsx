@@ -167,15 +167,7 @@ function DashboardContent() {
   if (state.loadingState === 'error') {
     return (
       <div className="container" style={{ padding: '40px 0' }}>
-        <div style={{
-          padding: '16px',
-          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          borderRadius: 'var(--radius-md)',
-          color: 'var(--color-danger)',
-          border: '1px solid rgba(239, 68, 68, 0.3)'
-        }}>
-          {state.error}
-        </div>
+        <div className="error-banner">{state.error}</div>
       </div>
     )
   }
@@ -355,13 +347,13 @@ function DashboardContent() {
                       <img
                         src={sf.logoUrl}
                         alt={sf.companyName}
-                        style={{ width: '48px', height: '48px', borderRadius: '4px', objectFit: 'cover' }}
+                        style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-sm)', objectFit: 'cover' }}
                       />
                     ) : (
                       <div style={{
                         width: '48px',
                         height: '48px',
-                        borderRadius: '4px',
+                        borderRadius: 'var(--radius-sm)',
                         backgroundColor: 'var(--color-border)',
                         display: 'flex',
                         alignItems: 'center',
@@ -386,7 +378,7 @@ function DashboardContent() {
                           style={{
                             width: '32px',
                             height: '32px',
-                            borderRadius: '4px',
+                            borderRadius: 'var(--radius-sm)',
                             backgroundColor: sf.primaryColor || 'var(--color-border)',
                             border: '1px solid var(--color-border)',
                             cursor: 'pointer'
@@ -404,7 +396,7 @@ function DashboardContent() {
                           style={{
                             width: '32px',
                             height: '32px',
-                            borderRadius: '4px',
+                            borderRadius: 'var(--radius-sm)',
                             backgroundColor: sf.secondaryColor || 'var(--color-border)',
                             border: '1px solid var(--color-border)',
                             cursor: 'pointer'
@@ -437,15 +429,7 @@ function DashboardContent() {
                   </div>
 
                   {/* Status */}
-                  <div style={{
-                    padding: '6px 8px',
-                    borderRadius: '4px',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    textAlign: 'center',
-                    backgroundColor: sf.status === 'complete' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 114, 128, 0.1)',
-                    color: sf.status === 'complete' ? '#10b981' : '#6b7280'
-                  }}>
+                  <div className={`status-pill ${sf.status === 'complete' ? 'status-pill-success' : 'status-pill-neutral'}`}>
                     {sf.status}
                   </div>
                 </div>
@@ -606,15 +590,7 @@ function DashboardContent() {
                         </span>
                       </td>
                       <td style={tableCellStyle}>
-                        <span style={{
-                          display: 'inline-block',
-                          padding: '4px 8px',
-                          borderRadius: 'var(--radius-sm)',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          backgroundColor: order.status === 'completed' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 114, 128, 0.1)',
-                          color: order.status === 'completed' ? '#10b981' : '#6b7280'
-                        }}>
+                        <span className={`status-pill ${order.status === 'completed' ? 'status-pill-success' : 'status-pill-neutral'}`}>
                           {order.status}
                         </span>
                       </td>
@@ -659,7 +635,7 @@ const tableHeaderStyle = {
   fontWeight: 600,
   fontSize: '0.875rem',
   color: 'var(--color-text-muted)',
-  backgroundColor: 'rgba(0, 0, 0, 0.2)'
+  backgroundColor: 'var(--color-overlay-subtle)'
 }
 
 const tableCellStyle = {

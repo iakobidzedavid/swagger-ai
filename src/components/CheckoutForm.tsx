@@ -233,7 +233,7 @@ function CheckoutFormContent() {
                       : ['shipping', 'payment', 'review'].indexOf(s) < ['shipping', 'payment', 'review'].indexOf(step)
                         ? 'var(--color-accent)'
                         : 'var(--color-border)',
-                  color: '#fff',
+                  color: 'var(--color-on-accent)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -278,18 +278,7 @@ function CheckoutFormContent() {
                       onChange={e => handleShippingChange('email', e.target.value)}
                       disabled={step !== 'shipping'}
                       placeholder="your@email.com"
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        marginTop: '6px',
-                        borderRadius: '4px',
-                        border: '1px solid var(--color-border)',
-                        background: 'var(--color-bg)',
-                        color: 'var(--color-text)',
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        cursor: step !== 'shipping' ? 'not-allowed' : 'auto',
-                      }}
+                      className="input-field mt-2"
                     />
                   </div>
                   <div>
@@ -300,18 +289,7 @@ function CheckoutFormContent() {
                       onChange={e => handleShippingChange('name', e.target.value)}
                       disabled={step !== 'shipping'}
                       placeholder="John Doe"
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        marginTop: '6px',
-                        borderRadius: '4px',
-                        border: '1px solid var(--color-border)',
-                        background: 'var(--color-bg)',
-                        color: 'var(--color-text)',
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        cursor: step !== 'shipping' ? 'not-allowed' : 'auto',
-                      }}
+                      className="input-field mt-2"
                     />
                   </div>
                 </div>
@@ -324,18 +302,7 @@ function CheckoutFormContent() {
                     onChange={e => handleShippingChange('address', e.target.value)}
                     disabled={step !== 'shipping'}
                     placeholder="123 Main St"
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      marginTop: '6px',
-                      borderRadius: '4px',
-                      border: '1px solid var(--color-border)',
-                      background: 'var(--color-bg)',
-                      color: 'var(--color-text)',
-                      fontSize: '14px',
-                      fontFamily: 'inherit',
-                      cursor: step !== 'shipping' ? 'not-allowed' : 'auto',
-                    }}
+                    className="input-field mt-2"
                   />
                 </div>
 
@@ -347,18 +314,7 @@ function CheckoutFormContent() {
                     onChange={e => handleShippingChange('addressLine2', e.target.value)}
                     disabled={step !== 'shipping'}
                     placeholder="Apt 5B"
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      marginTop: '6px',
-                      borderRadius: '4px',
-                      border: '1px solid var(--color-border)',
-                      background: 'var(--color-bg)',
-                      color: 'var(--color-text)',
-                      fontSize: '14px',
-                      fontFamily: 'inherit',
-                      cursor: step !== 'shipping' ? 'not-allowed' : 'auto',
-                    }}
+                    className="input-field mt-2"
                   />
                 </div>
 
@@ -371,18 +327,7 @@ function CheckoutFormContent() {
                       onChange={e => handleShippingChange('city', e.target.value)}
                       disabled={step !== 'shipping'}
                       placeholder="New York"
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        marginTop: '6px',
-                        borderRadius: '4px',
-                        border: '1px solid var(--color-border)',
-                        background: 'var(--color-bg)',
-                        color: 'var(--color-text)',
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        cursor: step !== 'shipping' ? 'not-allowed' : 'auto',
-                      }}
+                      className="input-field mt-2"
                     />
                   </div>
                   <div>
@@ -393,18 +338,7 @@ function CheckoutFormContent() {
                       onChange={e => handleShippingChange('state', e.target.value)}
                       disabled={step !== 'shipping'}
                       placeholder="NY"
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        marginTop: '6px',
-                        borderRadius: '4px',
-                        border: '1px solid var(--color-border)',
-                        background: 'var(--color-bg)',
-                        color: 'var(--color-text)',
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        cursor: step !== 'shipping' ? 'not-allowed' : 'auto',
-                      }}
+                      className="input-field mt-2"
                     />
                   </div>
                 </div>
@@ -418,18 +352,7 @@ function CheckoutFormContent() {
                       onChange={e => handleShippingChange('zipCode', e.target.value)}
                       disabled={step !== 'shipping'}
                       placeholder="10001"
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        marginTop: '6px',
-                        borderRadius: '4px',
-                        border: '1px solid var(--color-border)',
-                        background: 'var(--color-bg)',
-                        color: 'var(--color-text)',
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        cursor: step !== 'shipping' ? 'not-allowed' : 'auto',
-                      }}
+                      className="input-field mt-2"
                     />
                   </div>
                   <div>
@@ -438,18 +361,7 @@ function CheckoutFormContent() {
                       value={shippingInfo.country}
                       onChange={e => handleShippingChange('country', e.target.value)}
                       disabled={step !== 'shipping'}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        marginTop: '6px',
-                        borderRadius: '4px',
-                        border: '1px solid var(--color-border)',
-                        background: 'var(--color-bg)',
-                        color: 'var(--color-text)',
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        cursor: step !== 'shipping' ? 'not-allowed' : 'auto',
-                      }}
+                      className="input-field mt-2"
                     >
                       <option value="US">United States</option>
                       <option value="CA">Canada</option>
@@ -483,7 +395,7 @@ function CheckoutFormContent() {
                   <div>
                     <div style={{ marginBottom: '16px' }}>
                       <label className="text-small font-semibold text-muted">Card Details *</label>
-                      <div style={{ padding: '10px 12px', marginTop: '6px', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'var(--color-bg)' }}>
+                      <div className="input-field mt-2">
                         <CardElement />
                       </div>
                     </div>

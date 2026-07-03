@@ -12,6 +12,11 @@
   --color-danger: #ef4444;
   --color-danger-light: rgba(239, 68, 68, 0.12);
   --color-success: #10b981;
+  --color-success-light: rgba(16, 185, 129, 0.12);
+  --color-neutral: #6b7280;
+  --color-neutral-light: rgba(107, 114, 128, 0.12);
+  --color-overlay-subtle: rgba(0, 0, 0, 0.2);
+  --color-on-accent: #fff;
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -128,7 +133,7 @@ a:hover {
 
 .btn-primary {
   background: var(--color-accent);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 .btn-primary:hover:not(:disabled) { background: var(--color-accent-hover); }
 
@@ -177,6 +182,10 @@ a:hover {
 .input-field.input-error {
   border-color: var(--color-danger);
   box-shadow: 0 0 0 3px var(--color-danger-light);
+}
+.input-field:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Input wrapper with status icon */
@@ -279,6 +288,24 @@ a:hover {
   background: var(--color-accent-light);
   color: #a78bfa;
   border: 1px solid rgba(124, 58, 237, 0.25);
+}
+
+/* Status pill — reusable across dashboard status badges */
+.status-pill {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+.status-pill-success {
+  background: var(--color-success-light);
+  color: var(--color-success);
+}
+.status-pill-neutral {
+  background: var(--color-neutral-light);
+  color: var(--color-neutral);
 }
 
 /* Progress bar */

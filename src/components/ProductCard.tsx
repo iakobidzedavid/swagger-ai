@@ -72,8 +72,8 @@ export function ProductCard({
         style={{
           width: '100%',
           height: '160px',
-          background: '#1a3a5c',
-          borderRadius: '8px',
+          background: 'var(--color-border)',
+          borderRadius: 'var(--radius-md)',
           marginBottom: '12px',
           overflow: 'hidden',
           display: 'flex',

@@ -230,7 +230,7 @@ function ProductsForm() {
                         style={{
                           width: '100%',
                           height: '40px',
-                          borderRadius: '4px',
+                          borderRadius: 'var(--radius-sm)',
                           background: brand.primary_color,
                           border: '1px solid var(--color-border)',
                         }}
@@ -244,7 +244,7 @@ function ProductsForm() {
                         style={{
                           width: '100%',
                           height: '40px',
-                          borderRadius: '4px',
+                          borderRadius: 'var(--radius-sm)',
                           background: brand.secondary_color,
                           border: '1px solid var(--color-border)',
                         }}
