@@ -299,7 +299,7 @@ function PreviewContent() {
               className="card"
               style={{
                 marginBottom: '32px',
-                background: '#fff',
+                background: 'var(--color-on-accent)',
                 overflow: 'hidden',
                 minHeight: '500px',
                 display: 'flex',
@@ -328,12 +328,12 @@ function PreviewContent() {
                     <h2 style={{ margin: 0, color: brand.primary_color, fontSize: '24px', fontWeight: 600 }}>
                       {brand.company_name}
                     </h2>
-                    <p style={{ margin: '4px 0 0 0', color: '#666', fontSize: '14px' }}>
+                    <p style={{ margin: '4px 0 0 0', color: 'var(--color-canvas-text-muted)', fontSize: '14px' }}>
                       Team & Culture Swag
                     </p>
                   </div>
                 </div>
-                <p style={{ margin: 0, color: '#333', fontSize: '16px', lineHeight: 1.6, maxWidth: '500px' }}>
+                <p style={{ margin: 0, color: 'var(--color-canvas-text)', fontSize: '16px', lineHeight: 1.6, maxWidth: '500px' }}>
                   Browse our curated selection of branded merchandise. Each item has been carefully chosen to represent our brand.
                 </p>
               </div>
@@ -354,7 +354,7 @@ function PreviewContent() {
                         textAlign: 'center',
                         borderRadius: template.cta_style === 'pill' ? '16px' : '8px',
                         overflow: 'hidden',
-                        border: `1px solid #eee`,
+                        border: `1px solid var(--color-canvas-border-light)`,
                         transition: 'transform 0.2s, box-shadow 0.2s',
                         cursor: 'pointer',
                       }}
@@ -391,10 +391,10 @@ function PreviewContent() {
 
                       {/* Product Info */}
                       <div style={{ padding: '16px' }}>
-                        <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 600, color: '#222' }}>
+                        <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 600, color: 'var(--color-canvas-text-strong)' }}>
                           {product.title}
                         </h3>
-                        <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#666' }}>
+                        <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'var(--color-canvas-text-muted)' }}>
                           {product.description}
                         </p>
                         <div
@@ -408,7 +408,7 @@ function PreviewContent() {
                           <span style={{ fontSize: '14px', fontWeight: 600, color: brand.primary_color }}>
                             ${product.variants[0]?.price || 0}
                           </span>
-                          <span style={{ fontSize: '12px', color: '#999' }}>
+                          <span style={{ fontSize: '12px', color: 'var(--color-canvas-text-subtle)' }}>
                             {product.sku}
                           </span>
                         </div>
@@ -417,7 +417,7 @@ function PreviewContent() {
                             width: '100%',
                             padding: '10px 16px',
                             background: brand.primary_color,
-                            color: '#fff',
+                            color: 'var(--color-on-accent)',
                             border: 'none',
                             borderRadius: template.cta_style === 'pill' ? '20px' : template.cta_style === 'sharp' ? '2px' : '6px',
                             fontSize: '14px',
@@ -465,7 +465,7 @@ function PreviewContent() {
                     style={{
                       padding: '12px',
                       background: selectedTemplate === t.id ? 'var(--color-accent)' : 'var(--color-surface)',
-                      color: selectedTemplate === t.id ? '#fff' : 'var(--color-text)',
+                      color: selectedTemplate === t.id ? 'var(--color-on-accent)' : 'var(--color-text)',
                       border: `2px solid ${selectedTemplate === t.id ? 'var(--color-accent)' : 'var(--color-border)'}`,
                       borderRadius: 'var(--radius-md)',
                       cursor: 'pointer',

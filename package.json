@@ -7,7 +7,9 @@
     "build": "node scripts/migrate.mjs && next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx --test tests/*.test.mjs"
+    "test": "tsx --test tests/*.test.mjs",
+    "audit:tokens": "node scripts/audit-tokens.mjs",
+    "audit:tokens:fix": "node scripts/audit-tokens.mjs --fix"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^2.7.0",

@@ -162,7 +162,7 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
       <div
         style={{
           background: primaryColor,
-          color: '#fff',
+          color: 'var(--color-on-accent)',
           padding: '48px 24px',
           marginBottom: '60px',
           boxShadow: 'var(--shadow-card)',
@@ -219,7 +219,7 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
               style={{
                 background: 'rgba(255, 255, 255, 0.15)',
                 border: '1px solid rgba(255, 255, 255, 0.25)',
-                color: '#fff',
+                color: 'var(--color-on-accent)',
                 whiteSpace: 'nowrap',
               }}
               onMouseEnter={e => {
@@ -233,7 +233,7 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
                 <span
                   style={{
                     background: 'var(--color-danger)',
-                    color: '#fff',
+                    color: 'var(--color-on-accent)',
                     borderRadius: '50%',
                     width: '20px',
                     height: '20px',

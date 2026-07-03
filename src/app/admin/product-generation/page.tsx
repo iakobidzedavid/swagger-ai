@@ -56,17 +56,17 @@ function getStatusColor(status: string): string {
     case 'detected':
     case 'complete':
     case 'synced':
-      return 'var(--color-success, #10b981)'
+      return 'var(--color-success)'
     case 'pending':
     case 'queued':
-      return 'var(--color-warning, #f59e0b)'
+      return 'var(--color-warning)'
     case 'fetching':
     case 'processing':
-      return 'var(--color-info, #3b82f6)'
+      return 'var(--color-info)'
     case 'failed':
-      return 'var(--color-danger, #ef4444)'
+      return 'var(--color-danger)'
     default:
-      return 'var(--color-text-muted, #8fa3b8)'
+      return 'var(--color-text-muted)'
   }
 }
 
@@ -120,7 +120,7 @@ function ProgressBar({ synced, pending, failed, total }: { synced: number; pendi
           <div
             style={{
               width: `${syncedPercent}%`,
-              backgroundColor: '#10b981',
+              backgroundColor: 'var(--color-success)',
               transition: 'width 0.3s ease',
             }}
           />
@@ -129,7 +129,7 @@ function ProgressBar({ synced, pending, failed, total }: { synced: number; pendi
           <div
             style={{
               width: `${pendingPercent}%`,
-              backgroundColor: '#f59e0b',
+              backgroundColor: 'var(--color-warning)',
               transition: 'width 0.3s ease',
             }}
           />
@@ -138,7 +138,7 @@ function ProgressBar({ synced, pending, failed, total }: { synced: number; pendi
           <div
             style={{
               width: `${failedPercent}%`,
-              backgroundColor: '#ef4444',
+              backgroundColor: 'var(--color-danger)',
               transition: 'width 0.3s ease',
             }}
           />
@@ -331,7 +331,7 @@ function DashboardContent() {
               borderRadius: 'var(--radius-md)',
               border: '1px solid var(--color-border)',
               backgroundColor: state.autoRefresh ? 'var(--color-accent)' : 'var(--color-surface)',
-              color: state.autoRefresh ? '#fff' : 'var(--color-text)',
+              color: state.autoRefresh ? 'var(--color-on-accent)' : 'var(--color-text)',
               cursor: 'pointer',
               fontSize: '0.875rem',
               fontWeight: 600,

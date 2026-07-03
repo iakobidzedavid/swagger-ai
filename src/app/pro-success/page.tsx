@@ -69,13 +69,13 @@ function ProSuccessContent() {
       <div className="section">
         <div className="container content-narrow">
           <div style={{
-            backgroundColor: 'rgba(220, 38, 38, 0.1)',
-            borderLeft: '4px solid #dc2626',
+            backgroundColor: 'var(--color-danger-light)',
+            borderLeft: '4px solid var(--color-danger)',
             padding: '24px',
             borderRadius: '4px',
             marginBottom: '32px',
           }}>
-            <h2 className="text-h2" style={{ margin: '0 0 12px 0', color: '#fca5a5' }}>
+            <h2 className="text-h2" style={{ margin: '0 0 12px 0', color: 'var(--color-danger-tint)' }}>
               Subscription Error
             </h2>
             <p className="text-body text-muted" style={{ margin: 0 }}>
@@ -154,7 +154,7 @@ function ProSuccessContent() {
                   </div>
                   <div style={{ marginBottom: '8px' }}>
                     <span className="text-muted">Status: </span>
-                    <span style={{ color: '#34d399', fontWeight: 600 }}>Active</span>
+                    <span style={{ color: 'var(--color-success-tint)', fontWeight: 600 }}>Active</span>
                   </div>
                   {subscription.current_period_end && (
                     <div>

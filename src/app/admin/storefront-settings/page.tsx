@@ -51,10 +51,10 @@ function StorefrontPreview({ storefront }: { storefront: Storefront }) {
   // Safe gradient with fallback colors
   const primaryColor = storefront.primary_color && /^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/.test(storefront.primary_color)
     ? storefront.primary_color
-    : '#102542'
+    : 'var(--color-surface)'
   const secondaryColor = storefront.secondary_color && /^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/.test(storefront.secondary_color)
     ? storefront.secondary_color
-    : '#8fa3b8'
+    : 'var(--color-text-muted)'
 
   return (
     <div
@@ -68,7 +68,7 @@ function StorefrontPreview({ storefront }: { storefront: Storefront }) {
         justifyContent: 'center',
         alignItems: 'center',
         textAlign: 'center',
-        color: '#ecebf3',
+        color: 'var(--color-text)',
       }}
     >
       {/* Logo preview */}
@@ -124,7 +124,7 @@ function StorefrontPreview({ storefront }: { storefront: Storefront }) {
           marginTop: '16px',
           padding: '10px 24px',
           background: 'rgba(255,255,255,0.2)',
-          color: '#ecebf3',
+          color: 'var(--color-text)',
           border: '1px solid rgba(255,255,255,0.3)',
           borderRadius: 'var(--radius-md)',
           fontWeight: 600,
@@ -236,11 +236,11 @@ export default function StorefrontSettingsPage() {
 
     // Validate colors before saving
     if (editData.primary_color && !isValidHexColor(editData.primary_color)) {
-      setSaveError('Primary color must be a valid hex color (e.g., #102542)')
+      setSaveError('Primary color must be a valid hex color (e.g., #102542)') // audit-allow: hex format example in a user-facing message, not a style token
       return
     }
     if (editData.secondary_color && !isValidHexColor(editData.secondary_color)) {
-      setSaveError('Secondary color must be a valid hex color (e.g., #8fa3b8)')
+      setSaveError('Secondary color must be a valid hex color (e.g., #8fa3b8)') // audit-allow: hex format example in a user-facing message, not a style token
       return
     }
 
@@ -361,7 +361,7 @@ export default function StorefrontSettingsPage() {
                           width: '40px',
                           height: '40px',
                           borderRadius: 'var(--radius-sm)',
-                          background: `linear-gradient(135deg, ${sf.secondary_color || '#8fa3b8'} 0%, ${sf.primary_color || '#102542'} 100%)`,
+                          background: `linear-gradient(135deg, ${sf.secondary_color || 'var(--color-text-muted)'} 0%, ${sf.primary_color || 'var(--color-surface)'} 100%)`,
                           flexShrink: 0,
                         }}
                       />
@@ -448,6 +448,7 @@ export default function StorefrontSettingsPage() {
                         id="primary-color"
                         type="text"
                         className={`input-field${editData.primary_color && !isValidHexColor(editData.primary_color) ? ' input-error' : ''}`}
+                        // audit-allow: example placeholder text shown to the user, not a style token
                         placeholder="#102542"
                         value={editData.primary_color || ''}
                         onChange={(e) => handleInputChange('primary_color', e.target.value)}
@@ -470,7 +471,7 @@ export default function StorefrontSettingsPage() {
                       )}
                     </div>
                     {editData.primary_color && !isValidHexColor(editData.primary_color) && (
-                      <p className="text-small text-danger" style={{ marginTop: '4px' }}>Invalid hex color (e.g., #102542)</p>
+                      <p className="text-small text-danger" style={{ marginTop: '4px' }}>Invalid hex color (e.g., #102542)</p> /* audit-allow: hex format example in a user-facing message, not a style token */
                     )}
                   </div>
 
@@ -483,6 +484,7 @@ export default function StorefrontSettingsPage() {
                         id="secondary-color"
                         type="text"
                         className={`input-field${editData.secondary_color && !isValidHexColor(editData.secondary_color) ? ' input-error' : ''}`}
+                        // audit-allow: example placeholder text shown to the user, not a style token
                         placeholder="#8fa3b8"
                         value={editData.secondary_color || ''}
                         onChange={(e) => handleInputChange('secondary_color', e.target.value)}
@@ -505,7 +507,7 @@ export default function StorefrontSettingsPage() {
                       )}
                     </div>
                     {editData.secondary_color && !isValidHexColor(editData.secondary_color) && (
-                      <p className="text-small text-danger" style={{ marginTop: '4px' }}>Invalid hex color (e.g., #8fa3b8)</p>
+                      <p className="text-small text-danger" style={{ marginTop: '4px' }}>Invalid hex color (e.g., #8fa3b8)</p> /* audit-allow: hex format example in a user-facing message, not a style token */
                     )}
                   </div>
                 </div>

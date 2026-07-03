@@ -191,7 +191,7 @@ function OrderConfirmationContent() {
                   display: 'inline-block',
                   padding: '4px 12px',
                   background: 'rgba(59, 130, 246, 0.1)',
-                  color: '#3b82f6',
+                  color: 'var(--color-info)',
                   borderRadius: '12px',
                   fontSize: '12px',
                   fontWeight: 600,

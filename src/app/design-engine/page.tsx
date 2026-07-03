@@ -144,16 +144,16 @@ function DesignEngineContent() {
 
   if (loading) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center', minHeight: '100vh', background: '#0d1f33' }}>
-        <p style={{ color: '#ecebf3' }}>Loading design preview...</p>
+      <div style={{ padding: '40px', textAlign: 'center', minHeight: '100vh', background: 'var(--color-bg)' }}>
+        <p style={{ color: 'var(--color-text)' }}>Loading design preview...</p>
       </div>
     )
   }
 
   if (error || !mockup) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center', minHeight: '100vh', background: '#0d1f33' }}>
-        <p style={{ color: '#e74c3c' }}>Error: {error || 'No mockup data'}</p>
+      <div style={{ padding: '40px', textAlign: 'center', minHeight: '100vh', background: 'var(--color-bg)' }}>
+        <p style={{ color: 'var(--color-danger)' }}>Error: {error || 'No mockup data'}</p>
       </div>
     )
   }
@@ -170,7 +170,7 @@ function DesignEngineContent() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          color: '#fff',
+          color: 'var(--color-on-accent)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -193,7 +193,7 @@ function DesignEngineContent() {
             style={{
               padding: '8px 16px',
               background: 'rgba(255,255,255,0.2)',
-              color: '#fff',
+              color: 'var(--color-on-accent)',
               border: 'none',
               borderRadius: '4px',
               cursor: 'pointer',
@@ -216,7 +216,7 @@ function DesignEngineContent() {
           {/* Main Storefront Preview */}
           <div
             style={{
-              background: '#fff',
+              background: 'var(--color-on-accent)',
               borderRadius: '8px',
               overflow: 'hidden',
               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
@@ -228,7 +228,7 @@ function DesignEngineContent() {
                 background: brandAssets.primaryColor,
                 padding: '30px 20px',
                 textAlign: 'center',
-                color: '#fff',
+                color: 'var(--color-on-accent)',
               }}
             >
               {brandAssets.logoUrl ? (
@@ -283,7 +283,7 @@ function DesignEngineContent() {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: '#fff',
+                          color: 'var(--color-on-accent)',
                           fontSize: '36px',
                           fontWeight: 'bold',
                           position: 'relative',
@@ -307,10 +307,10 @@ function DesignEngineContent() {
                         )}
                       </div>
                       <div style={{ padding: '16px' }}>
-                        <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#333' }}>
+                        <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', color: 'var(--color-canvas-text)' }}>
                           {product.title}
                         </h3>
-                        <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#666' }}>
+                        <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--color-canvas-text-muted)' }}>
                           SKU: {product.sku}
                         </p>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -320,7 +320,7 @@ function DesignEngineContent() {
                           <button
                             style={{
                               background: brandAssets.primaryColor,
-                              color: '#fff',
+                              color: 'var(--color-on-accent)',
                               border: 'none',
                               padding: '6px 12px',
                               borderRadius: '4px',
@@ -335,7 +335,7 @@ function DesignEngineContent() {
                     </div>
                   ))
                 ) : (
-                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 20px', color: '#666' }}>
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 20px', color: 'var(--color-canvas-text-muted)' }}>
                     <p>Loading product catalog...</p>
                   </div>
                 )}
@@ -345,11 +345,11 @@ function DesignEngineContent() {
             {/* Footer */}
             <div
               style={{
-                background: '#f5f5f5',
+                background: 'var(--color-canvas-surface)',
                 padding: '20px',
                 textAlign: 'center',
                 fontSize: '12px',
-                color: '#666',
+                color: 'var(--color-canvas-text-muted)',
                 borderTop: `1px solid ${brandAssets.secondaryColor}`,
               }}
             >
@@ -362,7 +362,7 @@ function DesignEngineContent() {
             {/* Brand Info Card */}
             <div
               style={{
-                background: '#fff',
+                background: 'var(--color-on-accent)',
                 borderRadius: '8px',
                 padding: '20px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -370,18 +370,18 @@ function DesignEngineContent() {
                 transition: 'border-color 0.3s ease',
               }}
             >
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 'bold', color: '#333' }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 'bold', color: 'var(--color-canvas-text)' }}>
                 Brand Assets {editingSecondaryColor && <span style={{ fontSize: '12px', color: brandAssets.secondaryColor }}>● Editing</span>}
               </h3>
 
               {/* Logo */}
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '8px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-canvas-text-muted)', marginBottom: '8px' }}>
                   Logo
                 </label>
                 <div
                   style={{
-                    background: '#f5f5f5',
+                    background: 'var(--color-canvas-surface)',
                     borderRadius: '4px',
                     height: '80px',
                     display: 'flex',
@@ -396,14 +396,14 @@ function DesignEngineContent() {
                       style={{ maxWidth: '90%', maxHeight: '90%' }}
                     />
                   ) : (
-                    <span style={{ color: '#999', fontSize: '12px' }}>No logo found</span>
+                    <span style={{ color: 'var(--color-canvas-text-subtle)', fontSize: '12px' }}>No logo found</span>
                   )}
                 </div>
               </div>
 
               {/* Color Swatches */}
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '8px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-canvas-text-muted)', marginBottom: '8px' }}>
                   Primary Color
                 </label>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -413,22 +413,23 @@ function DesignEngineContent() {
                       height: '40px',
                       background: brandAssets.primaryColor,
                       borderRadius: '4px',
-                      border: '1px solid #ddd',
+                      border: '1px solid var(--color-canvas-border)',
                     }}
                   />
-                  <code style={{ fontSize: '12px', color: '#666' }}>
+                  <code style={{ fontSize: '12px', color: 'var(--color-canvas-text-muted)' }}>
                     {brandAssets.primaryColor}
                   </code>
                 </div>
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '8px', fontWeight: 'bold' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-canvas-text-muted)', marginBottom: '8px', fontWeight: 'bold' }}>
                   Secondary Color (Customizable)
                 </label>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
                   <input
                     type="color"
+                    // audit-allow: literal default value for a <input type=color>, not a style token
                     value={mockup?.brandAssets.secondaryColor || '#000000'}
                     onChange={(e) => {
                       const newColor = e.target.value.toUpperCase()
@@ -439,7 +440,7 @@ function DesignEngineContent() {
                       width: '40px',
                       height: '40px',
                       borderRadius: '4px',
-                      border: '1px solid #ddd',
+                      border: '1px solid var(--color-canvas-border)',
                       cursor: 'pointer',
                       padding: '2px',
                     }}
@@ -451,7 +452,7 @@ function DesignEngineContent() {
                       height: '40px',
                       background: brandAssets.secondaryColor,
                       borderRadius: '4px',
-                      border: '1px solid #ddd',
+                      border: '1px solid var(--color-canvas-border)',
                       transition: 'background-color 0.2s ease',
                     }}
                   />
@@ -460,11 +461,11 @@ function DesignEngineContent() {
                     style={{
                       padding: '4px 8px',
                       fontSize: '11px',
-                      background: colorCopied === brandAssets.secondaryColor ? '#4CAF50' : '#f5f5f5',
-                      border: '1px solid #ddd',
+                      background: colorCopied === brandAssets.secondaryColor ? 'var(--color-success)' : 'var(--color-canvas-surface)',
+                      border: '1px solid var(--color-canvas-border)',
                       borderRadius: '3px',
                       cursor: 'pointer',
-                      color: colorCopied === brandAssets.secondaryColor ? '#fff' : '#333',
+                      color: colorCopied === brandAssets.secondaryColor ? 'var(--color-on-accent)' : 'var(--color-canvas-text)',
                       transition: 'all 0.2s',
                     }}
                   >
@@ -477,25 +478,26 @@ function DesignEngineContent() {
                   onChange={handleSecondaryColorInputChange}
                   onFocus={() => setEditingSecondaryColor(true)}
                   onBlur={handleSecondaryColorInputBlur}
+                  // audit-allow: example placeholder text shown to the user, not a style token
                   placeholder="#000000"
                   style={{
                     width: '100%',
                     padding: '6px 8px',
                     fontSize: '12px',
                     fontFamily: 'monospace',
-                    border: `1px solid ${HEX_COLOR_REGEX.test(secondaryColorInput) ? '#ddd' : '#e74c3c'}`,
+                    border: `1px solid ${HEX_COLOR_REGEX.test(secondaryColorInput) ? 'var(--color-canvas-border)' : 'var(--color-danger)'}`,
                     borderRadius: '3px',
                     boxSizing: 'border-box',
                   }}
                 />
-                <p style={{ margin: '6px 0 0 0', fontSize: '10px', color: '#999' }}>
+                <p style={{ margin: '6px 0 0 0', fontSize: '10px', color: 'var(--color-canvas-text-subtle)' }}>
                   Enter hex code or use color picker to customize
                 </p>
               </div>
 
               {/* Domain Info */}
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '8px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-canvas-text-muted)', marginBottom: '8px' }}>
                   Domain
                 </label>
                 <code
@@ -503,7 +505,7 @@ function DesignEngineContent() {
                     display: 'block',
                     fontSize: '11px',
                     padding: '8px',
-                    background: '#f5f5f5',
+                    background: 'var(--color-canvas-surface)',
                     borderRadius: '3px',
                     wordBreak: 'break-all',
                   }}
@@ -517,14 +519,14 @@ function DesignEngineContent() {
             {qrDataUrl && (
               <div
                 style={{
-                  background: '#fff',
+                  background: 'var(--color-on-accent)',
                   borderRadius: '8px',
                   padding: '20px',
                   textAlign: 'center',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 }}
               >
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 'bold', color: '#333' }}>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 'bold', color: 'var(--color-canvas-text)' }}>
                   Share Mockup
                 </h3>
                 <img src={qrDataUrl} alt="QR Code" style={{ maxWidth: '100%', borderRadius: '4px' }} />
@@ -532,7 +534,7 @@ function DesignEngineContent() {
                   style={{
                     margin: '12px 0 0 0',
                     fontSize: '11px',
-                    color: '#999',
+                    color: 'var(--color-canvas-text-subtle)',
                   }}
                 >
                   Scan to share with prospects
@@ -548,8 +550,8 @@ function DesignEngineContent() {
 
 function DesignEngineSuspense() {
   return (
-    <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', minHeight: '100vh', background: '#0d1f33' }}>
-      <p style={{ color: '#ecebf3' }}>Loading...</p>
+    <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', minHeight: '100vh', background: 'var(--color-bg)' }}>
+      <p style={{ color: 'var(--color-text)' }}>Loading...</p>
     </div>}>
       <DesignEngineContent />
     </Suspense>

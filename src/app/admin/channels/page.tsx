@@ -395,7 +395,7 @@ export default function ChannelsAdminPage() {
                 <div key={s.id} className="card" style={{ padding: '14px 16px' }}>
                   <div className="flex items-center justify-between" style={{ gap: '8px', flexWrap: 'wrap' }}>
                     <span className="text-small font-semibold">{s.acquisition_channels?.name ?? 'Unknown channel'}</span>
-                    <span className="badge" style={{ background: 'var(--color-accent-light)', color: '#a78bfa', fontSize: '0.7rem', padding: '2px 8px' }}>
+                    <span className="badge" style={{ background: 'var(--color-accent-light)', color: 'var(--color-accent-tint)', fontSize: '0.7rem', padding: '2px 8px' }}>
                       {s.spec_format}{s.source_format ? ` · ${s.source_format}` : ''}
                     </span>
                   </div>

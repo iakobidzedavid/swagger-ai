@@ -245,7 +245,7 @@ function StoreCreatedContent() {
                   }}
                   onMouseEnter={(e) => {
                     ;(e.target as HTMLElement).style.background = 'var(--color-accent)'
-                    ;(e.target as HTMLElement).style.color = '#fff'
+                    ;(e.target as HTMLElement).style.color = 'var(--color-on-accent)'
                   }}
                   onMouseLeave={(e) => {
                     ;(e.target as HTMLElement).style.background = 'transparent'

@@ -31,7 +31,7 @@ export function StripePaymentForm({
         },
       },
       invalid: {
-        color: '#ef4444',
+        color: 'var(--color-danger)',
       },
     },
   }
@@ -89,7 +89,7 @@ export function StripePaymentForm({
         <CardElement options={cardElementOptions} />
       </div>
       {(cardError || error) && (
-        <div className="text-small" style={{ color: '#ef4444', marginTop: '8px' }}>
+        <div className="text-small" style={{ color: 'var(--color-danger)', marginTop: '8px' }}>
           {cardError || error}
         </div>
       )}

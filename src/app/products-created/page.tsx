@@ -276,7 +276,7 @@ function ProductsCreatedContent() {
                               }}
                             />
                           ) : (
-                            <span style={{ fontSize: '0.875rem', color: '#fff', textAlign: 'center', padding: '16px' }}>
+                            <span style={{ fontSize: '0.875rem', color: 'var(--color-on-accent)', textAlign: 'center', padding: '16px' }}>
                               No image available
                             </span>
                           )}
@@ -403,8 +403,8 @@ function ProductsCreatedContent() {
                       display: 'inline-block',
                       padding: '4px 8px',
                       borderRadius: '4px',
-                      background: storefront.status === 'complete' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(96, 165, 250, 0.1)',
-                      color: storefront.status === 'complete' ? '#22c55e' : '#60a5fa',
+                      background: storefront.status === 'complete' ? 'var(--color-success-light)' : 'var(--color-info-light)',
+                      color: storefront.status === 'complete' ? 'var(--color-success)' : 'var(--color-info-tint)',
                       fontSize: '0.75rem',
                       fontWeight: '600',
                       textTransform: 'uppercase',

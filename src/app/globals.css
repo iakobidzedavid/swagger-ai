@@ -18,6 +18,31 @@
   --color-overlay-subtle: rgba(0, 0, 0, 0.2);
   --color-on-accent: #fff;
 
+  /* Semantic tint/status tokens — added by the token-conformance audit
+     (scripts/audit-tokens.mjs) to formalize colors that were already reused
+     ad hoc across admin/status pages instead of being defined once here. */
+  --color-accent-tint: #a78bfa;   /* light violet text on --color-accent-light backgrounds */
+  --color-danger-tint: #fca5a5;   /* light red text on --color-danger-light backgrounds */
+  --color-success-tint: #34d399;  /* light emerald text on --color-success-light backgrounds / "copied" confirmations */
+  --color-info: #3b82f6;          /* blue — maps to blueprint's status.in_progress */
+  --color-info-light: rgba(59, 130, 246, 0.12);
+  --color-info-tint: #60a5fa;     /* light blue text on --color-info-light backgrounds */
+  --color-warning: #f59e0b;       /* amber — maps to blueprint's status.planned */
+  --color-warning-light: rgba(245, 158, 11, 0.12);
+
+  /* Light "canvas" sub-palette — for the two pages (design-engine, preview)
+     that intentionally render product mockups on a white card (matching the
+     print-on-demand catalog imagery), distinct from the app's dark theme.
+     Formalized here so that choice is a token, not scattered inline hex. */
+  --color-canvas-bg: #ffffff;
+  --color-canvas-surface: #f5f5f5;
+  --color-canvas-border: #dddddd;
+  --color-canvas-border-light: #eeeeee;
+  --color-canvas-text: #333333;
+  --color-canvas-text-muted: #666666;
+  --color-canvas-text-subtle: #999999;
+  --color-canvas-text-strong: #222222;
+
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -44,9 +69,9 @@
   --muted: #8fa3b8;
   --accent: #7c3aed;
   --primary: #7c3aed;
-  --danger: #dc2626;
-  --destructive: #dc2626;
-  --error: #dc2626;
+  --danger: #ef4444;
+  --destructive: #ef4444;
+  --error: #ef4444;
   --primary-hover: #6d33d0;
   --accent-text: #7c3aed;
   --primary-light: #102542;
@@ -286,7 +311,7 @@ a:hover {
 }
 .badge-accent {
   background: var(--color-accent-light);
-  color: #a78bfa;
+  color: var(--color-accent-tint);
   border: 1px solid rgba(124, 58, 237, 0.25);
 }
 

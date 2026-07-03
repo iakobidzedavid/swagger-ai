@@ -77,7 +77,7 @@ function CartContent() {
                     style={{
                       width: '100%',
                       height: '120px',
-                      background: '#f5f5f5',
+                      background: 'var(--color-canvas-surface)',
                       borderRadius: '8px',
                       overflow: 'hidden',
                       display: 'flex',

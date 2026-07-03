@@ -156,7 +156,7 @@ export default function PricingPage() {
                   left: '50%',
                   transform: 'translateX(-50%)',
                   backgroundColor: 'var(--color-accent)',
-                  color: '#fff',
+                  color: 'var(--color-on-accent)',
                   padding: '6px 12px',
                   borderRadius: 'var(--radius-sm)',
                   fontSize: '0.75rem',

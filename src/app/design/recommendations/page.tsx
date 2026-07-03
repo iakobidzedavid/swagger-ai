@@ -35,8 +35,8 @@ function ColorSwatch({
         gap: '8px',
         padding: '12px',
         borderRadius: '6px',
-        border: '1px solid #1a3a5c',
-        background: '#102542',
+        border: '1px solid var(--color-border)',
+        background: 'var(--color-surface)',
         cursor: 'pointer',
         transition: 'transform 0.2s',
       }}
@@ -62,7 +62,7 @@ function ColorSwatch({
         <div
           style={{
             fontSize: '12px',
-            color: '#8fa3b8',
+            color: 'var(--color-text-muted)',
             marginBottom: '4px',
           }}
         >
@@ -71,7 +71,7 @@ function ColorSwatch({
         <code
           style={{
             fontSize: '11px',
-            color: '#ecebf3',
+            color: 'var(--color-text)',
             fontFamily: 'monospace',
             wordBreak: 'break-all',
           }}
@@ -138,7 +138,7 @@ function DesignRecommendationsContent() {
       <div
         style={{
           minHeight: '100vh',
-          background: '#0d1f33',
+          background: 'var(--color-bg)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -146,7 +146,7 @@ function DesignRecommendationsContent() {
         }}
       >
         <div style={{ textAlign: 'center' }}>
-          <p style={{ color: '#ecebf3', fontSize: '18px' }}>
+          <p style={{ color: 'var(--color-text)', fontSize: '18px' }}>
             Loading design recommendations...
           </p>
         </div>
@@ -159,7 +159,7 @@ function DesignRecommendationsContent() {
       <div
         style={{
           minHeight: '100vh',
-          background: '#0d1f33',
+          background: 'var(--color-bg)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -167,10 +167,10 @@ function DesignRecommendationsContent() {
         }}
       >
         <div style={{ textAlign: 'center' }}>
-          <p style={{ color: '#e74c3c', fontSize: '16px' }}>
+          <p style={{ color: 'var(--color-danger)', fontSize: '16px' }}>
             {error || 'No design recommendations available'}
           </p>
-          <p style={{ color: '#8fa3b8', fontSize: '14px', marginTop: '12px' }}>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', marginTop: '12px' }}>
             {error
               ? 'Please submit your domain on the onboard page first.'
               : 'Try submitting your domain again.'}
@@ -183,7 +183,7 @@ function DesignRecommendationsContent() {
   const { colorPalette, accentColors, fonts, guidelines } = recommendations
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0d1f33', padding: '40px 20px' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--color-bg)', padding: '40px 20px' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* Header */}
         <div style={{ marginBottom: '40px' }}>
@@ -210,10 +210,10 @@ function DesignRecommendationsContent() {
               />
             )}
             <div>
-              <h1 style={{ margin: '0 0 8px 0', color: '#ecebf3', fontSize: '32px' }}>
+              <h1 style={{ margin: '0 0 8px 0', color: 'var(--color-text)', fontSize: '32px' }}>
                 {recommendations.companyName} Design Kit
               </h1>
-              <p style={{ margin: '0', color: '#8fa3b8', fontSize: '14px' }}>
+              <p style={{ margin: '0', color: 'var(--color-text-muted)', fontSize: '14px' }}>
                 {recommendations.domain}
               </p>
             </div>
@@ -229,11 +229,11 @@ function DesignRecommendationsContent() {
           }}
         >
           {/* Primary & Secondary Colors */}
-          <div style={{ background: '#102542', borderRadius: '8px', padding: '24px' }}>
+          <div style={{ background: 'var(--color-surface)', borderRadius: '8px', padding: '24px' }}>
             <h2
               style={{
                 margin: '0 0 20px 0',
-                color: '#ecebf3',
+                color: 'var(--color-text)',
                 fontSize: '18px',
                 fontWeight: '600',
               }}
@@ -253,7 +253,7 @@ function DesignRecommendationsContent() {
               />
             </div>
             {copiedColor && (
-              <p style={{ marginTop: '12px', color: '#7dd3fc', fontSize: '12px' }}>
+              <p style={{ marginTop: '12px', color: 'var(--color-success-tint)', fontSize: '12px' }}>
                 ✓ Color copied!
               </p>
             )}
@@ -261,11 +261,11 @@ function DesignRecommendationsContent() {
 
           {/* Full Palette */}
           {colorPalette.length > 2 && (
-            <div style={{ background: '#102542', borderRadius: '8px', padding: '24px' }}>
+            <div style={{ background: 'var(--color-surface)', borderRadius: '8px', padding: '24px' }}>
               <h2
                 style={{
                   margin: '0 0 20px 0',
-                  color: '#ecebf3',
+                  color: 'var(--color-text)',
                   fontSize: '18px',
                   fontWeight: '600',
                 }}
@@ -296,7 +296,7 @@ function DesignRecommendationsContent() {
                       gap: '8px',
                       padding: '8px',
                       borderRadius: '4px',
-                      border: '1px solid #1a3a5c',
+                      border: '1px solid var(--color-border)',
                       cursor: 'pointer',
                       transition: 'transform 0.2s',
                     }}
@@ -319,7 +319,7 @@ function DesignRecommendationsContent() {
                     <code
                       style={{
                         fontSize: '9px',
-                        color: '#8fa3b8',
+                        color: 'var(--color-text-muted)',
                         fontFamily: 'monospace',
                         textAlign: 'center',
                         wordBreak: 'break-all',
@@ -335,11 +335,11 @@ function DesignRecommendationsContent() {
 
           {/* Accent Colors */}
           {accentColors.length > 0 && (
-            <div style={{ background: '#102542', borderRadius: '8px', padding: '24px' }}>
+            <div style={{ background: 'var(--color-surface)', borderRadius: '8px', padding: '24px' }}>
               <h2
                 style={{
                   margin: '0 0 20px 0',
-                  color: '#ecebf3',
+                  color: 'var(--color-text)',
                   fontSize: '18px',
                   fontWeight: '600',
                 }}
@@ -361,11 +361,11 @@ function DesignRecommendationsContent() {
 
           {/* Fonts */}
           {fonts.length > 0 && (
-            <div style={{ background: '#102542', borderRadius: '8px', padding: '24px' }}>
+            <div style={{ background: 'var(--color-surface)', borderRadius: '8px', padding: '24px' }}>
               <h2
                 style={{
                   margin: '0 0 20px 0',
-                  color: '#ecebf3',
+                  color: 'var(--color-text)',
                   fontSize: '18px',
                   fontWeight: '600',
                 }}
@@ -378,15 +378,15 @@ function DesignRecommendationsContent() {
                     key={`${font}-${idx}`}
                     style={{
                       padding: '12px',
-                      background: '#0d1f33',
+                      background: 'var(--color-bg)',
                       borderRadius: '4px',
-                      border: '1px solid #1a3a5c',
+                      border: '1px solid var(--color-border)',
                     }}
                   >
                     <p
                       style={{
                         margin: '0',
-                        color: '#ecebf3',
+                        color: 'var(--color-text)',
                         fontSize: '14px',
                         fontFamily: font,
                       }}
@@ -396,7 +396,7 @@ function DesignRecommendationsContent() {
                     <code
                       style={{
                         fontSize: '11px',
-                        color: '#8fa3b8',
+                        color: 'var(--color-text-muted)',
                         fontFamily: 'monospace',
                       }}
                     >
@@ -413,7 +413,7 @@ function DesignRecommendationsContent() {
         <div
           style={{
             marginTop: '40px',
-            background: '#102542',
+            background: 'var(--color-surface)',
             borderRadius: '8px',
             padding: '24px',
           }}
@@ -421,7 +421,7 @@ function DesignRecommendationsContent() {
           <h2
             style={{
               margin: '0 0 20px 0',
-              color: '#ecebf3',
+              color: 'var(--color-text)',
               fontSize: '18px',
               fontWeight: '600',
             }}
@@ -442,7 +442,7 @@ function DesignRecommendationsContent() {
               <li
                 key={idx}
                 style={{
-                  color: '#ecebf3',
+                  color: 'var(--color-text)',
                   fontSize: '14px',
                   lineHeight: 1.5,
                 }}
@@ -458,10 +458,10 @@ function DesignRecommendationsContent() {
           style={{
             marginTop: '24px',
             padding: '12px 16px',
-            background: '#1a3a5c',
+            background: 'var(--color-border)',
             borderRadius: '4px',
             fontSize: '12px',
-            color: '#8fa3b8',
+            color: 'var(--color-text-muted)',
           }}
         >
           Source: {recommendations.source === 'brandfetch' && 'Brandfetch Brand Database'}
@@ -482,13 +482,13 @@ function DesignRecommendationsSuspense() {
         <div
           style={{
             minHeight: '100vh',
-            background: '#0d1f33',
+            background: 'var(--color-bg)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <p style={{ color: '#ecebf3' }}>Loading...</p>
+          <p style={{ color: 'var(--color-text)' }}>Loading...</p>
         </div>
       }
     >
