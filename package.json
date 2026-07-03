@@ -10,12 +10,15 @@
     "test": "tsx --test tests/*.test.mjs"
   },
   "dependencies": {
+    "@stripe/react-stripe-js": "^2.7.0",
+    "@stripe/stripe-js": "^3.2.0",
     "@supabase/supabase-js": "^2.49.0",
     "next": "^15.0.0",
     "pg": "^8.22.0",
     "qrcode": "^1.5.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "stripe": "^14.8.0",
     "yaml": "^2.9.0"
   },
   "devDependencies": {

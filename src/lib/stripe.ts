@@ -133,6 +133,45 @@ export async function retrieveSubscription(subscriptionId: string) {
   return stripeFetch(`/subscriptions/${subscriptionId}`, 'GET')
 }
 
+/**
+ * Creates a PaymentIntent for an order (DE-15 GMV-based monetization).
+ * The PaymentIntent captures payment for the swag order; Swagger AI's 15-22%
+ * fee is calculated and tracked separately in the orders table.
+ */
+export async function createOrderPaymentIntent(opts: {
+  amountCents: number // total order amount in cents
+  customerId: string
+  metadata: Record<string, string>
+}) {
+  return stripeFetch('/payment_intents', 'POST', {
+    amount: opts.amountCents,
+    currency: 'usd',
+    customer: opts.customerId,
+    metadata: opts.metadata,
+    automatic_payment_methods: { enabled: true },
+  })
+}
+
+/**
+ * Confirms a PaymentIntent with a payment method.
+ * Used after Stripe Elements collect card details client-side.
+ */
+export async function confirmPaymentIntent(
+  paymentIntentId: string,
+  paymentMethodId: string
+) {
+  return stripeFetch(`/payment_intents/${paymentIntentId}/confirm`, 'POST', {
+    payment_method: paymentMethodId,
+  })
+}
+
+/**
+ * Retrieves a PaymentIntent's current state.
+ */
+export async function retrievePaymentIntent(paymentIntentId: string) {
+  return stripeFetch(`/payment_intents/${paymentIntentId}`, 'GET')
+}
+
 export interface WebhookVerification {
   valid: boolean
   reason?: 'missing_signature_header' | 'malformed_header' | 'signature_mismatch' | 'timestamp_out_of_tolerance'

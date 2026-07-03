@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { retrievePaymentIntent } from '@/lib/stripe'
 
 export const runtime = 'nodejs'
 
@@ -28,10 +29,7 @@ interface CreateOrderRequest {
   items: OrderItem[]
   totalAmount: number
   shippingInfo: ShippingInfo
-  paymentInfo: {
-    last4: string
-    brand: string
-  }
+  paymentIntentId: string
 }
 
 interface CreateOrderResponse {
@@ -61,10 +59,10 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateOrderRe
     )
   }
 
-  const { domain, items, totalAmount, shippingInfo, paymentInfo } = body
+  const { domain, items, totalAmount, shippingInfo, paymentIntentId } = body
 
   // Validate required fields
-  if (!domain || !items || items.length === 0 || totalAmount <= 0 || !shippingInfo || !paymentInfo) {
+  if (!domain || !items || items.length === 0 || totalAmount <= 0 || !shippingInfo || !paymentIntentId) {
     return NextResponse.json(
       { success: false, error: 'Missing required fields' },
       { status: 400 }
@@ -79,7 +77,17 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateOrderRe
   }
 
   try {
-    // Step 1: Get storefront by domain
+    // Step 1: Verify payment intent succeeded
+    const paymentIntent = await retrievePaymentIntent(paymentIntentId)
+
+    if (paymentIntent.status !== 'succeeded') {
+      return NextResponse.json(
+        { success: false, error: `Payment failed with status: ${paymentIntent.status}` },
+        { status: 400 }
+      )
+    }
+
+    // Step 2: Get storefront by domain
     const { data: storefrontRequest, error: storefrontError } = await supabase
       .from('storefront_requests')
       .select('id')
@@ -98,12 +106,12 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateOrderRe
 
     const storefrontId = storefrontRequest.id
 
-    // Step 2: Calculate Swagger AI fee (18% of GMV)
+    // Step 3: Calculate Swagger AI fee (15-22% of GMV, using 18% as default)
     const totalCents = Math.round(totalAmount * 100)
     const swaggerFeeCents = Math.round(totalCents * 0.18)
     const vendorPayoutCents = totalCents - swaggerFeeCents
 
-    // Step 3: Create order record in database
+    // Step 4: Create order record in database with payment info
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -120,7 +128,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateOrderRe
         total_amount_cents: totalCents,
         swagger_fee_cents: swaggerFeeCents,
         vendor_payout_cents: vendorPayoutCents,
-        payment_method: paymentInfo.brand,
+        payment_method: paymentIntent.payment_method?.type || 'card',
+        transaction_id: paymentIntentId,
         status: 'processing',
       })
       .select()
@@ -136,7 +145,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateOrderRe
 
     const orderId = order.id
 
-    // Step 4: Create order items
+    // Step 5: Create order items
     const orderItems = items.map(item => ({
       order_id: orderId,
       product_id: item.productId,
@@ -157,7 +166,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateOrderRe
       // Still proceed, order was created
     }
 
-    // Step 5: Update order status to completed (in real scenario, this would be after Printify order creation)
+    // Step 6: Update order status to completed
     const { error: updateError } = await supabase
       .from('orders')
       .update({ status: 'completed' })

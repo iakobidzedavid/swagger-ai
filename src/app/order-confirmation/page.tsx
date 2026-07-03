@@ -37,34 +37,28 @@ function OrderConfirmationContent() {
       return
     }
 
-    // Mock order data for now (in production, fetch from /api/order/[id])
-    // This demonstrates the checkout flow is working
-    setTimeout(() => {
-      setOrder({
-        id: orderId,
-        customerEmail: 'customer@example.com',
-        customerName: 'Customer Name',
-        totalAmount: 250.00,
-        swaggerFee: 45.00,
-        status: 'processing',
-        createdAt: new Date().toLocaleDateString(),
-        items: [
-          {
-            productName: 'Branded T-Shirt',
-            productSku: 'TSHIRT-001',
-            quantity: 2,
-            totalPrice: 50.00,
-          },
-          {
-            productName: 'Branded Hoodie',
-            productSku: 'HOODIE-001',
-            quantity: 1,
-            totalPrice: 60.00,
-          },
-        ],
+    // Fetch real order data from API
+    fetch(`/api/order/${orderId}`)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Failed to fetch order')
+        }
+        return res.json()
       })
-      setLoadingState('loaded')
-    }, 500)
+      .then(data => {
+        if (data.success && data.order) {
+          setOrder(data.order)
+          setLoadingState('loaded')
+        } else {
+          setError(data.error || 'Order not found')
+          setLoadingState('error')
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching order:', err)
+        setError('Failed to load order details')
+        setLoadingState('error')
+      })
   }, [orderId])
 
   if (loadingState === 'error') {
