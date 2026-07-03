@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { sendFulfillmentUpdate } from '@/lib/email'
 import {
   verifyPrintifyWebhookSignature,
   PrintifyWebhookEventType,
@@ -282,6 +283,39 @@ async function handleFulfillmentEvent(
     console.log(
       `[Printify Webhook] Successfully updated order ${orderResult.data.id} fulfillment status=${orderStatus}`
     )
+
+    // Send fulfillment update email
+    // Fetch order details for email
+    const orderDetailsResult = await supabase
+      .from('orders')
+      .select('customer_email, customer_name')
+      .eq('id', orderResult.data.id)
+      .single()
+
+    if (orderDetailsResult.data) {
+      let statusForEmail: 'confirmed' | 'in_progress' | 'shipped' | 'delivered' = 'in_progress'
+      if (fulfillmentData.status === 'confirmed') {
+        statusForEmail = 'confirmed'
+      } else if (fulfillmentData.status === 'shipped') {
+        statusForEmail = 'shipped'
+      } else if (fulfillmentData.status === 'delivered') {
+        statusForEmail = 'delivered'
+      }
+
+      const emailResult = await sendFulfillmentUpdate({
+        orderId: orderResult.data.id,
+        customerEmail: orderDetailsResult.data.customer_email,
+        customerName: orderDetailsResult.data.customer_name || 'Customer',
+        status: statusForEmail,
+      })
+
+      if (!emailResult.success) {
+        console.error(
+          `[Printify Webhook] Failed to send fulfillment email for order ${orderResult.data.id}:`,
+          emailResult.error
+        )
+      }
+    }
   } catch (error) {
     console.error('[Printify Webhook] Error handling fulfillment event:', error)
   }
@@ -345,6 +379,38 @@ async function handleShipmentEvent(
     console.log(
       `[Printify Webhook] Successfully updated order ${orderResult.data.id} shipment status=${orderStatus} (${shipmentData.carrier} ${shipmentData.number})`
     )
+
+    // Send shipment update email with tracking information
+    // Fetch order details for email
+    const orderDetailsResult = await supabase
+      .from('orders')
+      .select('customer_email, customer_name')
+      .eq('id', orderResult.data.id)
+      .single()
+
+    if (orderDetailsResult.data) {
+      let statusForEmail: 'confirmed' | 'in_progress' | 'shipped' | 'delivered' = 'shipped'
+      if (shipmentData.status === 'delivered') {
+        statusForEmail = 'delivered'
+      }
+
+      const emailResult = await sendFulfillmentUpdate({
+        orderId: orderResult.data.id,
+        customerEmail: orderDetailsResult.data.customer_email,
+        customerName: orderDetailsResult.data.customer_name || 'Customer',
+        status: statusForEmail,
+        trackingCarrier: shipmentData.carrier,
+        trackingNumber: shipmentData.number,
+        trackingUrl: shipmentData.url,
+      })
+
+      if (!emailResult.success) {
+        console.error(
+          `[Printify Webhook] Failed to send shipment email for order ${orderResult.data.id}:`,
+          emailResult.error
+        )
+      }
+    }
   } catch (error) {
     console.error('[Printify Webhook] Error handling shipment event:', error)
   }

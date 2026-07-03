@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { retrievePaymentIntent } from '@/lib/stripe'
+import { sendOrderConfirmation } from '@/lib/email'
 
 export const runtime = 'nodejs'
 
@@ -175,6 +176,30 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateOrderRe
     if (updateError) {
       console.error('Failed to update order status:', updateError)
       // Still return success, order was created
+    }
+
+    // Step 7: Send order confirmation email
+    // Calculate totals for the email
+    const subtotalCents = totalCents - swaggerFeeCents
+    const emailResult = await sendOrderConfirmation({
+      orderId,
+      customerName: shippingInfo.name,
+      customerEmail: shippingInfo.email,
+      domain,
+      items: items.map(item => ({
+        productName: item.productName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      })),
+      totalAmount: totalCents / 100,
+      subtotal: subtotalCents / 100,
+      swaggerFee: swaggerFeeCents / 100,
+      itemCount: items.length,
+    })
+
+    if (!emailResult.success) {
+      console.error('Failed to send order confirmation email:', emailResult.error)
+      // Don't fail the order creation if email fails, just log it
     }
 
     return NextResponse.json({
