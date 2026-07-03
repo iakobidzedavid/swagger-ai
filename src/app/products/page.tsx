@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { normalizeDomain } from '@/lib/brand'
+import { ProductCard, type Product, type ProductVariant } from '@/components/ProductCard'
 
 type LoadingState = 'idle' | 'loading' | 'loaded' | 'error'
 
@@ -13,25 +14,6 @@ interface BrandData {
   logo_url: string | null
   primary_color: string
   secondary_color: string
-}
-
-interface ProductVariant {
-  id: string
-  title: string
-  price: number
-}
-
-interface Product {
-  id: string
-  title: string
-  description: string
-  category: string
-  image: string
-  mockupImage?: string
-  variants: ProductVariant[]
-  sku: string
-  primaryColor?: string
-  secondaryColor?: string
 }
 
 interface ProductsResponse {
@@ -184,61 +166,13 @@ function ProductsForm() {
             <div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
                 {products.map(product => (
-                  <div
+                  <ProductCard
                     key={product.id}
-                    className="card"
-                    style={{
-                      cursor: 'pointer',
-                      border: selectedProductIds.has(product.id) ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
-                      background: selectedProductIds.has(product.id) ? 'var(--color-surface)' : 'var(--color-bg)',
-                      transition: 'all 200ms ease',
-                    }}
-                    onClick={() => handleToggleProduct(product.id)}
-                  >
-                    {/* Product image */}
-                    <div
-                      style={{
-                        width: '100%',
-                        height: '160px',
-                        background: '#1a3a5c',
-                        borderRadius: '8px',
-                        marginBottom: '12px',
-                        overflow: 'hidden',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <img
-                        src={product.mockupImage || product.image}
-                        alt={product.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        onError={(e) => {
-                          ;(e.target as HTMLImageElement).src = product.image
-                        }}
-                      />
-                    </div>
-
-                    {/* Checkbox */}
-                    <div style={{ marginBottom: '12px' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedProductIds.has(product.id)}
-                        onChange={() => handleToggleProduct(product.id)}
-                        style={{ marginRight: '8px' }}
-                        aria-label={`Select ${product.title}`}
-                      />
-                      <span className="text-small font-semibold">{product.title}</span>
-                    </div>
-
-                    {/* Price */}
-                    <div className="text-small text-muted" style={{ marginBottom: '8px' }}>
-                      ${product.variants[0]?.price || 0}
-                    </div>
-
-                    {/* Description */}
-                    <div className="text-small text-muted">{product.description}</div>
-                  </div>
+                    product={product}
+                    isSelected={selectedProductIds.has(product.id)}
+                    onToggle={() => handleToggleProduct(product.id)}
+                    variant="selectable"
+                  />
                 ))}
               </div>
             </div>
