@@ -17,8 +17,25 @@ export const runtime = 'nodejs'
 /**
  * POST /api/webhooks/printify
  *
- * Handles Printify webhook events for order fulfillment tracking.
- * Events include:
+ * Handles Printify webhook events for order fulfillment tracking with integrated email notifications.
+ *
+ * FEATURES:
+ * ─────────
+ * 1. Order Status Tracking — maintains order status throughout the fulfillment lifecycle
+ * 2. Email Notifications — sends transactional emails at key fulfillment milestones
+ * 3. Tracking Link Integration — includes carrier tracking URLs in shipment emails
+ * 4. Database Persistence — logs all notifications to email_notifications table for audit/retry
+ *
+ * NOTIFICATION FLOW:
+ * ──────────────────
+ * Event Type              Email Status      Includes Tracking?    Message
+ * ──────────────────────────────────────────────────────────────────────────────────────
+ * fulfillment:confirmed   → 'confirmed'     ✗ No                 Order confirmed, preparing production
+ * fulfillment:in_progress → 'in_progress'   ✗ No                 Items being printed and prepared
+ * shipment:in_transit     → 'shipped'       ✓ YES (tracking URL) Package shipped, on its way
+ * shipment:delivered      → 'delivered'     ✓ YES (tracking URL) Order delivered successfully
+ *
+ * Webhook Events Handled:
  * - order:created — when a new order is placed
  * - order:updated — when order status changes
  * - fulfillment:created — when production starts
@@ -27,7 +44,19 @@ export const runtime = 'nodejs'
  * - shipment:updated — when shipping updates
  * - shipment:delivered — when customer receives item
  *
- * Webhook security:
+ * TRACKING LINK FEATURE:
+ * ─────────────────────
+ * Tracking numbers, carriers, and URLs are stored in the orders table:
+ * - tracking_number: Carrier-specific tracking code (e.g., "1Z999AA10123456784")
+ * - tracking_carrier: Shipping carrier name (e.g., "UPS", "FedEx", "USPS")
+ * - tracking_url: Direct URL to carrier's tracking page (e.g., "https://tracking.ups.com/...")
+ * - shipped_at: Timestamp when shipment was initiated
+ * - delivered_at: Timestamp when delivery was confirmed
+ *
+ * Email templates include a prominent "Track Your Package" button with the tracking_url,
+ * enabling customers to monitor their order status in real-time.
+ *
+ * Webhook Security:
  * - Verifies X-Printify-Signature header with HMAC-SHA256
  * - Requires PRINTIFY_ADMIN_SECRET environment variable
  */
@@ -224,7 +253,7 @@ async function handleOrderEvent(
 
 /**
  * Handle fulfillment events from Printify
- * Updates order with fulfillment status
+ * Updates order with fulfillment status and sends email notifications
  */
 async function handleFulfillmentEvent(
   fulfillmentData: PrintifyFulfillmentEvent,
@@ -251,7 +280,7 @@ async function handleFulfillmentEvent(
     // Find the order by Printify order ID
     const orderResult = await supabase
       .from('orders')
-      .select('id')
+      .select('id, customer_email, customer_name')
       .eq('printify_order_id', fulfillmentData.order_id)
       .limit(1)
       .maybeSingle()
@@ -284,18 +313,18 @@ async function handleFulfillmentEvent(
       `[Printify Webhook] Successfully updated order ${orderResult.data.id} fulfillment status=${orderStatus}`
     )
 
-    // Send fulfillment update email
-    // Fetch order details for email
-    const orderDetailsResult = await supabase
-      .from('orders')
-      .select('customer_email, customer_name')
-      .eq('id', orderResult.data.id)
-      .single()
+    // Send fulfillment update email for significant status changes
+    // Map fulfillment status to email notification status
+    const shouldSendEmail = ['confirmed', 'in_progress', 'shipped', 'delivered'].includes(
+      fulfillmentData.status
+    )
 
-    if (orderDetailsResult.data) {
+    if (shouldSendEmail && orderResult.data.customer_email) {
       let statusForEmail: 'confirmed' | 'in_progress' | 'shipped' | 'delivered' = 'in_progress'
       if (fulfillmentData.status === 'confirmed') {
         statusForEmail = 'confirmed'
+      } else if (fulfillmentData.status === 'in_progress') {
+        statusForEmail = 'in_progress'
       } else if (fulfillmentData.status === 'shipped') {
         statusForEmail = 'shipped'
       } else if (fulfillmentData.status === 'delivered') {
@@ -304,15 +333,20 @@ async function handleFulfillmentEvent(
 
       const emailResult = await sendFulfillmentUpdate({
         orderId: orderResult.data.id,
-        customerEmail: orderDetailsResult.data.customer_email,
-        customerName: orderDetailsResult.data.customer_name || 'Customer',
+        customerEmail: orderResult.data.customer_email,
+        customerName: orderResult.data.customer_name || 'Customer',
         status: statusForEmail,
+        // Note: Tracking info will be added by the shipment event handler
       })
 
       if (!emailResult.success) {
         console.error(
           `[Printify Webhook] Failed to send fulfillment email for order ${orderResult.data.id}:`,
           emailResult.error
+        )
+      } else {
+        console.log(
+          `[Printify Webhook] Sent fulfillment email for order ${orderResult.data.id} (status: ${statusForEmail})`
         )
       }
     }
@@ -393,7 +427,7 @@ async function handleShipmentEvent(
     )
 
     // Send shipment update email with tracking information
-    // Fetch order details for email
+    // The tracking URL is embedded in the email, allowing customers to track their package in real-time
     const orderDetailsResult = await supabase
       .from('orders')
       .select('customer_email, customer_name')
@@ -406,6 +440,7 @@ async function handleShipmentEvent(
         statusForEmail = 'delivered'
       }
 
+      // Send email with tracking link included in the HTML template
       const emailResult = await sendFulfillmentUpdate({
         orderId: orderResult.data.id,
         customerEmail: orderDetailsResult.data.customer_email,
@@ -420,6 +455,10 @@ async function handleShipmentEvent(
         console.error(
           `[Printify Webhook] Failed to send shipment email for order ${orderResult.data.id}:`,
           emailResult.error
+        )
+      } else {
+        console.log(
+          `[Printify Webhook] Sent shipment email with tracking link for order ${orderResult.data.id} (${shipmentData.carrier} ${shipmentData.number})`
         )
       }
     }
