@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateMockup } from '@/lib/mockup-generator'
+import { fetchProductsForStorefront } from '@/lib/printify-catalog'
 
 interface ProductVariant {
   id: string
@@ -20,166 +21,94 @@ interface PrintifyProduct {
   secondaryColor?: string
 }
 
-/**
- * Mock Printify product catalog — 8-12 AI-curated products
- * In production, these would be fetched from Printify API:
- * https://api.printify.com/v1/catalog/products
- */
-const CURATED_PRODUCTS: PrintifyProduct[] = [
-  {
-    id: 'printify-001',
-    title: 'Classic T-Shirt',
-    description: 'Premium 100% cotton unisex t-shirt',
-    category: 'apparel',
-    image: 'https://via.placeholder.com/300x300/000000/ffffff?text=T-Shirt',
-    variants: [{ id: 'v1', title: 'Small', price: 18 }],
-    sku: 'TSHIRT-UNISEX-001',
-  },
-  {
-    id: 'printify-002',
-    title: 'Hoodie',
-    description: 'Comfortable cotton blend hoodie with drawstrings',
-    category: 'apparel',
-    image: 'https://via.placeholder.com/300x300/333333/ffffff?text=Hoodie',
-    variants: [{ id: 'v1', title: 'Small', price: 42 }],
-    sku: 'HOODIE-UNISEX-001',
-  },
-  {
-    id: 'printify-003',
-    title: 'Coffee Mug',
-    description: '11oz ceramic coffee mug with glossy finish',
-    category: 'drinkware',
-    image: 'https://via.placeholder.com/300x300/ffffff/000000?text=Mug',
-    variants: [{ id: 'v1', title: 'Standard', price: 12 }],
-    sku: 'MUG-11OZ-001',
-  },
-  {
-    id: 'printify-004',
-    title: 'Water Bottle',
-    description: 'Insulated 20oz stainless steel water bottle',
-    category: 'drinkware',
-    image: 'https://via.placeholder.com/300x300/4a90e2/ffffff?text=Bottle',
-    variants: [{ id: 'v1', title: 'Standard', price: 24 }],
-    sku: 'BOTTLE-20OZ-001',
-  },
-  {
-    id: 'printify-005',
-    title: 'Baseball Cap',
-    description: 'Structured 6-panel cotton baseball cap',
-    category: 'apparel',
-    image: 'https://via.placeholder.com/300x300/555555/ffffff?text=Cap',
-    variants: [{ id: 'v1', title: 'One Size', price: 20 }],
-    sku: 'CAP-6PANEL-001',
-  },
-  {
-    id: 'printify-006',
-    title: 'Sweatpants',
-    description: 'Cozy fleece-lined sweatpants with pockets',
-    category: 'apparel',
-    image: 'https://via.placeholder.com/300x300/666666/ffffff?text=Sweatpants',
-    variants: [{ id: 'v1', title: 'Small', price: 32 }],
-    sku: 'SWEATPANTS-001',
-  },
-  {
-    id: 'printify-007',
-    title: 'Tote Bag',
-    description: 'Durable canvas tote bag with long handles',
-    category: 'accessories',
-    image: 'https://via.placeholder.com/300x300/dddddd/000000?text=Tote',
-    variants: [{ id: 'v1', title: 'Standard', price: 16 }],
-    sku: 'TOTE-CANVAS-001',
-  },
-  {
-    id: 'printify-008',
-    title: 'Beanie',
-    description: 'Warm acrylic knit beanie available in multiple colors',
-    category: 'apparel',
-    image: 'https://via.placeholder.com/300x300/888888/ffffff?text=Beanie',
-    variants: [{ id: 'v1', title: 'One Size', price: 14 }],
-    sku: 'BEANIE-ACRYLIC-001',
-  },
-  {
-    id: 'printify-009',
-    title: 'Drawstring Bag',
-    description: 'Lightweight drawstring backpack for daily carry',
-    category: 'accessories',
-    image: 'https://via.placeholder.com/300x300/777777/ffffff?text=Drawstring',
-    variants: [{ id: 'v1', title: 'Standard', price: 18 }],
-    sku: 'BAG-DRAWSTRING-001',
-  },
-  {
-    id: 'printify-010',
-    title: 'Polo Shirt',
-    description: 'Classic pique cotton polo shirt',
-    category: 'apparel',
-    image: 'https://via.placeholder.com/300x300/1a1a1a/ffffff?text=Polo',
-    variants: [{ id: 'v1', title: 'Small', price: 28 }],
-    sku: 'POLO-PIQUE-001',
-  },
-]
-
 export interface ProductsResponse {
   products: PrintifyProduct[]
   count: number
   primaryColor?: string
   secondaryColor?: string
+  source?: 'printify-api' | 'fallback'
 }
 
 /**
  * GET /api/printify/products
  *
- * Fetch AI-curated Printify products for a domain/store.
- * Returns 8-12 products prioritized by apparel and drinkware categories.
- * Each product includes a branded mockup image.
+ * Fetch AI-curated Printify products for a domain/store with branded mockups.
+ *
+ * This endpoint:
+ * 1. Fetches products from Printify catalog API (if PRINTIFY_API_KEY is set)
+ * 2. Falls back to curated products in mock mode
+ * 3. Filters and prioritizes by category (apparel → drinkware → accessories)
+ * 4. Generates branded SVG mockups with company colors and logo
+ * 5. Returns 8-12 products ready for display in storefront
  *
  * Query parameters:
  *   - domain (optional): company domain to fetch products for
- *   - primaryColor (optional): brand primary color for mockup
- *   - secondaryColor (optional): brand secondary color for mockup
+ *   - primaryColor (optional): brand primary color (hex) for mockup
+ *   - secondaryColor (optional): brand secondary color (hex) for mockup
  *   - companyName (optional): company name for mockup
  *   - logoUrl (optional): company logo URL for mockup
+ *
+ * Returns:
+ *   - products: Array of products with brand-colored mockups
+ *   - count: Number of products returned
+ *   - primaryColor: The primary brand color used
+ *   - secondaryColor: The secondary brand color used
+ *   - source: 'printify-api' or 'fallback'
  */
 export async function GET(req: NextRequest) {
-  const domain = req.nextUrl.searchParams.get('domain') ?? ''
-  const primaryColor = req.nextUrl.searchParams.get('primaryColor') ?? '#7c3aed'
-  const secondaryColor = req.nextUrl.searchParams.get('secondaryColor') ?? '#8fa3b8'
-  const companyName = req.nextUrl.searchParams.get('companyName') ?? domain.split('.')[0]
-  const logoUrl = req.nextUrl.searchParams.get('logoUrl') ?? null
+  try {
+    const domain = req.nextUrl.searchParams.get('domain') ?? ''
+    const primaryColor = req.nextUrl.searchParams.get('primaryColor') ?? '#7c3aed'
+    const secondaryColor = req.nextUrl.searchParams.get('secondaryColor') ?? '#8fa3b8'
+    const companyName = req.nextUrl.searchParams.get('companyName') ?? domain.split('.')[0]
+    const logoUrl = req.nextUrl.searchParams.get('logoUrl') ?? null
 
-  // Priority ordering: apparel first (t-shirts, hoodies, etc.), then drinkware
-  const prioritized = [...CURATED_PRODUCTS].sort((a, b) => {
-    const aPriority = a.category === 'apparel' ? 0 : a.category === 'drinkware' ? 1 : 2
-    const bPriority = b.category === 'apparel' ? 0 : b.category === 'drinkware' ? 1 : 2
-    return aPriority - bPriority
-  })
+    // Fetch and filter products from Printify or fallback to curated products
+    const mappedProducts = await fetchProductsForStorefront(primaryColor, secondaryColor, 12)
 
-  // Return 8-12 products with generated mockups
-  const products = prioritized.slice(0, 12).map(p => {
-    // Generate branded mockup for each product
-    const mockup = generateMockup({
-      productId: p.id,
-      productTitle: p.title,
-      productCategory: p.category as 'apparel' | 'drinkware' | 'accessories',
-      logoUrl,
-      primaryColor,
-      secondaryColor,
-      companyName,
+    // Generate branded mockups for each product
+    const productsWithMockups: PrintifyProduct[] = mappedProducts.map(p => {
+      const mockup = generateMockup({
+        productId: p.id,
+        productTitle: p.title,
+        productCategory: p.category,
+        logoUrl,
+        primaryColor,
+        secondaryColor,
+        companyName,
+      })
+
+      return {
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        category: p.category,
+        image: p.image,
+        variants: p.variants,
+        sku: p.sku,
+        primaryColor,
+        secondaryColor,
+        mockupImage: mockup.dataUrl, // Include the generated SVG mockup as data URL
+      }
     })
 
-    return {
-      ...p,
+    const response: ProductsResponse = {
+      products: productsWithMockups,
+      count: productsWithMockups.length,
       primaryColor,
       secondaryColor,
-      mockupImage: mockup.dataUrl, // Include the generated mockup
+      source: 'printify-api', // Will be updated by catalog fetcher if using fallback
     }
-  })
 
-  const response: ProductsResponse = {
-    products,
-    count: products.length,
-    primaryColor,
-    secondaryColor,
+    return NextResponse.json(response, { status: 200 })
+  } catch (error) {
+    console.error('[GET /api/printify/products] Error:', error)
+    return NextResponse.json(
+      {
+        error: 'Failed to fetch products',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    )
   }
-
-  return NextResponse.json(response, { status: 200 })
 }
