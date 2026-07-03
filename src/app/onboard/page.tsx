@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { captureAttribution, getAttribution } from '@/lib/attribution'
 import { DOMAIN_RE, normalizeDomain } from '@/lib/brand'
+import { BrandAssetGallery } from '@/components/BrandAssetGallery'
 
 type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid'
 type SubmitState = 'idle' | 'submitting' | 'success' | 'error'
@@ -44,46 +45,6 @@ function formatValidate(domain: string): string | null {
   if (PERSONAL_DOMAINS.has(domain)) return 'Enter a company domain, not a personal email provider'
   if (!DOMAIN_RE.test(domain)) return 'Enter a valid domain (e.g., acme.com)'
   return null
-}
-
-function ColorSwatch({ color, label, onCopy }: { color: string; label: string; onCopy: (c: string) => void }) {
-  return (
-    <div className="flex items-center gap-2" style={{ gap: '10px' }}>
-      <button
-        className="color-swatch"
-        style={{ background: color }}
-        title={`Copy ${color}`}
-        onClick={() => onCopy(color)}
-        type="button"
-        aria-label={`Copy ${label} color ${color}`}
-      />
-      <div>
-        <div className="text-small text-muted" style={{ fontSize: '0.75rem', lineHeight: 1.3 }}>{label}</div>
-        <div className="text-small font-semibold" style={{ fontFamily: 'monospace', letterSpacing: '0.03em' }}>{color}</div>
-      </div>
-    </div>
-  )
-}
-
-function PaletteColor({ color, onSelect, isSelected }: { color: string; onSelect: () => void; isSelected?: boolean }) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      title={`Select as primary color: ${color}`}
-      style={{
-        width: '48px',
-        height: '48px',
-        borderRadius: 'var(--radius-md)',
-        background: color,
-        border: isSelected ? `3px solid var(--color-accent)` : '1px solid var(--color-border)',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        padding: 0,
-      }}
-      aria-label={`Select color ${color}`}
-    />
-  )
 }
 
 function OnboardForm() {
@@ -483,138 +444,26 @@ function OnboardForm() {
           </form>
         </div>
 
-        {/* Brand Preview from /api/brand (before submit) */}
+        {/* Brand Preview Gallery */}
         {brandPreview && !brand && previewFetchState === 'loaded' && (
           <div className="card" style={{ marginBottom: '24px', borderColor: 'var(--color-accent)', borderWidth: '1px' }}>
-            <div style={{ marginBottom: '24px' }}>
-              <div className="text-small text-muted" style={{ marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
-                Brand preview
-              </div>
-              <div className="flex items-center" style={{ gap: '20px', marginBottom: '24px', flexWrap: 'wrap' }}>
-                {/* Logo */}
-                <div style={{
-                  width: '80px', height: '80px',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--color-border)',
-                  background: 'var(--color-bg)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, overflow: 'hidden',
-                }}>
-                  {brandPreview.logoUrl && !logoError ? (
-                    <img
-                      src={brandPreview.logoUrl}
-                      alt={`${brandPreview.companyName} logo`}
-                      style={{ width: '60px', height: '60px', objectFit: 'contain' }}
-                      onError={() => setLogoError(true)}
-                    />
-                  ) : (
-                    <span style={{ fontSize: '1.5rem', fontWeight: 800, color: brandPreview.primaryColor }}>
-                      {brandPreview.companyName.charAt(0)}
-                    </span>
-                  )}
-                </div>
-
-                <div>
-                  <div className="text-h2">{brandPreview.companyName}</div>
-                  <div className="text-small text-muted">{brandPreview.domain}</div>
-                  <div className="text-small text-muted" style={{ marginTop: '4px', fontSize: '0.75rem' }}>
-                    Source: {brandPreview.source}
-                  </div>
-                </div>
-              </div>
-
-              {/* Colors */}
-              <div style={{ marginBottom: '24px' }}>
-                <div className="text-small font-semibold" style={{ marginBottom: '12px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
-                  Brand Colors
-                </div>
-                <div className="flex" style={{ gap: '20px', flexWrap: 'wrap', marginBottom: '12px' }}>
-                  <ColorSwatch color={primaryColor || brandPreview.primaryColor} label="Primary" onCopy={copyHex} />
-                  <ColorSwatch color={userSelectedSecondaryColor || secondaryColor || brandPreview.secondaryColor} label="Secondary" onCopy={copyHex} />
-                </div>
-
-                {/* Color gradient preview */}
-                <div style={{
-                  height: '8px', borderRadius: '4px',
-                  background: `linear-gradient(to right, ${primaryColor || brandPreview.primaryColor} 0%, ${userSelectedSecondaryColor || secondaryColor || brandPreview.secondaryColor} 100%)`,
-                  marginBottom: '20px',
-                }} />
-
-                {/* Full color palette from Brandfetch */}
-                {brandPreview.colors && brandPreview.colors.length > 0 && (
-                  <div style={{ marginTop: '16px', padding: '12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)' }}>
-                    <div className="text-small text-muted" style={{ marginBottom: '8px', fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                      Full Palette ({brandPreview.colors.length}) — click to select primary
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {brandPreview.colors.map((color, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <PaletteColor
-                            color={color}
-                            isSelected={primaryColor === color}
-                            onSelect={() => setPrimaryColor(color)}
-                          />
-                          <span className="text-small" style={{ fontSize: '0.75rem', fontFamily: 'monospace', minWidth: '70px', cursor: 'pointer' }} onClick={() => copyHex(color)}>
-                            {color}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Secondary color picker when fewer than 2 colors are available */}
-                {brandPreview.colors && brandPreview.colors.length < 2 && (
-                  <div style={{ marginTop: '16px', padding: '12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                    <label htmlFor="secondary-color-picker" style={{ display: 'block', marginBottom: '8px' }}>
-                      <div className="text-small text-muted" style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                        Choose Secondary Color
-                      </div>
-                      <p className="text-small text-muted" style={{ fontSize: '0.8rem', marginTop: '4px' }}>
-                        We found only {brandPreview.colors.length} color{brandPreview.colors.length !== 1 ? 's' : ''}. Select a secondary color to complete your palette.
-                      </p>
-                    </label>
-                    <input
-                      id="secondary-color-picker"
-                      type="color"
-                      value={userSelectedSecondaryColor || (secondaryColor || brandPreview.secondaryColor)}
-                      onChange={(e) => setUserSelectedSecondaryColor(e.target.value)}
-                      style={{ width: '60px', height: '60px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', cursor: 'pointer' }}
-                      title="Select a secondary color"
-                    />
-                    {userSelectedSecondaryColor && (
-                      <div style={{ marginTop: '12px', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-                        Selected: <code style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--color-text)' }}>{userSelectedSecondaryColor}</code>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Fonts from Brandfetch */}
-              {brandPreview.fonts && brandPreview.fonts.length > 0 && (
-                <div style={{ marginBottom: '16px' }}>
-                  <div className="text-small font-semibold" style={{ marginBottom: '12px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
-                    Brand Fonts ({brandPreview.fonts.length})
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
-                    {brandPreview.fonts.map((font, i) => (
-                      <div key={i} style={{
-                        padding: '12px',
-                        background: 'var(--color-bg)',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 'var(--radius-md)',
-                      }}>
-                        <div className="text-small font-semibold" style={{ marginBottom: '4px' }}>{font}</div>
-                        <div style={{ fontFamily: font, fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-                          The quick brown fox
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <BrandAssetGallery
+              assets={{
+                domain: brandPreview.domain,
+                companyName: brandPreview.companyName,
+                logoUrl: brandPreview.logoUrl,
+                primaryColor: brandPreview.primaryColor,
+                secondaryColor: brandPreview.secondaryColor,
+                colors: brandPreview.colors,
+                fonts: brandPreview.fonts,
+              }}
+              logoError={logoError}
+              primaryColor={primaryColor}
+              secondaryColor={secondaryColor}
+              userSelectedSecondaryColor={userSelectedSecondaryColor}
+              onColorSelect={setPrimaryColor}
+              onSecondaryColorChange={setUserSelectedSecondaryColor}
+            />
           </div>
         )}
 
@@ -629,53 +478,18 @@ function OnboardForm() {
               Brand detected and saved — ID {brand.id.slice(0, 8)}…
             </div>
 
-            <div className="flex items-center" style={{ gap: '20px', marginBottom: '24px', flexWrap: 'wrap' }}>
-              {/* Logo */}
-              <div style={{
-                width: '80px', height: '80px',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--color-border)',
-                background: 'var(--color-bg)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0, overflow: 'hidden',
-              }}>
-                {brand.logo_url && !logoError ? (
-                  <img
-                    src={brand.logo_url}
-                    alt={`${brand.company_name} logo`}
-                    style={{ width: '60px', height: '60px', objectFit: 'contain' }}
-                    onError={() => setLogoError(true)}
-                  />
-                ) : (
-                  <span style={{ fontSize: '1.5rem', fontWeight: 800, color: brand.primary_color }}>
-                    {brand.company_name.charAt(0)}
-                  </span>
-                )}
-              </div>
-
-              <div>
-                <div className="text-h2">{brand.company_name}</div>
-                <div className="text-small text-muted">{brand.domain}</div>
-              </div>
-            </div>
-
-            {/* Colors */}
-            <div style={{ marginBottom: '24px' }}>
-              <div className="text-small font-semibold" style={{ marginBottom: '12px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
-                Brand Colors
-              </div>
-              <div className="flex" style={{ gap: '20px', flexWrap: 'wrap', marginBottom: '16px' }}>
-                <ColorSwatch color={brand.primary_color} label="Primary" onCopy={copyHex} />
-                <ColorSwatch color={userSelectedSecondaryColor || brand.secondary_color} label="Secondary" onCopy={copyHex} />
-              </div>
-
-              {/* Color gradient preview */}
-              <div style={{
-                height: '8px', borderRadius: '4px',
-                background: `linear-gradient(to right, ${brand.primary_color} 0%, ${userSelectedSecondaryColor || brand.secondary_color} 100%)`,
-                marginBottom: '16px',
-              }} />
-            </div>
+            <BrandAssetGallery
+              assets={{
+                domain: brand.domain,
+                companyName: brand.company_name,
+                logoUrl: brand.logo_url,
+                primaryColor: brand.primary_color,
+                secondaryColor: brand.secondary_color,
+              }}
+              logoError={logoError}
+              userSelectedSecondaryColor={userSelectedSecondaryColor}
+              onLogoError={setLogoError}
+            />
 
             {/* Store request error */}
             {storeRequestError && (
@@ -699,7 +513,7 @@ function OnboardForm() {
               </div>
             )}
 
-            <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: '12px' }}>
+            <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: '12px', marginTop: '24px' }}>
               <div className="text-small text-muted">
                 Saved to Swagger AI · {new Date(brand.created_at).toLocaleString()}
               </div>
