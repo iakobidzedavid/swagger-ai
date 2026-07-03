@@ -57,14 +57,16 @@ interface BrandData {
 
 function cacheRowToBrandData(row: BrandCacheRow): BrandData {
   const rawData = row.raw_brand_data ?? {}
+  const colors = (rawData as any)?.colors ?? []
+  const fonts = (rawData as any)?.fonts ?? []
   return {
     domain: row.domain,
     companyName: row.company_name,
     logoUrl: row.logo_url,
     primaryColor: row.primary_color,
     secondaryColor: row.secondary_color,
-    colors: (rawData as any)?.colors,
-    fonts: (rawData as any)?.fonts,
+    colors: colors,    // Always include arrays, even if empty
+    fonts: fonts,      // Always include arrays, even if empty
     // Additive-only annotation — neither existing caller (HomepageBrandPreview,
     // /onboard) reads `raw`, so merging `cached: true` in cannot break them.
     source: row.source as BrandData['source'],

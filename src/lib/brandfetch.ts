@@ -22,8 +22,9 @@ import { fetchKeylessBrand } from './keyless-brand'
 
 export interface BrandfetchLogoData {
   src?: string
-  formats?: Array<{ src?: string; format?: string }>
+  theme?: string
   type?: string
+  formats?: Array<{ src?: string; format?: string; background?: string }>
 }
 
 export interface BrandfetchColorData {
@@ -125,8 +126,8 @@ export async function fetchFromBrandfetch(domain: string): Promise<BrandData | n
       primaryColor,
       secondaryColor,
       source: 'brandfetch',
-      colors: colors.length > 0 ? colors : undefined,
-      fonts: fonts.length > 0 ? fonts : undefined,
+      colors: colors, // Always include, even if empty (design-engine relies on this)
+      fonts: fonts,   // Always include, even if empty (design-engine relies on this)
       raw: {
         brandfetchId: data.id,
         brandfetchModified: data.dateModified,
@@ -145,57 +146,145 @@ export async function fetchFromBrandfetch(domain: string): Promise<BrandData | n
 
 /**
  * Extract the best logo URL from Brandfetch logos array.
- * Preference order: SVG → PNG → any available.
+ * Preference order: SVG (light theme) → SVG (any) → PNG (light) → PNG (any) → any available.
+ *
+ * Brandfetch v2 API returns logos with:
+ * - `theme` field: 'light', 'dark', or other variants
+ * - `type` field: 'logo', 'symbol', 'icon', etc.
+ * - `formats` array: objects with `src`, `format` ('svg'|'png'|'webp'|'jpeg'), `background`
+ * Note: logos don't have a direct `src` at the top level; src is nested in formats.
  */
 function extractBestLogo(logos: BrandfetchLogoData[] | undefined): string | null {
   if (!logos || logos.length === 0) return null
 
-  // Try to find SVG first (vector, scales best)
+  // Helper to find and extract format src by priority
+  const findFormatUrl = (logo: BrandfetchLogoData, ...formats: string[]): string | null => {
+    for (const fmt of formats) {
+      const match = logo.formats?.find(f => f.format?.toLowerCase() === fmt.toLowerCase())
+      if (match?.src) return match.src
+    }
+    return null
+  }
+
+  // Priority 1: Light-theme logo with SVG (preferred for design engines)
   for (const logo of logos) {
-    if (logo.type === 'symbol' || logo.formats?.some(f => f.format === 'svg')) {
-      return logo.src ?? logo.formats?.find(f => f.format === 'svg')?.src ?? null
+    if (logo.theme?.toLowerCase() === 'light') {
+      const url = findFormatUrl(logo, 'svg', 'png', 'webp')
+      if (url) return url
     }
   }
 
-  // Try PNG
+  // Priority 2: Any light-theme logo (any format)
   for (const logo of logos) {
-    if (logo.type === 'mark' || logo.formats?.some(f => f.format === 'png')) {
-      return logo.src ?? logo.formats?.find(f => f.format === 'png')?.src ?? null
+    if (logo.theme?.toLowerCase() === 'light') {
+      const url = findFormatUrl(logo, 'jpeg', 'webp', 'png')
+      if (url) return url
     }
   }
 
-  // Fallback to any available
-  return logos[0]?.src ?? null
+  // Priority 3: SVG from any logo (no theme preference)
+  for (const logo of logos) {
+    const url = findFormatUrl(logo, 'svg')
+    if (url) return url
+  }
+
+  // Priority 4: PNG from any logo
+  for (const logo of logos) {
+    const url = findFormatUrl(logo, 'png')
+    if (url) return url
+  }
+
+  // Priority 5: Any available format from first logo
+  if (logos[0]?.formats && logos[0].formats.length > 0) {
+    return logos[0].formats[0]?.src ?? null
+  }
+
+  return null
 }
 
 /**
  * Extract and validate colors from Brandfetch color array.
+ * Prioritizes by type (accent first, then primary colors, then supporting colors).
  * Only includes valid hex colors; filters out invalid data.
+ *
+ * Brandfetch v2 returns colors with:
+ * - `hex`: the color value (may be 3, 4, 6, or 8 digit hex)
+ * - `type`: 'accent', 'primary', 'dark', 'light', etc.
+ * - `brightness`: luminance value 0-255
  */
 function extractColors(colors: BrandfetchColorData[] | undefined): string[] {
   if (!colors) return []
 
-  const hexPattern = /^#[0-9a-f]{6}$/i
-  const validated: string[] = []
+  // Accept 3-digit (#FFF), 4-digit (#FFFA), 6-digit (#FFFFFF), or 8-digit (#FFFFFFFF) hex
+  const hexPattern = /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i
+  const validated: Array<{ hex: string; type?: string; brightness?: number }> = []
 
   for (const color of colors) {
     if (color.hex && hexPattern.test(color.hex)) {
-      validated.push(color.hex.toLowerCase())
+      // Normalize to 6-digit hex (expand 3-digit and drop alpha from 8-digit)
+      let normalized = color.hex.toLowerCase()
+      if (normalized.length === 4) {
+        // #RGB → #RRGGBB
+        normalized = '#' + normalized[1] + normalized[1] + normalized[2] + normalized[2] + normalized[3] + normalized[3]
+      } else if (normalized.length === 9) {
+        // #RRGGBBAA → #RRGGBB (drop alpha)
+        normalized = normalized.slice(0, 7)
+      }
+      validated.push({ hex: normalized, type: color.type, brightness: color.brightness })
     }
   }
 
-  return validated
+  // Sort by type priority: accent > primary > others
+  // Within each group, sort by saturation/brightness for better visual hierarchy
+  validated.sort((a, b) => {
+    const typeOrder = { accent: 0, primary: 1, secondary: 2, dark: 3, light: 4 }
+    const aOrder = typeOrder[a.type as keyof typeof typeOrder] ?? 99
+    const bOrder = typeOrder[b.type as keyof typeof typeOrder] ?? 99
+    if (aOrder !== bOrder) return aOrder - bOrder
+    // Secondary sort: prefer mid-range brightness (not too light, not too dark)
+    const aBrightness = a.brightness ?? 128
+    const bBrightness = b.brightness ?? 128
+    const aDistance = Math.abs(aBrightness - 128)
+    const bDistance = Math.abs(bBrightness - 128)
+    return aDistance - bDistance
+  })
+
+  return validated.map(c => c.hex)
 }
 
 /**
  * Extract font names from Brandfetch fonts array.
+ * Prioritizes by type (heading/title first, then body, then supporting fonts).
+ * Deduplicates font names and limits to 5 unique fonts for practical use.
+ *
+ * Brandfetch v2 returns fonts with:
+ * - `name`: the font family name (e.g., 'Inter', 'Sohne Var', 'system-ui')
+ * - `type`: 'title', 'body', 'heading', etc.
+ * - `weights`: array of available weights (optional)
  */
 function extractFonts(fonts: BrandfetchFontData[] | undefined): string[] {
   if (!fonts) return []
-  return fonts
-    .filter(f => f.name)
-    .map(f => f.name!)
-    .slice(0, 5) // Limit to 5 fonts for practical use
+
+  // Sort by type priority: title/heading first, then body, then others
+  const typeOrder = { title: 0, heading: 1, body: 2 }
+  const sorted = [...fonts].sort((a, b) => {
+    const aOrder = typeOrder[a.type as keyof typeof typeOrder] ?? 99
+    const bOrder = typeOrder[b.type as keyof typeof typeOrder] ?? 99
+    return aOrder - bOrder
+  })
+
+  // Extract unique font names, preserving order
+  const seen = new Set<string>()
+  const extracted: string[] = []
+  for (const font of sorted) {
+    if (font.name && !seen.has(font.name)) {
+      seen.add(font.name)
+      extracted.push(font.name)
+      if (extracted.length >= 5) break // Limit to 5 fonts
+    }
+  }
+
+  return extracted
 }
 
 /**
@@ -254,6 +343,8 @@ export async function fetchBrandData(domain: string): Promise<BrandData> {
     primaryColor: keyless.primaryColor,
     secondaryColor: keyless.secondaryColor,
     source: keyless.source,
+    colors: [], // Keyless mode has no palette data, but include empty array for consistency
+    fonts: [],  // Keyless mode has no font data, but include empty array for consistency
     raw: {
       logoSource: 'favicon',
       colorSource: keyless.colorSource,

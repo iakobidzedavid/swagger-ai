@@ -13,6 +13,8 @@ interface BrandAsset {
   companyName: string
   domain: string
   source: 'brandfetch' | 'favicon' | 'theme-color' | 'fallback'
+  colors?: string[] // Full color palette from Brandfetch
+  fonts?: string[]  // Font families from Brandfetch
   raw?: Record<string, unknown>
 }
 
@@ -34,6 +36,8 @@ interface MockupResponse {
   brandAssets: BrandAsset
   mockupUrl: string
   shareableUrl: string
+  colorPalette?: string[]  // Direct access to full color palette for design-engine
+  brandFonts?: string[]    // Direct access to brand fonts for design-engine
   products?: ProductData[]
 }
 
@@ -57,6 +61,8 @@ export async function GET(req: NextRequest) {
     companyName: brand.companyName,
     domain: brand.domain,
     source: brand.source,
+    colors: brand.colors,    // Full color palette from Brandfetch
+    fonts: brand.fonts,      // Font families from Brandfetch
     raw: brand.raw,
   }
 
@@ -88,6 +94,8 @@ export async function GET(req: NextRequest) {
     brandAssets,
     mockupUrl: `/design-engine?domain=${encodeURIComponent(brandAssets.domain)}`,
     shareableUrl: `${req.nextUrl.origin}/design-engine?domain=${encodeURIComponent(brandAssets.domain)}`,
+    colorPalette: brandAssets.colors,
+    brandFonts: brandAssets.fonts,
     products,
   }
 

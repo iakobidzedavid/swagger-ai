@@ -2,9 +2,14 @@ import { readdir, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import pg from 'pg'
 
-const { Client } = pg
+let Client
+try {
+  const pg = await import('pg')
+  Client = pg.default?.Client || pg.Client
+} catch (err) {
+  console.warn('WARNING: pg module not available (requires Node 18+) — skipping migrations')
+}
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const MIGRATIONS_DIR = join(__dirname, '..', 'supabase', 'migrations')
 
@@ -24,6 +29,11 @@ if (existsSync(envLocal)) {
 }
 
 async function migrate() {
+  if (!Client) {
+    console.warn('WARNING: pg module unavailable — skipping migrations')
+    return
+  }
+
   const url = process.env.DATABASE_URL
   if (!url) {
     console.warn('WARNING: DATABASE_URL is not set — skipping migrations (set in Vercel env vars to run automatically)')
