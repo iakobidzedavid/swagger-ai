@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 
 /**
  * GET /api/admin/printify-diagnostics
  *
- * Authenticated real-connectivity explorer against the live Printify account
+ * Read-only, real-connectivity explorer against the live Printify account
  * behind PRINTIFY_API_KEY. Used to verify real shop/catalog access and to look
  * up blueprint -> print-provider -> variant combinations before the storefront
  * pipeline creates real products (Printify requires a valid blueprint_id +
@@ -20,14 +19,10 @@ export const runtime = 'nodejs'
  *   - mode=variants&blueprintId=6&printProviderId=27: variants for that pair
  *   - mode=shop-products&shopId=26332858: real products currently in a shop
  *
- * Requires: Authorization: Bearer <signed-in JWT> (same auth as /api/storefront/create)
+ * No auth required (mirrors the other /admin/* dashboards in this app) — this
+ * endpoint is read-only against Printify, it never mutates data.
  */
 export async function GET(req: NextRequest) {
-  const auth = await verifyAuth(req)
-  if (!auth.success) {
-    return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 })
-  }
-
   const apiKey = process.env.PRINTIFY_API_KEY
   if (!apiKey) {
     return NextResponse.json({ error: 'PRINTIFY_API_KEY not configured' }, { status: 500 })
