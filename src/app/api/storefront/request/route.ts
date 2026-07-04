@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { computeBrandFidelity, computeGenerationSeconds } from '@/lib/competitive-position'
 
 const DOMAIN_RE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i
 
@@ -28,6 +29,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Valid domain is required' }, { status: 400 })
   }
 
+  // DE Step 11 (Chart Your Competitive Position): this is the fast, no-signup
+  // path (domain → brand colors → submit), so there's no product-selection
+  // step to measure yet — score brand fidelity from the assets actually
+  // detected and measure speed-to-launch from when the buyer first submitted
+  // their domain (domain_submissions.created_at), not from this instant.
+  let journeyStartedAt: string | null = null
+  if (body.domain_submission_id) {
+    const { data: submission } = await supabase
+      .from('domain_submissions')
+      .select('created_at')
+      .eq('id', body.domain_submission_id)
+      .single()
+    journeyStartedAt = submission?.created_at ?? null
+  }
+  const generationSeconds = computeGenerationSeconds(journeyStartedAt ?? new Date().toISOString())
+  const { pct: brandFidelityPct, breakdown: brandFidelityBreakdown } = computeBrandFidelity({
+    logoUrl: body.logo_url,
+    primaryColor: body.primary_color,
+    secondaryColor: body.secondary_color,
+    productsRequested: 0,
+    productsCreated: 0,
+  })
+
   const { data, error } = await supabase
     .from('storefront_requests')
     .insert({
@@ -40,6 +64,9 @@ export async function POST(req: NextRequest) {
       contact_name: body.contact_name ?? null,
       contact_email: body.contact_email ?? null,
       status: 'queued',
+      generation_seconds: generationSeconds,
+      brand_fidelity_pct: brandFidelityPct,
+      brand_fidelity_breakdown: brandFidelityBreakdown,
     })
     .select()
     .single()

@@ -513,7 +513,31 @@ function OnboardForm() {
               </div>
             )}
 
-            <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: '12px', marginTop: '24px' }}>
+            {storeRequestState !== 'queued' && (
+              <button
+                type="button"
+                onClick={handleGenerateStore}
+                disabled={storeRequestState === 'requesting'}
+                className="btn btn-primary btn-full"
+                style={{ marginTop: '8px', marginBottom: '16px' }}
+              >
+                {storeRequestState === 'requesting' ? (
+                  <>
+                    <span className="spinner" style={{ width: 16, height: 16 }} />
+                    Creating your store…
+                  </>
+                ) : (
+                  <>
+                    Generate My Store
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 8h10M9 4l4 4-4 4"/>
+                    </svg>
+                  </>
+                )}
+              </button>
+            )}
+
+            <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: '12px', marginTop: '8px' }}>
               <div className="text-small text-muted">
                 Saved to Swagger AI · {new Date(brand.created_at).toLocaleString()}
               </div>
@@ -529,9 +553,9 @@ function OnboardForm() {
                 </a>
                 <a
                   href={`/products?domain=${encodeURIComponent(brand.domain)}&id=${encodeURIComponent(brand.id)}`}
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-secondary btn-sm"
                 >
-                  Select Products
+                  Select Products Instead
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 8h10M9 4l4 4-4 4"/>
                   </svg>
