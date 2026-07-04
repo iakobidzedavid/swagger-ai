@@ -6,11 +6,19 @@ export const runtime = 'nodejs'
 /**
  * GET /api/admin/printify-diagnostics
  *
- * Authenticated real-connectivity check against the live Printify account behind
- * PRINTIFY_API_KEY: lists real shops and a sample of the real catalog. Used to
- * verify the account has a usable shop before the storefront pipeline creates
- * real products, and to confirm the catalog fetch path isn't silently falling
- * back to curated placeholder data.
+ * Authenticated real-connectivity explorer against the live Printify account
+ * behind PRINTIFY_API_KEY. Used to verify real shop/catalog access and to look
+ * up blueprint -> print-provider -> variant combinations before the storefront
+ * pipeline creates real products (Printify requires a valid blueprint_id +
+ * print_provider_id + variant ids; there is no flat "create any product"
+ * shortcut).
+ *
+ * Query params:
+ *   - mode=overview (default): shops + a small blueprint sample
+ *   - mode=search&keyword=hoodie: blueprints whose title matches keyword
+ *   - mode=providers&blueprintId=6: print providers offering that blueprint
+ *   - mode=variants&blueprintId=6&printProviderId=27: variants for that pair
+ *   - mode=shop-products&shopId=26332858: real products currently in a shop
  *
  * Requires: Authorization: Bearer <signed-in JWT> (same auth as /api/storefront/create)
  */
@@ -30,42 +38,56 @@ export async function GET(req: NextRequest) {
     'Content-Type': 'application/json',
   }
 
-  const result: Record<string, unknown> = {}
+  const mode = req.nextUrl.searchParams.get('mode') || 'overview'
 
-  try {
-    const shopsRes = await fetch('https://api.printify.com/v1/shops.json', { headers })
-    result.shopsStatus = shopsRes.status
-    result.shops = shopsRes.ok ? await shopsRes.json() : await shopsRes.text()
-  } catch (err) {
-    result.shopsError = err instanceof Error ? err.message : String(err)
+  async function fetchJson(path: string) {
+    const res = await fetch(`https://api.printify.com/v1${path}`, { headers })
+    const status = res.status
+    const body = res.ok ? await res.json() : await res.text()
+    return { status, body }
   }
 
   try {
-    const blueprintsRes = await fetch('https://api.printify.com/v1/catalog/blueprints.json', { headers })
-    result.blueprintsStatus = blueprintsRes.status
-    if (blueprintsRes.ok) {
-      const data = await blueprintsRes.json()
-      result.blueprintsCount = Array.isArray(data) ? data.length : undefined
-      result.blueprintsSample = Array.isArray(data) ? data.slice(0, 5) : data
-    } else {
-      result.blueprintsError = await blueprintsRes.text()
+    if (mode === 'search') {
+      const keyword = (req.nextUrl.searchParams.get('keyword') || '').toLowerCase()
+      const { status, body } = await fetchJson('/catalog/blueprints.json')
+      const list = Array.isArray(body) ? body as Array<{ id: number; title: string; brand?: string; model?: string }> : []
+      const matches = list.filter(bp => bp.title?.toLowerCase().includes(keyword)).slice(0, 15)
+      return NextResponse.json({ status, count: matches.length, matches })
     }
+
+    if (mode === 'providers') {
+      const blueprintId = req.nextUrl.searchParams.get('blueprintId')
+      const { status, body } = await fetchJson(`/catalog/blueprints/${blueprintId}/print_providers.json`)
+      return NextResponse.json({ status, body })
+    }
+
+    if (mode === 'variants') {
+      const blueprintId = req.nextUrl.searchParams.get('blueprintId')
+      const printProviderId = req.nextUrl.searchParams.get('printProviderId')
+      const { status, body } = await fetchJson(`/catalog/blueprints/${blueprintId}/print_providers/${printProviderId}/variants.json`)
+      return NextResponse.json({ status, body })
+    }
+
+    if (mode === 'shop-products') {
+      const shopId = req.nextUrl.searchParams.get('shopId')
+      const { status, body } = await fetchJson(`/shops/${shopId}/products.json`)
+      return NextResponse.json({ status, body })
+    }
+
+    // overview
+    const result: Record<string, unknown> = {}
+    const shopsResult = await fetchJson('/shops.json')
+    result.shopsStatus = shopsResult.status
+    result.shops = shopsResult.body
+
+    const blueprintsResult = await fetchJson('/catalog/blueprints.json')
+    result.blueprintsStatus = blueprintsResult.status
+    result.blueprintsCount = Array.isArray(blueprintsResult.body) ? blueprintsResult.body.length : undefined
+    result.blueprintsSample = Array.isArray(blueprintsResult.body) ? blueprintsResult.body.slice(0, 3) : blueprintsResult.body
+
+    return NextResponse.json(result)
   } catch (err) {
-    result.blueprintsError = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 })
   }
-
-  const shops = Array.isArray(result.shops) ? result.shops as Array<{ id: number | string }> : undefined
-  const firstShopId = shops?.[0]?.id
-
-  if (firstShopId) {
-    try {
-      const productsRes = await fetch(`https://api.printify.com/v1/shops/${firstShopId}/products.json`, { headers })
-      result.firstShopProductsStatus = productsRes.status
-      result.firstShopProducts = productsRes.ok ? await productsRes.json() : await productsRes.text()
-    } catch (err) {
-      result.firstShopProductsError = err instanceof Error ? err.message : String(err)
-    }
-  }
-
-  return NextResponse.json(result, { status: 200 })
 }
