@@ -1,11 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { getSupabase } from '@/lib/supabase'
 import { computeBrandFidelityScore } from '@/lib/design-feedback'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-)
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,6 +11,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = authHeader.replace('Bearer ', '')
+    const supabase = getSupabase()
 
     // Fetch user's storefronts with aggregated order stats and brand data
     const { data: storefronts, error: storefrontError } = await supabase

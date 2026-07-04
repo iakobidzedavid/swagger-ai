@@ -1,10 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-)
+import { getSupabase } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,6 +9,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = authHeader.replace('Bearer ', '')
+    const supabase = getSupabase()
     const { searchParams } = new URL(request.url)
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
