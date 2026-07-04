@@ -7,7 +7,7 @@ export const runtime = 'nodejs'
 interface SubmitBody {
   orderId?: string
   brandAccuracyRating?: number
-  wouldReorder?: boolean
+  wouldReorder?: boolean | null
   comment?: string
 }
 
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<SubmitRespons
       { status: 400 }
     )
   }
-  if (typeof wouldReorder !== 'boolean') {
+  if (wouldReorder != null && typeof wouldReorder !== 'boolean') {
     return NextResponse.json({ success: false, error: 'wouldReorder must be a boolean' }, { status: 400 })
   }
   if (comment && (typeof comment !== 'string' || comment.length > 1000)) {
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<SubmitRespons
           order_id: order.id,
           domain: order.domain,
           brand_accuracy_rating: brandAccuracyRating,
-          would_reorder: wouldReorder,
+          would_reorder: wouldReorder ?? null,
           comment: comment?.trim() || null,
         },
         { onConflict: 'order_id' }

@@ -40,8 +40,8 @@ export function DesignFeedbackWidget({ orderId }: DesignFeedbackWidgetProps) {
   }, [orderId])
 
   const handleSubmit = async () => {
-    if (rating < 1 || wouldReorder === null) {
-      setErrorMsg('Please rate the brand match and answer the reorder question')
+    if (rating < 1) {
+      setErrorMsg('Please select a star rating')
       return
     }
     setErrorMsg('')
@@ -100,9 +100,11 @@ export function DesignFeedbackWidget({ orderId }: DesignFeedbackWidgetProps) {
               ★
             </span>
           ))}
-          <span className="text-small text-muted" style={{ marginLeft: '6px' }}>
-            {wouldReorder ? 'Would reorder' : 'Would not reorder'}
-          </span>
+          {wouldReorder !== null && (
+            <span className="text-small text-muted" style={{ marginLeft: '6px' }}>
+              {wouldReorder ? 'Would reorder' : 'Would not reorder'}
+            </span>
+          )}
         </div>
 
         {savedComment && (
@@ -173,7 +175,7 @@ export function DesignFeedbackWidget({ orderId }: DesignFeedbackWidgetProps) {
 
       <div style={{ marginBottom: '20px' }}>
         <div className="text-small font-semibold" style={{ marginBottom: '10px' }}>
-          Would you reorder this for the next new hire?
+          Would you reorder this for the next new hire? <span className="text-muted" style={{ fontWeight: 400 }}>(optional)</span>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button

@@ -30,8 +30,12 @@ export async function computeBrandFidelityScore(domain: string): Promise<BrandFi
 
   const avgRating = rows.reduce((sum, r) => sum + r.brand_accuracy_rating, 0) / responseCount
   const brandAccuracyPct = Math.round((avgRating / 5) * 100)
-  const reorderCount = rows.filter(r => r.would_reorder).length
-  const reorderRatePct = Math.round((reorderCount / responseCount) * 100)
+
+  const answeredReorder = rows.filter(r => r.would_reorder !== null)
+  const reorderRatePct =
+    answeredReorder.length === 0
+      ? null
+      : Math.round((answeredReorder.filter(r => r.would_reorder).length / answeredReorder.length) * 100)
 
   return { responseCount, brandAccuracyPct, reorderRatePct }
 }

@@ -8,7 +8,7 @@ interface CheckResponse {
   submitted?: boolean
   feedback?: {
     brandAccuracyRating: number
-    wouldReorder: boolean
+    wouldReorder: boolean | null
     comment: string | null
   }
   error?: string
