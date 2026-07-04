@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { computeBrandFidelityScore } from '@/lib/design-feedback'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -40,28 +41,38 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch storefronts' }, { status: 500 })
     }
 
-    // Aggregate stats for each storefront
-    const storefrontStats = (storefronts || []).map((sf: any) => {
-      const completedOrders = (sf.orders || []).filter((o: any) => o.status === 'completed')
-      const totalGmv = completedOrders.reduce((sum: number, o: any) => sum + o.total_amount_cents, 0)
-      const swaggerFee = completedOrders.reduce((sum: number, o: any) => sum + o.swagger_fee_cents, 0)
+    // Aggregate stats for each storefront, including brand fidelity scores
+    const storefrontStats = await Promise.all(
+      (storefronts || []).map(async (sf: any) => {
+        const completedOrders = (sf.orders || []).filter((o: any) => o.status === 'completed')
+        const totalGmv = completedOrders.reduce((sum: number, o: any) => sum + o.total_amount_cents, 0)
+        const swaggerFee = completedOrders.reduce((sum: number, o: any) => sum + o.swagger_fee_cents, 0)
 
-      return {
-        id: sf.id,
-        domain: sf.domain,
-        companyName: sf.company_name,
-        logoUrl: sf.logo_url,
-        primaryColor: sf.primary_color,
-        secondaryColor: sf.secondary_color,
-        status: sf.status,
-        createdAt: sf.created_at,
-        gmvCents: totalGmv,
-        gmvDisplay: `$${(totalGmv / 100).toFixed(2)}`,
-        swaggerFeeCents: swaggerFee,
-        swaggerFeeDisplay: `$${(swaggerFee / 100).toFixed(2)}`,
-        orderCount: completedOrders.length,
-      }
-    })
+        // Compute brand fidelity score from real design feedback
+        const brandFidelity = await computeBrandFidelityScore(sf.domain)
+
+        return {
+          id: sf.id,
+          domain: sf.domain,
+          companyName: sf.company_name,
+          logoUrl: sf.logo_url,
+          primaryColor: sf.primary_color,
+          secondaryColor: sf.secondary_color,
+          status: sf.status,
+          createdAt: sf.created_at,
+          gmvCents: totalGmv,
+          gmvDisplay: `$${(totalGmv / 100).toFixed(2)}`,
+          swaggerFeeCents: swaggerFee,
+          swaggerFeeDisplay: `$${(swaggerFee / 100).toFixed(2)}`,
+          orderCount: completedOrders.length,
+          brandFidelity: {
+            responseCount: brandFidelity.responseCount,
+            brandAccuracyPct: brandFidelity.brandAccuracyPct,
+            reorderRatePct: brandFidelity.reorderRatePct,
+          },
+        }
+      })
+    )
 
     return NextResponse.json({
       storefronts: storefrontStats,

@@ -39,6 +39,11 @@ interface StorefrontData {
   gmvCents: number
   gmvDisplay: string
   orderCount: number
+  brandFidelity?: {
+    responseCount: number
+    brandAccuracyPct: number | null
+    reorderRatePct: number | null
+  }
 }
 
 interface DashboardState {
@@ -428,8 +433,49 @@ function DashboardContent() {
                     </div>
                   </div>
 
+                  {/* Brand Fidelity Score */}
+                  {sf.brandFidelity && sf.brandFidelity.responseCount > 0 && (
+                    <div style={{
+                      padding: '12px',
+                      background: 'var(--color-accent-subtle)',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: '0.875rem',
+                      marginTop: '8px'
+                    }}>
+                      <div style={{ color: 'var(--color-text-muted)', marginBottom: '6px' }}>Brand Fidelity Score</div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '4px' }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-accent)' }}>
+                          {sf.brandFidelity.brandAccuracyPct}%
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                          {sf.brandFidelity.reorderRatePct !== null && (
+                            <>
+                              · {sf.brandFidelity.reorderRatePct}% reorder rate
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                        from {sf.brandFidelity.responseCount} employee rating{sf.brandFidelity.responseCount === 1 ? '' : 's'}
+                      </div>
+                    </div>
+                  )}
+
+                  {sf.brandFidelity && sf.brandFidelity.responseCount === 0 && (
+                    <div style={{
+                      padding: '12px',
+                      background: 'var(--color-overlay-subtle)',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: '0.75rem',
+                      color: 'var(--color-text-muted)',
+                      marginTop: '8px'
+                    }}>
+                      🧵 New storefront — brand fidelity score appears after first order
+                    </div>
+                  )}
+
                   {/* Status */}
-                  <div className={`status-pill ${sf.status === 'complete' ? 'status-pill-success' : 'status-pill-neutral'}`}>
+                  <div className={`status-pill ${sf.status === 'complete' ? 'status-pill-success' : 'status-pill-neutral'}`} style={{ marginTop: '12px' }}>
                     {sf.status}
                   </div>
                 </div>
