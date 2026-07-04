@@ -57,7 +57,7 @@ export function CompetitivePositionChart({ yourSpeedSeconds, yourBrandFidelityPc
         </p>
       </div>
 
-      <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} width="100%" height="auto" role="img" aria-label="Competitive position chart: brand accuracy vs speed to launch">
+      <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} style={{ width: '100%', height: 'auto' }} role="img" aria-label="Competitive position chart: brand accuracy vs speed to launch">
         {/* Winning quadrant tint (upper-right: fast + high fidelity) */}
         <rect
           x={dividerX < PAD_L + PLOT_W ? dividerX : PAD_L}

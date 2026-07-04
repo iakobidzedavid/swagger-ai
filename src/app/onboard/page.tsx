@@ -172,8 +172,9 @@ function OnboardForm() {
     }
   }
 
-  async function handleGenerateStore() {
-    if (!brand) return
+  async function handleGenerateStore(brandOverride?: BrandResult) {
+    const brandData = brandOverride ?? brand
+    if (!brandData) return
     setStoreRequestState('requesting')
     setStoreRequestError(null)
     try {
@@ -181,12 +182,12 @@ function OnboardForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          domain_submission_id: brand.id,
-          domain: brand.domain,
-          company_name: brand.company_name,
-          logo_url: brand.logo_url,
-          primary_color: brand.primary_color,
-          secondary_color: userSelectedSecondaryColor || brand.secondary_color,
+          domain_submission_id: brandData.id,
+          domain: brandData.domain,
+          company_name: brandData.company_name,
+          logo_url: brandData.logo_url,
+          primary_color: brandData.primary_color,
+          secondary_color: userSelectedSecondaryColor || brandData.secondary_color,
           contact_name: contactName.trim() || undefined,
           contact_email: contactEmail.trim() || undefined,
         }),
@@ -265,6 +266,11 @@ function OnboardForm() {
       }
       setBrand(data)
       setSubmitState('success')
+      // Single click, single flow: the domain form's CTA reads "Continue to
+      // Store", so continuing to the store — firing the storefront request
+      // and landing on /store-created — must happen right here, not wait on
+      // a second manual click the visitor has no reason to expect.
+      handleGenerateStore(data)
     } catch {
       setSubmitState('error')
       setSubmitError('Network error. Please check your connection and try again.')
@@ -516,7 +522,7 @@ function OnboardForm() {
             {storeRequestState !== 'queued' && (
               <button
                 type="button"
-                onClick={handleGenerateStore}
+                onClick={() => handleGenerateStore()}
                 disabled={storeRequestState === 'requesting'}
                 className="btn btn-primary btn-full"
                 style={{ marginTop: '8px', marginBottom: '16px' }}
