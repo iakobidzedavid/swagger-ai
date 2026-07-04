@@ -6,6 +6,11 @@ export const runtime = 'nodejs'
 interface CheckResponse {
   success: boolean
   submitted?: boolean
+  feedback?: {
+    brandAccuracyRating: number
+    wouldReorder: boolean
+    comment: string | null
+  }
   error?: string
 }
 
@@ -24,7 +29,7 @@ export async function GET(req: NextRequest): Promise<NextResponse<CheckResponse>
   try {
     const { data, error } = await supabase
       .from('design_feedback')
-      .select('id')
+      .select('brand_accuracy_rating, would_reorder, comment')
       .eq('order_id', orderId)
       .maybeSingle()
 
@@ -33,7 +38,19 @@ export async function GET(req: NextRequest): Promise<NextResponse<CheckResponse>
       return NextResponse.json({ success: false, error: 'Failed to check feedback' }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, submitted: !!data })
+    if (!data) {
+      return NextResponse.json({ success: true, submitted: false })
+    }
+
+    return NextResponse.json({
+      success: true,
+      submitted: true,
+      feedback: {
+        brandAccuracyRating: data.brand_accuracy_rating,
+        wouldReorder: data.would_reorder,
+        comment: data.comment,
+      },
+    })
   } catch (err) {
     console.error('design-feedback/check error:', err)
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })

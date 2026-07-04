@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { computeBrandFidelityScore } from '@/lib/design-feedback'
 
 export const runtime = 'nodejs'
 
@@ -13,6 +14,7 @@ interface SubmitBody {
 interface SubmitResponse {
   success: boolean
   id?: string
+  score?: number | null
   error?: string
 }
 
@@ -85,7 +87,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<SubmitRespons
       return NextResponse.json({ success: false, error: 'Failed to save feedback' }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, id: data.id })
+    const { brandAccuracyPct } = await computeBrandFidelityScore(order.domain)
+
+    return NextResponse.json({ success: true, id: data.id, score: brandAccuracyPct })
   } catch (err) {
     console.error('design-feedback/submit error:', err)
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })

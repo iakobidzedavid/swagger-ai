@@ -20,12 +20,17 @@ export function DesignFeedbackWidget({ orderId }: DesignFeedbackWidgetProps) {
   const [wouldReorder, setWouldReorder] = useState<boolean | null>(null)
   const [comment, setComment] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
+  const [savedComment, setSavedComment] = useState<string | null>(null)
+  const [score, setScore] = useState<number | null>(null)
 
   useEffect(() => {
     fetch(`/api/design-feedback/check?orderId=${encodeURIComponent(orderId)}`)
       .then(res => res.json())
       .then(json => {
-        if (json.success && json.submitted) {
+        if (json.success && json.submitted && json.feedback) {
+          setRating(json.feedback.brandAccuracyRating)
+          setWouldReorder(json.feedback.wouldReorder)
+          setSavedComment(json.feedback.comment)
           setState('already-submitted')
         } else {
           setState('prompt')
@@ -56,6 +61,8 @@ export function DesignFeedbackWidget({ orderId }: DesignFeedbackWidgetProps) {
       if (!res.ok || !json.success) {
         throw new Error(json.error || 'Failed to submit feedback')
       }
+      setSavedComment(comment.trim() || null)
+      setScore(typeof json.score === 'number' ? json.score : null)
       setState('submitted')
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Failed to submit feedback')
@@ -70,7 +77,7 @@ export function DesignFeedbackWidget({ orderId }: DesignFeedbackWidgetProps) {
   if (state === 'already-submitted' || state === 'submitted') {
     return (
       <div className="card" style={{ marginBottom: '32px', background: 'var(--color-surface)' }}>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: '16px' }}>
           <span style={{ fontSize: '20px' }}>✓</span>
           <div>
             <h3 className="text-h3" style={{ marginBottom: '6px' }}>
@@ -82,6 +89,45 @@ export function DesignFeedbackWidget({ orderId }: DesignFeedbackWidgetProps) {
             </p>
           </div>
         </div>
+
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
+          {[1, 2, 3, 4, 5].map(star => (
+            <span
+              key={star}
+              aria-hidden
+              style={{ fontSize: '20px', lineHeight: 1, color: rating >= star ? 'var(--color-accent)' : 'var(--color-border)' }}
+            >
+              ★
+            </span>
+          ))}
+          <span className="text-small text-muted" style={{ marginLeft: '6px' }}>
+            {wouldReorder ? 'Would reorder' : 'Would not reorder'}
+          </span>
+        </div>
+
+        {savedComment && (
+          <p className="text-small text-muted" style={{ marginBottom: '12px', fontStyle: 'italic' }}>
+            "{savedComment}"
+          </p>
+        )}
+
+        {state === 'submitted' && score !== null && (
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'baseline',
+              gap: '8px',
+              padding: '10px 14px',
+              background: 'var(--color-accent-subtle)',
+              borderRadius: 'var(--radius-md)',
+            }}
+          >
+            <span className="text-h3" style={{ color: 'var(--color-accent)' }}>
+              {score}/100
+            </span>
+            <span className="text-small text-muted">Brand Fidelity Score for this storefront</span>
+          </div>
+        )}
       </div>
     )
   }

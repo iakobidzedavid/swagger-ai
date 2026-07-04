@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
 import { normalizeDomain } from '@/lib/brand'
+import { computeBrandFidelityScore } from '@/lib/design-feedback'
 
 export const runtime = 'nodejs'
 
@@ -28,33 +28,7 @@ export async function GET(req: NextRequest): Promise<NextResponse<ScoreResponse>
   const domain = normalizeDomain(domainParam)
 
   try {
-    const { data, error } = await supabase
-      .from('design_feedback')
-      .select('brand_accuracy_rating, would_reorder')
-      .eq('domain', domain)
-
-    if (error) {
-      console.error('Failed to load design feedback score:', error)
-      return NextResponse.json({ success: false, error: 'Failed to load score' }, { status: 500 })
-    }
-
-    const rows = data || []
-    const responseCount = rows.length
-
-    if (responseCount === 0) {
-      return NextResponse.json({
-        success: true,
-        domain,
-        responseCount: 0,
-        brandAccuracyPct: null,
-        reorderRatePct: null,
-      })
-    }
-
-    const avgRating = rows.reduce((sum, r) => sum + r.brand_accuracy_rating, 0) / responseCount
-    const brandAccuracyPct = Math.round((avgRating / 5) * 100)
-    const reorderCount = rows.filter(r => r.would_reorder).length
-    const reorderRatePct = Math.round((reorderCount / responseCount) * 100)
+    const { responseCount, brandAccuracyPct, reorderRatePct } = await computeBrandFidelityScore(domain)
 
     return NextResponse.json({
       success: true,
