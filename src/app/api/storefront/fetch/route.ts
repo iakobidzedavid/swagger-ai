@@ -84,9 +84,22 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // For store-created page (queued status), return just the request without products
-    if (idParam && storefrontRequest.status === 'queued') {
-      return NextResponse.json(storefrontRequest, { status: 200 })
+    // Store-created confirmation page always looks up by ID and expects the
+    // raw row (snake_case columns, including status/created_at/the DE Step 11
+    // competitive-position metrics) — regardless of status. Previously this
+    // only returned the raw row for 'queued' and otherwise fell through to the
+    // domain-lookup shape below (wrapped, camelCase, missing created_at/status),
+    // which broke the confirmation page for every completed storefront.
+    if (idParam) {
+      const { count: productsCreated } = await supabase
+        .from('printify_products')
+        .select('id', { count: 'exact', head: true })
+        .eq('storefront_request_id', storefrontRequest.id)
+
+      return NextResponse.json(
+        { ...storefrontRequest, productsCreated: productsCreated ?? 0 },
+        { status: 200 }
+      )
     }
 
     // For published storefronts, fetch products

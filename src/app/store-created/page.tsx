@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { CompetitivePositionChart } from '@/components/CompetitivePositionChart'
 
 interface StorefrontRequest {
   id: string
@@ -12,6 +13,8 @@ interface StorefrontRequest {
   secondary_color: string
   status: string
   created_at: string
+  generation_seconds: number | null
+  brand_fidelity_pct: number | null
 }
 
 interface StoreInfo {
@@ -23,6 +26,8 @@ interface StoreInfo {
   secondaryColor: string
   storeUrl: string
   createdAt: string
+  generationSeconds: number | null
+  brandFidelityPct: number | null
 }
 
 function StoreCreatedContent() {
@@ -63,6 +68,8 @@ function StoreCreatedContent() {
           secondaryColor: data.secondary_color,
           storeUrl,
           createdAt: data.created_at,
+          generationSeconds: data.generation_seconds,
+          brandFidelityPct: data.brand_fidelity_pct,
         })
         setError(null)
       } catch (err) {
@@ -258,6 +265,15 @@ function StoreCreatedContent() {
             </div>
           </div>
         </div>
+
+        {/* Your Competitive Position — DE Step 11 made real: your own generation
+            time + brand-fidelity score, plotted against the competitive research */}
+        {storeInfo.generationSeconds != null && storeInfo.brandFidelityPct != null && (
+          <CompetitivePositionChart
+            yourSpeedSeconds={storeInfo.generationSeconds}
+            yourBrandFidelityPct={storeInfo.brandFidelityPct}
+          />
+        )}
 
         {/* Action Buttons */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>

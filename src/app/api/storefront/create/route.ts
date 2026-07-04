@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { getPrintifyClient } from '@/lib/printify'
 import { verifyAuth } from '@/lib/auth'
+import { computeBrandFidelity, computeGenerationSeconds } from '@/lib/competitive-position'
 
 export const runtime = 'nodejs'
 
@@ -34,6 +35,8 @@ interface StorefrontCreateResponse {
     companyName: string
     status: string
     productsCreated: number
+    generationSeconds: number
+    brandFidelityPct: number
   }
 }
 
@@ -235,13 +238,27 @@ export async function POST(req: NextRequest) {
       printifyClient.isMockMode() ? 'mock.swagger.shop' : 'swagger.shop'
     }`
 
-    // Step 5: Update storefront_requests with completion status
+    // Step 5: Update storefront_requests with completion status + DE Step 11
+    // competitive-position metrics (real, computed from this exact generation —
+    // not estimated): elapsed generation time and an objective brand-fidelity
+    // score from the assets actually captured/applied.
     const finalStatus = failedProducts.length === 0 ? 'complete' : failedProducts.length === products.length ? 'failed' : 'partial'
+    const generationSeconds = computeGenerationSeconds(storefrontRequest.created_at)
+    const { pct: brandFidelityPct, breakdown: brandFidelityBreakdown } = computeBrandFidelity({
+      logoUrl,
+      primaryColor,
+      secondaryColor,
+      productsRequested: products.length,
+      productsCreated,
+    })
     const { error: updateError } = await supabase
       .from('storefront_requests')
       .update({
         status: finalStatus,
         updated_at: new Date().toISOString(),
+        generation_seconds: generationSeconds,
+        brand_fidelity_pct: brandFidelityPct,
+        brand_fidelity_breakdown: brandFidelityBreakdown,
       })
       .eq('id', storefrontId)
 
@@ -265,6 +282,8 @@ export async function POST(req: NextRequest) {
           companyName,
           status: finalStatus,
           productsCreated,
+          generationSeconds,
+          brandFidelityPct,
         },
         failedProducts: failedProducts.length > 0 ? failedProducts : undefined,
       },
