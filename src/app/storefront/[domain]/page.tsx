@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { normalizeDomain } from '@/lib/brand'
 import { useCart } from '@/context/CartContext'
 import { VariantSelector } from '@/components/VariantSelector'
+import { BrandFidelityScore } from '@/components/BrandFidelityScore'
 
 interface StorefrontProduct {
   id: string
@@ -257,6 +258,7 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
             <p style={{ margin: 0, fontSize: '16px', lineHeight: 1.6, opacity: 0.95 }}>
               Browse our curated selection of branded merchandise. Free for all team members — express your company culture!
             </p>
+            <BrandFidelityScore domain={domain} />
           </div>
         </div>
       </div>

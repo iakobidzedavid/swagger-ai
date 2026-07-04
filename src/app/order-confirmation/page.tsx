@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { getStatusBadge } from '@/lib/order-status'
+import { DesignFeedbackWidget } from '@/components/DesignFeedbackWidget'
 
 interface OrderData {
   id: string
@@ -481,6 +482,9 @@ function OrderConfirmationContent() {
             </ul>
           </div>
         </div>
+
+        {/* Brand Fidelity Feedback — closes the loop on Swagger AI's core design engine */}
+        <DesignFeedbackWidget orderId={order.id} />
 
         {/* Action Buttons */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
