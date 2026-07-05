@@ -127,18 +127,19 @@ export function stripHtml(html: string): string {
 
 /**
  * Get the first variant or create a default one
+ * Prices are stored in dollars in the DB and catalog; convert to cents here.
  */
 function getPrimaryVariant(
   product: PrintifyCatalogProduct
 ): Array<{ id: string; title: string; price: number }> {
   if (!product.variants || product.variants.length === 0) {
-    return [{ id: 'default', title: 'Standard', price: 19.99 }]
+    return [{ id: 'default', title: 'Standard', price: 1999 }] // $19.99 in cents
   }
 
   return product.variants.slice(0, 1).map(v => ({
     id: String(v.id),
     title: v.title || 'Standard',
-    price: v.price || 19.99,
+    price: Math.round((v.price || 19.99) * 100), // Convert dollars to cents
   }))
 }
 
