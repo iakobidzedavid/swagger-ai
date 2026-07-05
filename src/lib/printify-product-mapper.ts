@@ -106,6 +106,9 @@ function getBestImage(product: PrintifyCatalogProduct): string {
  * descriptions come back as marketing HTML with <p>/<div>/<br> markup) and
  * collapse whitespace so it reads as plain copy on a product card.
  *
+ * Also removes hex color codes and metadata patterns like "Branded with colors: #XXXXXX"
+ * that contaminate product descriptions.
+ *
  * Exported so printify-catalog.ts can reuse it when normalizing rows read
  * back from the printify_products table (see normalizeStoredProduct).
  */
@@ -114,6 +117,10 @@ export function stripHtml(html: string): string {
     .replace(/<[^>]*>/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&nbsp;/g, ' ')
+    // Remove hex color codes and metadata patterns like "Branded with colors: #XXXXXX"
+    .replace(/(?:^|\s)[-–—]*\s*(?:Branded\s+)?with\s+colors?\s*:?\s*#[0-9a-fA-F]{6}(?:\s|$)/gi, ' ')
+    // Remove standalone hex codes (but keep them in hex color formats like #123456 unless they're metadata)
+    .replace(/\b#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b(?:\s|$)/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim()
 }

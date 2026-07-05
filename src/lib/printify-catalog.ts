@@ -239,6 +239,9 @@ function isUsableStoredDescription(description: string | null | undefined): desc
   const d = description.trim()
   if (!d) return false
   if (HEX_COLOR_ONLY.test(d)) return false
+  // Reject descriptions that appear to contain brand metadata with hex codes
+  // e.g., "...Branded with colors: #4285f4"
+  if (/(Branded\s+)?with\s+colors?\s*:?\s*#[0-9a-fA-F]{6}/i.test(d)) return false
   return true
 }
 
