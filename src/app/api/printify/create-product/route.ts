@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { getPrintifyClient } from '@/lib/printify'
+import { generateMockup } from '@/lib/mockup-generator'
+import { determinePrimaryCategory } from '@/lib/printify-product-mapper'
 
 export const runtime = 'nodejs'
 
@@ -86,6 +88,16 @@ export async function POST(req: NextRequest) {
   try {
     const printifyClient = getPrintifyClient()
 
+    // Look up the storefront's logo + company name so the mockup we generate
+    // actually carries the store's brand identity (this endpoint's request
+    // body only carries colors, not logo/company — the storefront row is the
+    // single source of truth for both).
+    const { data: storefrontRow } = await supabase
+      .from('storefront_requests')
+      .select('logo_url, company_name, domain')
+      .eq('id', storefrontRequestId)
+      .single()
+
     // Prepare product data for Printify
     // Use the product's own real catalog description when available — never
     // surface raw hex codes (e.g. "#7c3aed") as customer-facing copy.
@@ -136,6 +148,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Generate the branded mockup (SVG with the store's logo + brand colors
+    // baked in) so the persisted product shows real brand identity instead
+    // of the generic Printify catalog photo (see storefront/create/route.ts
+    // for the equivalent fix on the bulk-creation path).
+    const mockup = generateMockup({
+      productId,
+      productTitle: productName,
+      productCategory: determinePrimaryCategory(productCategory),
+      logoUrl: storefrontRow?.logo_url ?? null,
+      primaryColor,
+      secondaryColor,
+      companyName: storefrontRow?.company_name ?? storefrontRow?.domain ?? productName,
+    })
+
     // Store the created product in our database
     const { data, error } = await supabase
       .from('printify_products')
@@ -146,6 +172,7 @@ export async function POST(req: NextRequest) {
         description: productData.description,
         category: productCategory,
         image_url: productImage,
+        mockup_image_url: mockup.dataUrl,
         price_usd: productPrice,
         sku: productSku,
         brand_color_primary: primaryColor,
