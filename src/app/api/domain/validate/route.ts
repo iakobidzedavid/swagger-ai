@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { promises as dns } from 'dns'
 
 const PERSONAL_DOMAINS = new Set([
   'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
@@ -18,16 +19,43 @@ function validateFormat(domain: string): { valid: boolean; reason?: string } {
 }
 
 /**
- * Check if domain is available and reachable via HTTP/HTTPS.
- * Uses a simple HEAD request (no redirect following) to avoid bot detection,
- * SSL renegotiation, or redirect-loop complications that can cause timeouts.
+ * Check if domain is available by:
+ * 1. First checking DNS resolution to catch NXDOMAIN errors early
+ * 2. Then attempting HTTP/HTTPS requests to verify HTTP availability
  *
- * Returns true if domain responds with ANY HTTP status code (2xx, 3xx, 4xx, 5xx),
- * indicating the domain exists and is configured. Returns false only if the domain
- * fails to respond due to DNS errors, connection refused, or timeout.
+ * Returns true if domain:
+ * - Resolves via DNS AND
+ * - Responds with ANY HTTP status code (2xx, 3xx, 4xx, 5xx)
+ *
+ * Returns false if:
+ * - Domain fails DNS resolution (NXDOMAIN, ENOTFOUND)
+ * - Domain doesn't respond to HTTP requests due to network/connection errors
  */
 async function checkDomainAvailability(domain: string): Promise<{ available: boolean; details?: string }> {
   try {
+    // STEP 1: Check DNS resolution first to catch NXDOMAIN early
+    try {
+      await dns.resolveSoa(domain)
+      // DNS resolution succeeded, domain exists
+    } catch (dnsErr: any) {
+      const dnsErrCode = (dnsErr as any)?.code
+      const dnsErrMsg = String(dnsErr)
+
+      // Check for DNS errors that indicate the domain doesn't exist
+      if (dnsErrCode === 'ENOTFOUND' ||
+          dnsErrCode === 'ENODATA' ||
+          /NXDOMAIN|ENOTFOUND|ENODATA/i.test(dnsErrMsg)) {
+        return {
+          available: false,
+          details: 'Domain does not exist (DNS resolution failed).',
+        }
+      }
+
+      // For other DNS errors (timeouts, temporary failures), continue to HTTP check
+      // Some domains might be configured to not respond to DNS SOA queries
+    }
+
+    // STEP 2: Check HTTP availability as secondary verification
     // Use 'manual' redirect handling to avoid bot detection timeouts and redirect loops.
     // Accept any HTTP response as proof the domain exists (including 3xx, 4xx, 5xx).
     const controller = new AbortController()
@@ -66,7 +94,7 @@ async function checkDomainAvailability(domain: string): Promise<{ available: boo
 
         // Both HEAD and GET failed. Check if it's a DNS/network error or timeout.
         const errorMsg = String(getErr)
-        const isNetworkError = /ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|AbortError|getaddrinfo/i.test(
+        const isNetworkError = /ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|AbortError|getaddrinfo|NXDOMAIN/i.test(
           errorMsg
         )
 
