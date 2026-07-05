@@ -105,8 +105,11 @@ function getBestImage(product: PrintifyCatalogProduct): string {
  * Strip HTML tags from a Printify catalog description (real blueprint
  * descriptions come back as marketing HTML with <p>/<div>/<br> markup) and
  * collapse whitespace so it reads as plain copy on a product card.
+ *
+ * Exported so printify-catalog.ts can reuse it when normalizing rows read
+ * back from the printify_products table (see normalizeStoredProduct).
  */
-function stripHtml(html: string): string {
+export function stripHtml(html: string): string {
   return html
     .replace(/<[^>]*>/g, ' ')
     .replace(/&amp;/g, '&')
@@ -146,7 +149,7 @@ function getSku(product: PrintifyCatalogProduct): string {
 /**
  * Determine primary category from Printify product
  */
-function determinePrimaryCategory(
+export function determinePrimaryCategory(
   category?: string
 ): 'apparel' | 'drinkware' | 'accessories' {
   if (!category) return 'accessories'

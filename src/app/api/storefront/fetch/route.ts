@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { normalizeDomain } from '@/lib/brand'
+import { normalizeStoredProduct } from '@/lib/printify-catalog'
 
 export const runtime = 'nodejs'
 
@@ -116,17 +117,13 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Transform products to storefront format
-    const products = (printifyProducts || []).map(p => ({
-      id: p.id,
-      title: p.title,
-      description: p.description,
-      sku: p.sku,
-      image: p.image_url,
-      mockupImage: p.mockup_image_url,
-      category: p.category,
-      variants: p.variants || [],
-    }))
+    // Transform stored rows to real, display-safe storefront data. Rows from
+    // before the create-product pipeline was fixed can hold raw hex brand
+    // colors or dead via.placeholder.com URLs in title/image fields (e.g. the
+    // google.com storefront) — normalizeStoredProduct swaps anything
+    // unusable for the matching real Printify catalog product at read time,
+    // so old storefronts render correctly without a backfill migration.
+    const products = (printifyProducts || []).map((p, i) => normalizeStoredProduct(p, i))
 
     const response: StorefrontData = {
       id: storefrontRequest.id,
