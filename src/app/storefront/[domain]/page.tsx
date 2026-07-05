@@ -49,14 +49,15 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({})
   const [cartCount, setCartCount] = useState(0)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
-  const { addToCart, cart } = useCart()
+  const { addToCart, cartForDomain } = useCart()
 
   const domain = normalizeDomain(paramDomain)
+  const scopedCart = cartForDomain(domain)
 
   // Update cart count whenever items change
   useEffect(() => {
-    setCartCount(cart.items.length)
-  }, [cart.items])
+    setCartCount(scopedCart.items.length)
+  }, [scopedCart.items])
 
   useEffect(() => {
     if (!domain) {
@@ -134,6 +135,7 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
     }
 
     addToCart(
+      domain,
       {
         id: product.id,
         title: product.title,

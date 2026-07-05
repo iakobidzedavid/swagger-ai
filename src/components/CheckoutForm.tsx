@@ -23,7 +23,8 @@ function CheckoutFormContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const domain = searchParams.get('domain') || ''
-  const { cart, clearCart } = useCart()
+  const { isHydrated, clearCart, cartForDomain } = useCart()
+  const cart = cartForDomain(domain)
   const stripe = useStripe()
   const elements = useElements()
 
@@ -176,7 +177,7 @@ function CheckoutFormContent() {
         throw new Error(json.error || 'Failed to create order')
       }
 
-      clearCart()
+      clearCart(domain)
       setStep('success')
       setTimeout(() => {
         router.push(`/order-confirmation?orderId=${json.orderId}`)
@@ -187,6 +188,22 @@ function CheckoutFormContent() {
     } finally {
       setProcessing(false)
     }
+  }
+
+  // Cart is read from localStorage asynchronously after mount. Bouncing to
+  // "your cart is empty" before that finishes was the reported bug — a real
+  // cart could take a tick to load (slower device/connection), and this
+  // screen would show — and could be clicked away from — before the items
+  // ever appeared.
+  if (!isHydrated && step !== 'success') {
+    return (
+      <div className="section">
+        <div className="container content-narrow" style={{ textAlign: 'center' }}>
+          <div className="spinner" style={{ width: 32, height: 32, margin: '0 auto 16px' }} />
+          <p className="text-body text-muted">Loading your cart…</p>
+        </div>
+      </div>
+    )
   }
 
   if (cart.items.length === 0 && step !== 'success') {

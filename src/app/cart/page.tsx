@@ -8,7 +8,8 @@ function CartContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const domain = searchParams.get('domain') || ''
-  const { cart, removeFromCart, updateQuantity } = useCart()
+  const { isHydrated, removeFromCart, updateQuantity, cartForDomain } = useCart()
+  const cart = cartForDomain(domain)
 
   const handleCheckout = () => {
     if (cart.items.length === 0) {
@@ -36,7 +37,16 @@ function CartContent() {
         </div>
 
         {/* Cart Items */}
-        {cart.items.length === 0 ? (
+        {!isHydrated ? (
+          // Cart is read from localStorage async on mount — until that
+          // finishes we genuinely don't know if it's empty yet. Rendering
+          // the "Cart is Empty" state here would flash it before the real
+          // items load (the bug this page previously had).
+          <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <div className="spinner" style={{ width: 32, height: 32, margin: '0 auto 16px' }} />
+            <p className="text-body text-muted">Loading your cart…</p>
+          </div>
+        ) : cart.items.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
             <svg
               width="48"
@@ -134,7 +144,7 @@ function CartContent() {
                             onChange={e => {
                               const newQty = parseInt(e.target.value, 10)
                               if (newQty > 0) {
-                                updateQuantity(item.productId, item.variantId, newQty)
+                                updateQuantity(item.domain, item.productId, item.variantId, newQty)
                               }
                             }}
                             className="input-field"
@@ -157,7 +167,7 @@ function CartContent() {
 
                     {/* Remove Button */}
                     <button
-                      onClick={() => removeFromCart(item.productId, item.variantId)}
+                      onClick={() => removeFromCart(item.domain, item.productId, item.variantId)}
                       style={{
                         marginTop: '8px',
                         background: 'none',

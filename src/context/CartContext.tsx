@@ -1,35 +1,36 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import {
+  type CartProduct,
+  type CartItem,
+  type Cart,
+  toCart,
+  addItem,
+  removeItem,
+  updateItemQuantity,
+  clearItems,
+  itemsForDomain,
+  sanitizeLoadedItems,
+} from '@/lib/cart'
 
-export interface CartProduct {
-  id: string
-  title: string
-  sku: string
-  image: string
-  variants: Array<{ id: string; title: string; price: number }>
-}
-
-export interface CartItem {
-  productId: string
-  variantId: string
-  quantity: number
-  product: CartProduct
-  unitPrice: number
-}
-
-export interface Cart {
-  items: CartItem[]
-  totalItems: number
-  totalPrice: number
-}
+export type { CartProduct, CartItem, Cart }
 
 interface CartContextType {
+  /** Raw cart across ALL storefronts ever added in this browser. Prefer `cartForDomain`. */
   cart: Cart
-  addToCart: (product: CartProduct, variantId: string, unitPrice: number, quantity?: number) => void
-  removeFromCart: (productId: string, variantId: string) => void
-  updateQuantity: (productId: string, variantId: string, quantity: number) => void
-  clearCart: () => void
+  /** True once the cart has been read back from localStorage. Callers that
+   * decide "is the cart empty?" (e.g. checkout's empty-cart bounce screen)
+   * MUST wait for this to be true first — otherwise the transient
+   * pre-hydration empty state gets mistaken for a genuinely empty cart and
+   * the user gets bounced back before their real items load. */
+  isHydrated: boolean
+  addToCart: (domain: string, product: CartProduct, variantId: string, unitPrice: number, quantity?: number) => void
+  removeFromCart: (domain: string, productId: string, variantId: string) => void
+  updateQuantity: (domain: string, productId: string, variantId: string, quantity: number) => void
+  clearCart: (domain?: string) => void
+  /** Cart scoped to a single storefront's domain — what /cart and /checkout should render/charge. */
+  cartForDomain: (domain: string) => Cart
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -37,12 +38,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 const CART_STORAGE_KEY = 'swagger-ai-cart'
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [cart, setCart] = useState<Cart>({
-    items: [],
-    totalItems: 0,
-    totalPrice: 0,
-  })
-
+  const [items, setItems] = useState<CartItem[]>([])
   const [isHydrated, setIsHydrated] = useState(false)
 
   // Load cart from localStorage on mount
@@ -50,8 +46,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       const stored = localStorage.getItem(CART_STORAGE_KEY)
       if (stored) {
-        const parsed = JSON.parse(stored)
-        setCart(parsed)
+        setItems(sanitizeLoadedItems(JSON.parse(stored)))
       }
     } catch (err) {
       console.error('Failed to load cart from storage:', err)
@@ -63,107 +58,35 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isHydrated) {
       try {
-        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart))
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(toCart(items)))
       } catch (err) {
         console.error('Failed to save cart to storage:', err)
       }
     }
-  }, [cart, isHydrated])
+  }, [items, isHydrated])
 
-  const calculateTotals = (items: CartItem[]) => {
-    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
-    const totalPrice = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
-    return { totalItems, totalPrice }
+  const addToCart = (domain: string, product: CartProduct, variantId: string, unitPrice: number, quantity: number = 1) => {
+    setItems(prev => addItem(prev, domain, product, variantId, unitPrice, quantity))
   }
 
-  const addToCart = (product: CartProduct, variantId: string, unitPrice: number, quantity: number = 1) => {
-    setCart(prev => {
-      const existingItem = prev.items.find(
-        item => item.productId === product.id && item.variantId === variantId
-      )
-
-      let newItems: CartItem[]
-
-      if (existingItem) {
-        // Update quantity if item already in cart
-        newItems = prev.items.map(item =>
-          item.productId === product.id && item.variantId === variantId
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        )
-      } else {
-        // Add new item
-        newItems = [
-          ...prev.items,
-          {
-            productId: product.id,
-            variantId,
-            quantity,
-            product,
-            unitPrice,
-          },
-        ]
-      }
-
-      const { totalItems, totalPrice } = calculateTotals(newItems)
-
-      return {
-        items: newItems,
-        totalItems,
-        totalPrice,
-      }
-    })
+  const removeFromCart = (domain: string, productId: string, variantId: string) => {
+    setItems(prev => removeItem(prev, domain, productId, variantId))
   }
 
-  const removeFromCart = (productId: string, variantId: string) => {
-    setCart(prev => {
-      const newItems = prev.items.filter(
-        item => !(item.productId === productId && item.variantId === variantId)
-      )
-
-      const { totalItems, totalPrice } = calculateTotals(newItems)
-
-      return {
-        items: newItems,
-        totalItems,
-        totalPrice,
-      }
-    })
+  const updateQuantity = (domain: string, productId: string, variantId: string, quantity: number) => {
+    setItems(prev => updateItemQuantity(prev, domain, productId, variantId, quantity))
   }
 
-  const updateQuantity = (productId: string, variantId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId, variantId)
-      return
-    }
-
-    setCart(prev => {
-      const newItems = prev.items.map(item =>
-        item.productId === productId && item.variantId === variantId
-          ? { ...item, quantity }
-          : item
-      )
-
-      const { totalItems, totalPrice } = calculateTotals(newItems)
-
-      return {
-        items: newItems,
-        totalItems,
-        totalPrice,
-      }
-    })
+  const clearCart = (domain?: string) => {
+    setItems(prev => clearItems(prev, domain))
   }
 
-  const clearCart = () => {
-    setCart({
-      items: [],
-      totalItems: 0,
-      totalPrice: 0,
-    })
-  }
+  const cartForDomain = (domain: string): Cart => toCart(itemsForDomain(items, domain))
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart }}>
+    <CartContext.Provider
+      value={{ cart: toCart(items), isHydrated, addToCart, removeFromCart, updateQuantity, clearCart, cartForDomain }}
+    >
       {children}
     </CartContext.Provider>
   )
