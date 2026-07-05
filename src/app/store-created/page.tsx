@@ -56,8 +56,10 @@ function StoreCreatedContent() {
         }
         const data: StorefrontRequest = await res.json()
 
-        // Generate store URL based on domain
-        const storeUrl = `https://${data.domain.replace(/\./g, '-')}.swagger.shop`
+        // Generate store URL pointing to the real storefront page (not a fake domain)
+        // The domain is guaranteed to contain only alphanumerics, hyphens, and dots (via validation)
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
+        const storeUrl = `${appUrl}/storefront/${data.domain}`
 
         setStoreInfo({
           id: data.id,
