@@ -11,6 +11,7 @@ interface ProductSelection {
   productName: string
   productCategory: string
   productImage: string
+  productDescription?: string
   productPrice: number
   productSku: string
 }
@@ -154,9 +155,11 @@ export async function POST(req: NextRequest) {
     for (const product of products) {
       try {
         // Prepare product data for Printify
+        // Use the product's own real catalog description when we have one —
+        // never surface raw hex codes (e.g. "#7c3aed") as customer-facing copy.
         const productData = {
           title: product.productName,
-          description: `${product.productName} - Branded with colors: ${primaryColor}, ${secondaryColor}`,
+          description: product.productDescription?.trim() || `${product.productName} — custom branded merchandise for your team`,
           images: [{ src: product.productImage }],
           variants: [
             {

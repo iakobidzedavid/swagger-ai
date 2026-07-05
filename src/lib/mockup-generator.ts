@@ -68,12 +68,31 @@ function getTextColorForBg(bgColor: string): string {
 }
 
 /**
+ * Escape a string for safe interpolation into SVG/XML attribute and text
+ * content. Real logo URLs (Clearbit/Brandfetch) almost always contain an
+ * unescaped `&` in the query string (e.g. `?size=128&format=png`); embedding
+ * that directly into an `href="..."` produces invalid XML, which makes the
+ * browser refuse to render the *entire* SVG — the classic "broken image
+ * icon" bug. Product titles can also contain `&`, `<`, `>`, or `"`.
+ */
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
+/**
  * Generate a realistic-looking apparel product mockup (e.g., t-shirt, hoodie)
  */
 function generateApparelMockup(input: MockupInput): string {
   const { productTitle, primaryColor, secondaryColor, logoUrl } = input
   const primary = normalizeHexColor(primaryColor)
   const secondary = normalizeHexColor(secondaryColor)
+  const safeTitle = escapeXml(productTitle)
+  const safeLogoUrl = logoUrl ? escapeXml(logoUrl) : logoUrl
 
   // Product silhouette shape (simplified apparel form)
   const width = 300
@@ -111,11 +130,11 @@ function generateApparelMockup(input: MockupInput): string {
       </g>
 
       <!-- Logo placeholder (center of garment) -->
-      ${logoUrl ? `
+      ${safeLogoUrl ? `
         <g id="logoGroup">
           <!-- Subtle background for logo -->
           <circle cx="150" cy="170" r="35" fill="#ffffff" opacity="0.15" />
-          <image x="125" y="145" width="50" height="50" href="${logoUrl}"
+          <image x="125" y="145" width="50" height="50" href="${safeLogoUrl}"
                  preserveAspectRatio="xMidYMid slice" opacity="0.95" />
         </g>
       ` : `
@@ -128,7 +147,7 @@ function generateApparelMockup(input: MockupInput): string {
       <!-- Product title at bottom -->
       <text x="${width / 2}" y="${height - 30}" text-anchor="middle" font-size="16"
             font-weight="600" fill="${getTextColorForBg(primary)}"
-            font-family="system-ui, -apple-system, sans-serif">${productTitle}</text>
+            font-family="system-ui, -apple-system, sans-serif">${safeTitle}</text>
 
       <!-- Subtle shine/highlight effect -->
       <ellipse cx="120" cy="130" rx="30" ry="60" fill="#ffffff" opacity="0.15" />
@@ -143,6 +162,8 @@ function generateDrinkwareMockup(input: MockupInput): string {
   const { productTitle, primaryColor, secondaryColor, logoUrl } = input
   const primary = normalizeHexColor(primaryColor)
   const secondary = normalizeHexColor(secondaryColor)
+  const safeTitle = escapeXml(productTitle)
+  const safeLogoUrl = logoUrl ? escapeXml(logoUrl) : logoUrl
 
   const width = 300
   const height = 360
@@ -189,11 +210,11 @@ function generateDrinkwareMockup(input: MockupInput): string {
       </g>
 
       <!-- Logo in center of container -->
-      ${logoUrl ? `
+      ${safeLogoUrl ? `
         <g id="logoGroup" opacity="0.9">
           <!-- Subtle background -->
           <rect x="115" y="150" width="70" height="70" rx="5" fill="#ffffff" opacity="0.12" />
-          <image x="120" y="155" width="60" height="60" href="${logoUrl}"
+          <image x="120" y="155" width="60" height="60" href="${safeLogoUrl}"
                  preserveAspectRatio="xMidYMid slice" />
         </g>
       ` : `
@@ -210,7 +231,7 @@ function generateDrinkwareMockup(input: MockupInput): string {
       <!-- Product title -->
       <text x="${width / 2}" y="${height - 30}" text-anchor="middle" font-size="16"
             font-weight="600" fill="${getTextColorForBg(primary)}"
-            font-family="system-ui, -apple-system, sans-serif">${productTitle}</text>
+            font-family="system-ui, -apple-system, sans-serif">${safeTitle}</text>
     </svg>
   `
 }
@@ -222,6 +243,8 @@ function generateAccessoriesMockup(input: MockupInput): string {
   const { productTitle, primaryColor, secondaryColor, logoUrl } = input
   const primary = normalizeHexColor(primaryColor)
   const secondary = normalizeHexColor(secondaryColor)
+  const safeTitle = escapeXml(productTitle)
+  const safeLogoUrl = logoUrl ? escapeXml(logoUrl) : logoUrl
 
   const width = 300
   const height = 360
@@ -256,11 +279,11 @@ function generateAccessoriesMockup(input: MockupInput): string {
       </g>
 
       <!-- Logo area (front of bag) -->
-      ${logoUrl ? `
+      ${safeLogoUrl ? `
         <g id="logoGroup" opacity="0.92">
           <!-- Background panel for logo -->
           <rect x="110" y="160" width="80" height="80" rx="3" fill="#ffffff" opacity="0.16" />
-          <image x="115" y="165" width="70" height="70" href="${logoUrl}"
+          <image x="115" y="165" width="70" height="70" href="${safeLogoUrl}"
                  preserveAspectRatio="xMidYMid slice" />
         </g>
       ` : `
@@ -278,7 +301,7 @@ function generateAccessoriesMockup(input: MockupInput): string {
       <!-- Product title -->
       <text x="${width / 2}" y="${height - 30}" text-anchor="middle" font-size="16"
             font-weight="600" fill="${getTextColorForBg(secondary)}"
-            font-family="system-ui, -apple-system, sans-serif">${productTitle}</text>
+            font-family="system-ui, -apple-system, sans-serif">${safeTitle}</text>
     </svg>
   `
 }

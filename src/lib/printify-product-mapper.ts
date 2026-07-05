@@ -93,11 +93,26 @@ function getBestImage(product: PrintifyCatalogProduct): string {
   if (product.images && product.images.length > 0) {
     const img = product.images[0]
     if (typeof img === 'string') return img
-    if ('src' in img) return img.src
+    if ('src' in img && img.src) return img.src
   }
 
-  // Fallback placeholder
-  return `https://via.placeholder.com/300x300/cccccc/666666?text=${encodeURIComponent(product.title)}`
+  // Last-resort fallback — a real local asset (not a third-party placeholder
+  // service, which can go dark at any time and render as a broken image).
+  return '/product-placeholder.svg'
+}
+
+/**
+ * Strip HTML tags from a Printify catalog description (real blueprint
+ * descriptions come back as marketing HTML with <p>/<div>/<br> markup) and
+ * collapse whitespace so it reads as plain copy on a product card.
+ */
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 /**
@@ -169,17 +184,30 @@ function determinePrimaryCategory(
 
 /**
  * Map a Printify catalog product to our internal product schema
+ *
+ * Real Printify catalog blueprints (from /catalog/blueprints.json) have no
+ * `category` field — only title/brand/model — so category priority and
+ * apparel/drinkware/accessories classification both fall back to matching
+ * against the title when `category` is absent. A title is always required:
+ * if a product ever arrives without one, it gets a visible fallback instead
+ * of rendering as blank copy.
  */
 export function mapPrintifyProduct(
   product: PrintifyCatalogProduct,
   primaryColor?: string,
   secondaryColor?: string
 ): MappedProduct {
+  const title = product.title?.trim() || 'Custom Product'
+  const rawDescription = product.description?.trim()
+  const description = rawDescription
+    ? stripHtml(rawDescription).slice(0, 180)
+    : `Premium ${title.toLowerCase()} with your brand`
+
   return {
     id: product.id,
-    title: product.title,
-    description: product.description || `Premium ${product.title.toLowerCase()} with your brand`,
-    category: determinePrimaryCategory(product.category),
+    title,
+    description,
+    category: determinePrimaryCategory(product.category || title),
     image: getBestImage(product),
     variants: getPrimaryVariant(product),
     sku: getSku(product),
@@ -198,8 +226,8 @@ export function filterAndPrioritizeProducts(
 ): PrintifyCatalogProduct[] {
   return products
     .sort((a, b) => {
-      const aPriority = getCategoryPriority(a.category)
-      const bPriority = getCategoryPriority(b.category)
+      const aPriority = getCategoryPriority(a.category || a.title)
+      const bPriority = getCategoryPriority(b.category || b.title)
       return aPriority - bPriority
     })
     .slice(0, limit)

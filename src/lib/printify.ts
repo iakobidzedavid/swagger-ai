@@ -208,23 +208,38 @@ export class PrintifyClient {
   }
 
   /**
-   * Get catalog of available base products (templates)
+   * Get catalog of available base products (blueprints) — real Printify products
+   * (real photography, real titles/brand/model) that print providers fulfill.
+   *
+   * NOTE: Printify's real endpoint is `/catalog/blueprints.json` (a plain array,
+   * no `data` wrapper, no `limit` query param) — NOT `/catalog/products`, which
+   * doesn't exist on Printify's API. Calling the wrong path silently 404'd on
+   * every request, so every real-mode request fell through to the mock catalog.
    */
-  async getCatalogProducts(limit = 100): Promise<Array<{ id: string; title: string; description: string }>> {
+  async getCatalogProducts(
+    limit = 100
+  ): Promise<Array<{ id: string; title: string; description: string; images: Array<{ src: string }>; brand?: string; model?: string }>> {
     if (this.mockMode) {
       // Return mock catalog
       return [
-        { id: 't-shirt-1', title: 'Classic T-Shirt', description: 'Premium cotton' },
-        { id: 'hoodie-1', title: 'Hoodie', description: 'Comfortable hoodie' },
-        { id: 'mug-1', title: 'Coffee Mug', description: '11oz ceramic mug' },
+        { id: 't-shirt-1', title: 'Classic T-Shirt', description: 'Premium cotton', images: [] },
+        { id: 'hoodie-1', title: 'Hoodie', description: 'Comfortable hoodie', images: [] },
+        { id: 'mug-1', title: 'Coffee Mug', description: '11oz ceramic mug', images: [] },
       ]
     }
 
-    const response = await this.request<{ data: Array<{ id: string; title: string; description: string }> }>(
-      'GET',
-      `/catalog/products?limit=${limit}`
-    )
-    return response.data
+    const blueprints = await this.request<
+      Array<{ id: number; title: string; description: string; brand: string; model: string; images: string[] }>
+    >('GET', '/catalog/blueprints.json')
+
+    return blueprints.slice(0, limit).map(bp => ({
+      id: String(bp.id),
+      title: bp.title,
+      description: bp.description,
+      images: (bp.images || []).map(src => ({ src })),
+      brand: bp.brand,
+      model: bp.model,
+    }))
   }
 
   /**

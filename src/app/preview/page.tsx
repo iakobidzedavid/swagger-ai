@@ -194,7 +194,12 @@ function PreviewContent() {
             productId: p.id,
             productName: p.title,
             productCategory: p.category,
-            productImage: p.mockupImage || p.image,
+            // Persist the real Printify catalog photo, not the generated SVG
+            // brand-color mockup — the mockup is a nice live preview on this
+            // page, but it isn't a real product photo and shouldn't be what
+            // ships on the published storefront.
+            productImage: p.image,
+            productDescription: p.description,
             productPrice: p.variants[0]?.price || 0,
             productSku: p.sku,
           })),

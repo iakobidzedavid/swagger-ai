@@ -11,6 +11,7 @@ interface CreateProductRequest {
   productName: string
   productCategory: string
   productImage: string
+  productDescription?: string
   productPrice: number
   productSku: string
   primaryColor: string
@@ -64,6 +65,7 @@ export async function POST(req: NextRequest) {
     productName,
     productCategory,
     productImage,
+    productDescription,
     productPrice,
     productSku,
     primaryColor,
@@ -85,9 +87,11 @@ export async function POST(req: NextRequest) {
     const printifyClient = getPrintifyClient()
 
     // Prepare product data for Printify
+    // Use the product's own real catalog description when available — never
+    // surface raw hex codes (e.g. "#7c3aed") as customer-facing copy.
     const productData = {
       title: productName,
-      description: `${productName} - Branded with colors: ${primaryColor}, ${secondaryColor}`,
+      description: productDescription?.trim() || `${productName} — custom branded merchandise for your team`,
       images: [{ src: productImage }],
       variants: [
         {

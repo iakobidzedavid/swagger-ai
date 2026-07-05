@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <rect width="300" height="300" fill="#102542" />
+  <rect x="0.5" y="0.5" width="299" height="299" fill="none" stroke="#1a3a5c" stroke-width="1" />
+  <g fill="none" stroke="#8fa3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="95" y="95" width="110" height="110" rx="8" />
+    <circle cx="122" cy="122" r="10" />
+    <path d="M95 178 L132 145 L160 168 L182 140 L205 168" />
+  </g>
+  <text x="150" y="232" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#8fa3b8">
+    Image unavailable
+  </text>
+</svg>
