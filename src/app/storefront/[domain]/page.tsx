@@ -31,12 +31,21 @@ interface StorefrontData {
   products: StorefrontProduct[]
 }
 
-type LoadingState = 'loading' | 'loaded' | 'error'
+type LoadingState = 'loading' | 'loaded' | 'error' | 'pending'
+
+// How long to keep auto-refreshing an in-progress storefront before falling
+// back to a manual "Check again" button. Product creation is normally
+// synchronous (seconds), so this window is generous headroom for a slow
+// Printify call, not the expected case.
+const PENDING_POLL_MS = 4000
+const PENDING_MAX_ATTEMPTS = 20 // ~80s of auto-polling
 
 function StorefrontContent({ domain: paramDomain }: { domain: string }) {
   const [storefront, setStorefront] = useState<StorefrontData | null>(null)
   const [loadingState, setLoadingState] = useState<LoadingState>('loading')
   const [error, setError] = useState<string | null>(null)
+  const [pendingAttempts, setPendingAttempts] = useState(0)
+  const [refreshKey, setRefreshKey] = useState(0)
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({})
   const [cartCount, setCartCount] = useState(0)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
@@ -56,26 +65,55 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
       return
     }
 
-    const fetchStorefront = async () => {
+    let cancelled = false
+    let pollTimer: ReturnType<typeof setTimeout> | null = null
+
+    const fetchStorefront = async (attempt: number) => {
       try {
         const res = await fetch(`/api/storefront/fetch?domain=${encodeURIComponent(domain)}`)
-        if (!res.ok) {
-          throw new Error(`Failed to load storefront: ${res.statusText}`)
+        const json = await res.json().catch(() => null)
+        if (cancelled) return
+
+        // Real, still-generating storefront (e.g. the one-click "Continue to
+        // Store" flow completing in the background) — show a friendly
+        // in-progress state and keep checking, instead of a bare error.
+        if (res.status === 202 && json?.inProgress) {
+          setLoadingState('pending')
+          setPendingAttempts(attempt)
+          if (attempt < PENDING_MAX_ATTEMPTS) {
+            pollTimer = setTimeout(() => fetchStorefront(attempt + 1), PENDING_POLL_MS)
+          }
+          return
         }
-        const json = await res.json()
-        if (!json.success) {
-          throw new Error(json.error || 'Unknown error')
+
+        if (!res.ok) {
+          throw new Error(json?.error || `Failed to load storefront (${res.status})`)
+        }
+        if (!json?.success) {
+          throw new Error(json?.error || 'Unknown error')
         }
         setStorefront(json.data)
         setLoadingState('loaded')
       } catch (err) {
+        if (cancelled) return
         setError(err instanceof Error ? err.message : 'Failed to load storefront')
         setLoadingState('error')
       }
     }
 
-    fetchStorefront()
-  }, [domain])
+    setLoadingState('loading')
+    fetchStorefront(0)
+
+    return () => {
+      cancelled = true
+      if (pollTimer) clearTimeout(pollTimer)
+    }
+  }, [domain, refreshKey])
+
+  const handleCheckAgain = () => {
+    setPendingAttempts(0)
+    setRefreshKey(k => k + 1)
+  }
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type })
@@ -137,6 +175,37 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
             <Link href="/" className="btn btn-secondary btn-full">
               Return Home
             </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (loadingState === 'pending') {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="section" style={{ flex: 1 }}>
+          <div className="container content-narrow" style={{ textAlign: 'center' }}>
+            <div className="card" style={{ padding: '48px 32px' }}>
+              <div className="spinner" style={{ width: 40, height: 40, margin: '0 auto 20px' }} />
+              <span className="badge badge-accent" style={{ marginBottom: '16px' }}>
+                Setting up your store
+              </span>
+              <p className="text-h3" style={{ marginBottom: '8px' }}>
+                Your storefront is almost ready
+              </p>
+              <p className="text-body text-muted" style={{ marginBottom: '24px' }}>
+                We're finishing up brand assets and products for <strong>{domain}</strong>. This
+                usually takes just a few seconds — this page will refresh itself automatically.
+              </p>
+              {pendingAttempts >= PENDING_MAX_ATTEMPTS ? (
+                <button type="button" onClick={handleCheckAgain} className="btn btn-primary">
+                  Check again
+                </button>
+              ) : (
+                <p className="text-small text-muted">Checking again shortly…</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
