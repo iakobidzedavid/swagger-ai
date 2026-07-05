@@ -3,8 +3,6 @@ import { supabase } from '@/lib/supabase'
 import { getPrintifyClient } from '@/lib/printify'
 import { verifyAuth } from '@/lib/auth'
 import { computeBrandFidelity, computeGenerationSeconds } from '@/lib/competitive-position'
-import { generateMockup } from '@/lib/mockup-generator'
-import { determinePrimaryCategory } from '@/lib/printify-product-mapper'
 
 export const runtime = 'nodejs'
 
@@ -199,22 +197,6 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Generate the branded mockup (SVG with the store's logo + brand
-        // colors baked in) so the persisted product shows real brand
-        // identity instead of the generic Printify catalog photo. This is
-        // the same generateMockup() already used at product-SELECTION time
-        // (/api/printify/products) — previously it was never called at
-        // CREATE time, so nothing brand-colored ever made it into the DB.
-        const mockup = generateMockup({
-          productId: product.productId,
-          productTitle: product.productName,
-          productCategory: determinePrimaryCategory(product.productCategory),
-          logoUrl,
-          primaryColor,
-          secondaryColor,
-          companyName,
-        })
-
         // Store the created product in our database
         const { data: insertedProduct, error: insertError } = await supabase
           .from('printify_products')
@@ -225,7 +207,6 @@ export async function POST(req: NextRequest) {
             description: productData.description,
             category: product.productCategory,
             image_url: product.productImage,
-            mockup_image_url: mockup.dataUrl,
             price_usd: product.productPrice,
             sku: product.productSku,
             brand_color_primary: primaryColor,

@@ -229,14 +229,8 @@ function isUsableStoredImage(image: string | null | undefined): image is string 
   if (!img) return false
   if (HEX_COLOR_ONLY.test(img)) return false
   if (PLACEHOLDER_IMAGE_HOST.test(img)) return false
-  // A real image reference is an absolute URL, a local /public path, or an
-  // inline data: URI — the last of which is exactly what generateMockup()
-  // (src/lib/mockup-generator.ts) produces for the brand-colored SVG mockup
-  // now stored in mockup_image_url. Without this branch, every persisted
-  // mockup was silently rejected here and replaced with the generic catalog
-  // fallback photo, even after the create-product pipeline started storing
-  // mockup_image_url correctly.
-  if (!/^https?:\/\//i.test(img) && !img.startsWith('/') && !/^data:image\//i.test(img)) return false
+  // A real image reference is either an absolute URL or a local /public path.
+  if (!/^https?:\/\//i.test(img) && !img.startsWith('/')) return false
   return true
 }
 
