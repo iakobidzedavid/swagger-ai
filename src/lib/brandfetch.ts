@@ -3,7 +3,7 @@
  *
  * Fetches logos, color palettes, fonts, typography, and official company metadata
  * from the Brandfetch API. When the API key is unavailable or the API fails, gracefully
- * falls back to keyless mode (Google favicon + HTML meta-tag extraction).
+ * falls back to keyless mode (icon.horse favicon + HTML meta-tag extraction).
  *
  * The Brandfetch API v2 provides:
  *  - Logos (multiple sizes and formats)

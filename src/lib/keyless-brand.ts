@@ -28,11 +28,12 @@ export interface KeylessBrandResult {
 // "wrong brand".
 export const NEUTRAL_COLOR = '#4b5563'
 
-/** Google's favicon service: a real brand mark for ~every domain, keyless and
- * reliable from serverless. Both the logo AND the source we derive the brand
+/** icon.horse service: a real brand mark for ~every domain, keyless and
+ * reliable from serverless. Provides 64px+ quality logos superior to Google's
+ * 16px favicon. Both the logo AND the source we derive the brand
  * color from — far better than the deprecated Clearbit endpoint. */
 export function faviconUrl(domain: string): string {
-  return `https://www.google.com/s2/favicons?domain=${domain}&sz=256`
+  return `https://icon.horse/icon/${encodeURIComponent(domain)}`
 }
 
 /** Lighten a hex color by mixing with white. Used to derive a secondary color
@@ -149,7 +150,7 @@ function dominantColor(px: Array<[number, number, number, number]>): string | nu
 }
 
 /** Fetch the favicon and derive its dominant color. Always returns a logoUrl
- * (Google's favicon endpoint renders even when we can't decode it for color). */
+ * (icon.horse endpoint renders a logo for most domains). */
 async function fetchFaviconBrand(domain: string): Promise<{ logoUrl: string; color: string | null }> {
   const logoUrl = faviconUrl(domain)
   try {
@@ -159,7 +160,7 @@ async function fetchFaviconBrand(domain: string): Promise<{ logoUrl: string; col
     clearTimeout(t)
     if (!r.ok) return { logoUrl, color: null }
     const buf = Buffer.from(await r.arrayBuffer())
-    if (buf.length < 64) return { logoUrl, color: null } // Google's tiny default globe
+    if (buf.length < 64) return { logoUrl, color: null } // Failed decode or too small
     return { logoUrl, color: dominantColor(decodePng(buf)) }
   } catch {
     return { logoUrl, color: null }
@@ -204,7 +205,7 @@ async function fetchThemeColor(domain: string): Promise<string | null> {
 }
 
 /** The canonical keyless brand-detection path (no BRANDFETCH_API_KEY needed):
- * a REAL logo from Google's favicon service + a brand color derived from that
+ * a REAL logo from icon.horse service + a brand color derived from that
  * logo (dependency-free PNG decode), with theme-color meta as a secondary
  * color source, and a neutral slate only when nothing is derivable. */
 export async function fetchKeylessBrand(domain: string): Promise<KeylessBrandResult> {

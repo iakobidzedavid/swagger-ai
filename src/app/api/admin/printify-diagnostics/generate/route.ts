@@ -169,7 +169,7 @@ export async function POST(req: NextRequest) {
 
   // Step 5: upload one print-ready brand asset (the real favicon for this domain) that every SKU prints
   const s5 = stepStart()
-  const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(raw)}&sz=256`
+  const faviconUrl = `https://icon.horse/icon/${encodeURIComponent(raw)}`
   const uploadResp = await printifyFetch('/uploads/images.json', apiKey, {
     method: 'POST',
     body: JSON.stringify({ file_name: `${raw}-mark.png`, url: faviconUrl }),
