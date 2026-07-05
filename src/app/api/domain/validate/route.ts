@@ -19,17 +19,17 @@ function validateFormat(domain: string): { valid: boolean; reason?: string } {
 
 /**
  * Check if domain is available and reachable via HTTP/HTTPS.
- * Uses multiple checks to determine availability:
- * 1. HTTP HEAD request (2s timeout) — checks if domain is live and configured
- * 2. HTTP GET request (2s timeout) — fallback if HEAD fails
+ * Uses a simple HEAD request (no redirect following) to avoid bot detection,
+ * SSL renegotiation, or redirect-loop complications that can cause timeouts.
  *
- * Returns true if domain responds with any status code (2xx, 3xx, 4xx),
- * indicating the domain exists and is configured. Returns false only if
- * the domain doesn't respond within timeout or has severe connectivity issues.
+ * Returns true if domain responds with ANY HTTP status code (2xx, 3xx, 4xx, 5xx),
+ * indicating the domain exists and is configured. Returns false only if the domain
+ * fails to respond due to DNS errors, connection refused, or timeout.
  */
 async function checkDomainAvailability(domain: string): Promise<{ available: boolean; details?: string }> {
   try {
-    // First, try HEAD request (faster, no body download)
+    // Use 'manual' redirect handling to avoid bot detection timeouts and redirect loops.
+    // Accept any HTTP response as proof the domain exists (including 3xx, 4xx, 5xx).
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 2000)
 
@@ -37,26 +37,17 @@ async function checkDomainAvailability(domain: string): Promise<{ available: boo
       const headRes = await fetch(`https://${domain}`, {
         method: 'HEAD',
         signal: controller.signal,
-        redirect: 'follow',
+        redirect: 'manual', // Don't follow redirects — any response = domain exists
       })
       clearTimeout(timeoutId)
 
-      // If we got any response, domain is available
-      if (headRes.ok || (headRes.status >= 300 && headRes.status < 500)) {
-        return { available: true }
-      }
-
-      // 5xx means server error — domain exists but has issues
-      if (headRes.status >= 500) {
-        return {
-          available: false,
-          details: 'Domain responded with server error. It may be temporarily unavailable.',
-        }
-      }
-
+      // Any HTTP response means the domain is live and configured
+      // (2xx OK, 3xx redirect, 4xx client error, 5xx server error all indicate existence)
       return { available: true }
     } catch (headErr) {
-      // HEAD failed, try GET with a fresh controller
+      clearTimeout(timeoutId)
+
+      // HEAD failed. Try GET as fallback (some servers disable HEAD).
       const getController = new AbortController()
       const getTimeoutId = setTimeout(() => getController.abort(), 2000)
 
@@ -64,27 +55,35 @@ async function checkDomainAvailability(domain: string): Promise<{ available: boo
         const getRes = await fetch(`https://${domain}`, {
           method: 'GET',
           signal: getController.signal,
-          redirect: 'follow',
+          redirect: 'manual',
         })
         clearTimeout(getTimeoutId)
 
-        // If we got any response, domain is available
-        return { available: getRes.ok || (getRes.status >= 300 && getRes.status < 500) }
-      } catch {
+        // Any HTTP response means domain exists
+        return { available: true }
+      } catch (getErr) {
         clearTimeout(getTimeoutId)
-        // Both HEAD and GET failed — domain is likely unavailable
-        return {
-          available: false,
-          details: 'Domain did not respond to availability check. It may be offline or misconfigured.',
+
+        // Both HEAD and GET failed. Check if it's a DNS/network error or timeout.
+        const errorMsg = String(getErr)
+        const isNetworkError = /ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|AbortError|getaddrinfo/i.test(
+          errorMsg
+        )
+
+        if (isNetworkError) {
+          return {
+            available: false,
+            details: 'Domain did not respond. It may be offline or misconfigured.',
+          }
         }
+
+        // Other error (TLS, etc.) — be generous and assume domain exists
+        return { available: true }
       }
     }
   } catch {
-    // Catch-all for any other errors
-    return {
-      available: false,
-      details: 'Could not verify domain availability. Try again in a moment.',
-    }
+    // Catch-all: if in doubt, assume domain might exist (be generous)
+    return { available: true }
   }
 }
 
