@@ -94,6 +94,7 @@ export async function sendOrderConfirmation(
         status: 'sent',
         sent_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        provider_message_id: sendResult.messageId ?? null,
       })
       .eq('id', notifResult.id)
 
@@ -164,6 +165,7 @@ export async function sendFulfillmentUpdate(
         status: 'sent',
         sent_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        provider_message_id: sendResult.messageId ?? null,
       })
       .eq('id', notifResult.id)
 
@@ -177,39 +179,46 @@ export async function sendFulfillmentUpdate(
   }
 }
 
+// Pica passthrough base URL. Fixed, public — not a secret, so it is a literal
+// constant rather than an env var (avoids an unnecessary @@NEEDS_ENV flag).
+const PICA_PASSTHROUGH_BASE = 'https://api.picaos.com/v1/passthrough'
+
+// Pica's stable action id for "Send a User's Gmail Message" (gmail platform).
+// This identifies the action to Pica's router; it is not a credential.
+const GMAIL_SEND_ACTION_ID = 'conn_mod_def::GJ3odhCpd3I::gujvYoneSk6NFWltse9bGg'
+
 /**
- * Internal: Send email via Gmail or mock provider
+ * Internal: Send email via the connected Gmail account, through Pica's HTTP
+ * passthrough API.
  *
- * If GMAIL_SERVICE_ACCOUNT_EMAIL is configured, uses pica Gmail API.
- * Otherwise, logs to console for development.
+ * Requires two credentials:
+ *  - PICA_SECRET               — Pica account secret (provisioned)
+ *  - PICA_GMAIL_CONNECTION_KEY — identifies which connected Gmail mailbox to
+ *                                send through (per-connection, not provisioned yet)
+ *
+ * If either is missing, or the Pica call itself fails, this returns
+ * success:false with the REAL reason — it never fakes a "sent" result.
  */
 async function sendEmail(
   to: string,
   subject: string,
   html: string,
   displayName?: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; messageId?: string }> {
   try {
-    // Check if Gmail is configured
-    const gmailEmail = process.env.GMAIL_SERVICE_ACCOUNT_EMAIL
+    const result = await sendEmailViaPica(to, subject, html, displayName)
 
-    if (!gmailEmail) {
-      // Development mode: log to console
-      console.log(`
-[Email Service] Development mode — email not sent
-To: ${to}
-Subject: ${subject}
-Display Name: ${displayName || '(no name)'}
----
-${html.substring(0, 200)}...
----
-      `)
-      return { success: true }
+    if (!result.success) {
+      console.warn(
+        `[Email Service] NOT sent — ${result.error} (to: ${to}, subject: "${subject}")`
+      )
+    } else {
+      console.log(
+        `[Email Service] Sent via Pica Gmail: ${to} (subject: "${subject}", messageId: ${result.messageId})`
+      )
     }
 
-    // Gmail is configured - use Pica Gmail API to send
-    // This function will be called via MCP when available
-    return await sendEmailViaPicaGmail(to, subject, html, gmailEmail, displayName)
+    return result
   } catch (error) {
     console.error('[Email Service] Error sending email:', error)
     return {
@@ -220,53 +229,126 @@ ${html.substring(0, 200)}...
 }
 
 /**
- * Send email via Pica Gmail API
- * This integrates with the mcp__pica__pica_gmail_send_a_user_s_gmail_message tool
- * Note: In production, this would be called via MCP. For now, we prepare the message
- * and return success, with the actual send delegated to the operator's integration.
+ * Send a real email through Gmail via Pica's HTTP passthrough API.
+ *
+ * This is a plain `fetch` call — no MCP tool imports. App code (Next.js API
+ * routes / serverless functions) cannot invoke MCP tools at runtime; those
+ * only exist inside an agent session. Pica's passthrough REST API is the
+ * real integration surface for production code.
+ *
+ * Passthrough contract (mirrors Pica's own action metadata for
+ * gmail.users.messages.send):
+ *   POST {PICA_PASSTHROUGH_BASE}/gmail/v1/users/me/messages/send
+ *   headers: x-pica-secret, x-pica-connection-key, x-pica-action-id
+ *   body: { raw: <base64url RFC2822 message>, connectionKey }
  */
-async function sendEmailViaPicaGmail(
+async function sendEmailViaPica(
   to: string,
   subject: string,
   html: string,
-  fromEmail: string,
   displayName?: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Prepare the message for sending via Pica Gmail
-    const message = {
-      to,
-      subject,
-      mimeType: 'text/html',
-      raw: Buffer.from(
-        `To: ${to}\r\nSubject: ${subject}\r\nContent-Type: text/html; charset="UTF-8"\r\n\r\n${html}`
-      ).toString('base64'),
-    }
+): Promise<{ success: boolean; error?: string; messageId?: string }> {
+  const secret = process.env.PICA_SECRET
+  const connectionKey = process.env.PICA_GMAIL_CONNECTION_KEY
 
-    // Log that we're sending via Gmail
-    console.log(
-      `[Email Service] Sending email via Pica Gmail: ${to} (subject: "${subject}")`
-    )
-
-    // In production with Pica MCP integration, this would call:
-    // mcp__pica__pica_gmail_send_a_user_s_gmail_message({
-    //   userId: 'me', // or the authenticated user's ID
-    //   requestBody: {
-    //     raw: message.raw,
-    //     threadId?: undefined
-    //   }
-    // })
-
-    // For now, return success as the message is prepared
-    // The operator's Pica integration will actually send this
-    return { success: true }
-  } catch (error) {
-    console.error('[Email Service] Error preparing Gmail message:', error)
+  if (!secret) {
+    return { success: false, error: 'PICA_SECRET is not configured — cannot authenticate to Pica' }
+  }
+  if (!connectionKey) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to prepare message',
+      error:
+        'PICA_GMAIL_CONNECTION_KEY is not configured — no Gmail mailbox is connected to send through',
     }
   }
+
+  const raw = buildRawGmailMessage(to, subject, html, displayName)
+
+  let resp: Response
+  try {
+    resp = await fetch(`${PICA_PASSTHROUGH_BASE}/gmail/v1/users/me/messages/send`, {
+      method: 'POST',
+      headers: {
+        'x-pica-secret': secret,
+        'x-pica-connection-key': connectionKey,
+        'x-pica-action-id': GMAIL_SEND_ACTION_ID,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ raw, connectionKey }),
+    })
+  } catch (error) {
+    return {
+      success: false,
+      error: `Pica request failed: ${error instanceof Error ? error.message : 'network error'}`,
+    }
+  }
+
+  const bodyText = await resp.text()
+
+  if (!resp.ok) {
+    return {
+      success: false,
+      error: `Pica Gmail send failed (HTTP ${resp.status}): ${bodyText.slice(0, 500)}`,
+    }
+  }
+
+  let parsed: { id?: string; threadId?: string } = {}
+  try {
+    parsed = JSON.parse(bodyText)
+  } catch {
+    // Non-JSON 2xx body — still a real success, just no message id to report.
+  }
+
+  return { success: true, messageId: parsed.id }
+}
+
+/**
+ * Build a base64url-encoded RFC 2822 message for the Gmail API's
+ * `users.messages.send` `raw` field. `From` is intentionally omitted — Gmail
+ * fills it in with the authenticated (connected) account automatically.
+ */
+function buildRawGmailMessage(
+  to: string,
+  subject: string,
+  html: string,
+  displayName?: string
+): string {
+  // Strip CR/LF from every value that lands in a raw header line. `to` and
+  // `displayName` come from customer-supplied checkout fields (name/email) —
+  // without this, a name like "Foo\r\nBcc: attacker@evil.com" would inject
+  // arbitrary headers into the RFC2822 message we hand to Gmail.
+  const safeTo = stripHeaderInjection(to)
+  const safeSubject = stripHeaderInjection(subject)
+  const toHeader = displayName
+    ? `"${stripHeaderInjection(displayName).replace(/"/g, "'")}" <${safeTo}>`
+    : safeTo
+
+  const message = [
+    `To: ${toHeader}`,
+    `Subject: ${encodeMimeSubject(safeSubject)}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/html; charset="UTF-8"',
+    '',
+    html,
+  ].join('\r\n')
+
+  return Buffer.from(message, 'utf-8')
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+}
+
+/** Removes CR/LF (and the header-continuation whitespace that follows them)
+ *  so untrusted input can never inject additional RFC 2822 header lines. */
+function stripHeaderInjection(value: string): string {
+  return value.replace(/[\r\n]+\s*/g, ' ').trim()
+}
+
+/** MIME encoded-word for subjects containing non-ASCII characters. */
+function encodeMimeSubject(subject: string): string {
+  if (/^[\x00-\x7F]*$/.test(subject)) return subject
+  return `=?UTF-8?B?${Buffer.from(subject, 'utf-8').toString('base64')}?=`
 }
 
 /**
