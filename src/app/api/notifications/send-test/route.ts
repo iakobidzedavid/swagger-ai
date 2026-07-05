@@ -37,6 +37,7 @@ interface TestEmailRequest {
   status?: 'confirmed' | 'in_progress' | 'shipped' | 'delivered'
   trackingCarrier?: string
   trackingNumber?: string
+  orderId?: string | null
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const totalAmount = body.totalAmount
 
       result = await sendOrderConfirmation({
-        orderId: 'test-' + Date.now(),
+        orderId: body.orderId !== undefined ? body.orderId : 'test-' + Date.now(),
         customerName: body.customerName,
         customerEmail: body.email,
         domain: body.domain,
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
 
       result = await sendFulfillmentUpdate({
-        orderId: 'test-' + Date.now(),
+        orderId: body.orderId !== undefined ? body.orderId : 'test-' + Date.now(),
         customerEmail: body.email,
         customerName: body.customerName,
         status: body.status as 'confirmed' | 'in_progress' | 'shipped' | 'delivered',

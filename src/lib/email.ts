@@ -18,7 +18,7 @@ interface OrderItem {
 }
 
 interface OrderConfirmationData {
-  orderId: string
+  orderId?: string | null
   customerName: string
   customerEmail: string
   domain: string
@@ -28,7 +28,7 @@ interface OrderConfirmationData {
 }
 
 interface FulfillmentUpdateData {
-  orderId: string
+  orderId?: string | null
   customerEmail: string
   customerName: string
   status: 'confirmed' | 'in_progress' | 'shipped' | 'delivered'
@@ -51,7 +51,7 @@ export async function sendOrderConfirmation(
     const { data: notifResult, error: notifError } = await supabase
       .from('email_notifications')
       .insert({
-        order_id: data.orderId,
+        order_id: data.orderId || null,
         recipient_email: data.customerEmail,
         notification_type: 'order_confirmation',
         status: 'pending',
@@ -122,7 +122,7 @@ export async function sendFulfillmentUpdate(
     const { data: notifResult, error: notifError } = await supabase
       .from('email_notifications')
       .insert({
-        order_id: data.orderId,
+        order_id: data.orderId || null,
         recipient_email: data.customerEmail,
         notification_type: 'fulfillment_update',
         status: 'pending',
@@ -503,7 +503,7 @@ function generateFulfillmentUpdateHtml(data: FulfillmentUpdateData): string {
       <td style="padding: 40px 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center;">
         <div style="font-size: 48px; margin-bottom: 12px;">${emoji}</div>
         <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">${title}</h1>
-        <p style="margin: 8px 0 0 0; opacity: 0.95; font-size: 15px;">Order #${data.orderId.substring(0, 8).toUpperCase()}</p>
+        ${data.orderId ? `<p style="margin: 8px 0 0 0; opacity: 0.95; font-size: 15px;">Order #${data.orderId.substring(0, 8).toUpperCase()}</p>` : ''}
       </td>
     </tr>
 
