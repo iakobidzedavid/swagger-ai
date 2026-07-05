@@ -33,7 +33,7 @@ export const CURATED_FALLBACK_PRODUCTS = [
     description: 'Gildan 5000 — 100% cotton tee, tightly knit for sharp, long-lasting print detail.',
     category: 'apparel',
     images: [{ src: 'https://images.printify.com/66d81786ae1f0775ec0aef82' }],
-    variants: [{ id: 'v1', title: 'Small', price: 18, sku: 'TSHIRT-UNISEX-001' }],
+    variants: [{ id: 'v1', title: 'Small', price: 1800, sku: 'TSHIRT-UNISEX-001' }],
   },
   {
     id: 'printify-092',
@@ -41,7 +41,7 @@ export const CURATED_FALLBACK_PRODUCTS = [
     description: 'AWDIS JH001 — classic pullover hoodie with side seams that hold its shape wash after wash.',
     category: 'apparel',
     images: [{ src: 'https://images.printify.com/66c43c6cbbde44677a041c24' }],
-    variants: [{ id: 'v1', title: 'Small', price: 42, sku: 'HOODIE-UNISEX-001' }],
+    variants: [{ id: 'v1', title: 'Small', price: 4200, sku: 'HOODIE-UNISEX-001' }],
   },
   {
     id: 'printify-068',
@@ -49,7 +49,7 @@ export const CURATED_FALLBACK_PRODUCTS = [
     description: 'Classic white ceramic mug in the most popular size, built for durable sublimation printing.',
     category: 'drinkware',
     images: [{ src: 'https://images.printify.com/66c42e5361b2691da8085442' }],
-    variants: [{ id: 'v1', title: 'Standard', price: 12, sku: 'MUG-11OZ-001' }],
+    variants: [{ id: 'v1', title: 'Standard', price: 1200, sku: 'MUG-11OZ-001' }],
   },
   {
     id: 'printify-482',
@@ -57,7 +57,7 @@ export const CURATED_FALLBACK_PRODUCTS = [
     description: 'Stainless steel, spill-proof screw-on cap — an eco-friendly swap for single-use plastic.',
     category: 'drinkware',
     images: [{ src: 'https://images.printify.com/66d5c1f99d176ab4d20610a2' }],
-    variants: [{ id: 'v1', title: 'Standard', price: 24, sku: 'BOTTLE-20OZ-001' }],
+    variants: [{ id: 'v1', title: 'Standard', price: 2400, sku: 'BOTTLE-20OZ-001' }],
   },
   {
     id: 'printify-1447',
@@ -65,7 +65,7 @@ export const CURATED_FALLBACK_PRODUCTS = [
     description: 'Yupoong 6245CM — timeless 100% cotton dad cap, built for everyday comfort.',
     category: 'apparel',
     images: [{ src: 'https://images.printify.com/66c4719a26c12b30ed07acc2' }],
-    variants: [{ id: 'v1', title: 'One Size', price: 20, sku: 'CAP-6PANEL-001' }],
+    variants: [{ id: 'v1', title: 'One Size', price: 2000, sku: 'CAP-6PANEL-001' }],
   },
   {
     id: 'printify-1398',
@@ -73,7 +73,7 @@ export const CURATED_FALLBACK_PRODUCTS = [
     description: 'Gildan 18200 — heavy blend sweatpants, soft enough to lounge in, durable enough for daily wear.',
     category: 'apparel',
     images: [{ src: 'https://images.printify.com/69fc63dd1ba1caad070c2750' }],
-    variants: [{ id: 'v1', title: 'Small', price: 32, sku: 'SWEATPANTS-001' }],
+    variants: [{ id: 'v1', title: 'Small', price: 3200, sku: 'SWEATPANTS-001' }],
   },
   {
     id: 'printify-507',
@@ -81,7 +81,7 @@ export const CURATED_FALLBACK_PRODUCTS = [
     description: 'Lightweight polyester canvas tote with a sleek lined interior, built for picture-perfect prints.',
     category: 'accessories',
     images: [{ src: 'https://images.printify.com/66d5c839de3247673e010573' }],
-    variants: [{ id: 'v1', title: 'Standard', price: 16, sku: 'TOTE-CANVAS-001' }],
+    variants: [{ id: 'v1', title: 'Standard', price: 1600, sku: 'TOTE-CANVAS-001' }],
   },
   {
     id: 'printify-1691',
@@ -89,7 +89,7 @@ export const CURATED_FALLBACK_PRODUCTS = [
     description: 'Yupoong 1501KC — hypoallergenic acrylic beanie with a classic 12" cuffed design.',
     category: 'apparel',
     images: [{ src: 'https://images.printify.com/67e27a4665b07e8bc90a9462' }],
-    variants: [{ id: 'v1', title: 'One Size', price: 14, sku: 'BEANIE-ACRYLIC-001' }],
+    variants: [{ id: 'v1', title: 'One Size', price: 1400, sku: 'BEANIE-ACRYLIC-001' }],
   },
   {
     id: 'printify-414',
@@ -97,7 +97,7 @@ export const CURATED_FALLBACK_PRODUCTS = [
     description: 'Lightweight, durable drawstring bag for the gym, the store, or the beach.',
     category: 'accessories',
     images: [{ src: 'https://images.printify.com/66d8359f9935bc2b42015826' }],
-    variants: [{ id: 'v1', title: 'Standard', price: 18, sku: 'BAG-DRAWSTRING-001' }],
+    variants: [{ id: 'v1', title: 'Standard', price: 1800, sku: 'BAG-DRAWSTRING-001' }],
   },
   {
     id: 'printify-1129',
@@ -105,7 +105,7 @@ export const CURATED_FALLBACK_PRODUCTS = [
     description: 'Sport-Tek ST650 — 100% soft polyester polo built for performance and everyday style.',
     category: 'apparel',
     images: [{ src: 'https://images.printify.com/66d58cd37dd31e0a3b0ecd1d' }],
-    variants: [{ id: 'v1', title: 'Small', price: 28, sku: 'POLO-PIQUE-001' }],
+    variants: [{ id: 'v1', title: 'Small', price: 2800, sku: 'POLO-PIQUE-001' }],
   },
 ]
 
@@ -292,7 +292,7 @@ export function normalizeStoredProduct(row: StoredProductRow, index: number = 0)
   const storedPrice = typeof row.price_usd === 'string' ? parseFloat(row.price_usd) : row.price_usd
   const price = typeof storedPrice === 'number' && !Number.isNaN(storedPrice)
     ? storedPrice
-    : fallback?.variants[0]?.price ?? 19.99
+    : fallback?.variants[0]?.price ?? 1999
 
   const variants =
     Array.isArray(row.variants) && row.variants.length > 0
