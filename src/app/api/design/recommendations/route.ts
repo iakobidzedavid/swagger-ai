@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { DOMAIN_RE, normalizeDomain } from '@/lib/brand'
+import { DOMAIN_RE, normalizeDomain, isCacheFresh } from '@/lib/brand'
 
 export const runtime = 'nodejs'
 
@@ -102,16 +102,26 @@ function generateGuidelines(
  * Fetch design recommendations for a domain.
  * Looks up the domain in Supabase (brand_cache or domain_submissions table)
  * and returns enriched design data with full palettes, fonts, and guidelines.
+ *
+ * Uses the same cache-staleness logic as /api/brand: fallback sources
+ * (favicon, theme-color) are always treated as stale to prioritize refetching
+ * from Brandfetch when the API recovers, avoiding serving poisoned cache forever.
  */
 async function fetchRecommendations(domain: string): Promise<DesignRecommendation | null> {
-  // Try to fetch from brand_cache first (faster, cached)
+  // Try to fetch from brand_cache first (faster, cached).
+  // But skip it if: (1) it's stale by TTL, or (2) the source is a fallback
+  // (favicon/theme-color), indicating Brandfetch failed at cache time.
   const { data: cached } = await supabase
     .from('brand_cache')
     .select('*')
     .eq('domain', domain)
     .maybeSingle()
 
-  if (cached) {
+  const cacheIsUsable =
+    cached &&
+    isCacheFresh(cached.fetched_at, Date.now(), cached.source)
+
+  if (cacheIsUsable && cached) {
     const raw = (cached.raw_brand_data as Record<string, unknown>) || {}
     const colorPalette = (raw.colors as string[]) || [
       cached.primary_color,

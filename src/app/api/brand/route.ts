@@ -75,8 +75,10 @@ function cacheRowToBrandData(row: BrandCacheRow): BrandData {
 }
 
 /** Best-effort cache read. Returns null on any failure (missing table, RLS
- * denial, network blip) or on a stale/missing row — caller always falls
- * through to a live fetch in every one of those cases. */
+ * denial, network blip), on a stale/missing row, or if the source is a fallback
+ * (favicon/theme-color) — caller always falls through to a live fetch in every
+ * one of those cases. Fallback sources indicate Brandfetch failed at cache time;
+ * we always refetch to get real Brandfetch data when it recovers. */
 async function readCache(domain: string): Promise<BrandCacheRow | null> {
   try {
     const { data, error } = await supabase
@@ -86,7 +88,7 @@ async function readCache(domain: string): Promise<BrandCacheRow | null> {
       .maybeSingle()
     if (error || !data) return null
     const row = data as BrandCacheRow
-    if (!isCacheFresh(row.fetched_at, Date.now())) return null
+    if (!isCacheFresh(row.fetched_at, Date.now(), row.source)) return null
     return row
   } catch (err) {
     console.warn('brand_cache read failed (continuing without cache):', err)
