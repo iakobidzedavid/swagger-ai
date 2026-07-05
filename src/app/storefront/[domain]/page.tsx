@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { normalizeDomain } from '@/lib/brand'
 import { useCart } from '@/context/CartContext'
 import { VariantSelector } from '@/components/VariantSelector'
+import { ProductPhotoOverlay } from '@/components/ProductPhotoOverlay'
 
 interface StorefrontProduct {
   id: string
@@ -395,17 +396,11 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
                       borderBottom: `1px solid var(--color-border)`,
                     }}
                   >
-                    <img
-                      src={product.mockupImage || product.image}
+                    <ProductPhotoOverlay
+                      imageUrl={product.image}
+                      logoUrl={storefront.logoUrl}
+                      category={product.category}
                       alt={product.title}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                      }}
-                      onError={e => {
-                        (e.target as HTMLImageElement).src = product.image
-                      }}
                     />
                   </div>
 

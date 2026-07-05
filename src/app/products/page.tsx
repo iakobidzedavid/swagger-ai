@@ -172,6 +172,7 @@ function ProductsForm() {
                     isSelected={selectedProductIds.has(product.id)}
                     onToggle={() => handleToggleProduct(product.id)}
                     variant="selectable"
+                    logoUrl={brand.logo_url}
                   />
                 ))}
               </div>

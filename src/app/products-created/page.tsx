@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { ProductPhotoOverlay } from '@/components/ProductPhotoOverlay'
 
 type LoadingState = 'idle' | 'loading' | 'loaded' | 'error'
 type SyncState = 'idle' | 'syncing' | 'success' | 'error'
@@ -267,13 +268,11 @@ function ProductsCreatedContent() {
                           }}
                         >
                           {product.imageUrl ? (
-                            <img
-                              src={product.imageUrl}
+                            <ProductPhotoOverlay
+                              imageUrl={product.imageUrl}
+                              logoUrl={storefront?.logoUrl}
+                              category={product.category}
                               alt={product.name}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              onError={(e) => {
-                                ;(e.target as HTMLImageElement).style.display = 'none'
-                              }}
                             />
                           ) : (
                             <span style={{ fontSize: '0.875rem', color: 'var(--color-on-accent)', textAlign: 'center', padding: '16px' }}>

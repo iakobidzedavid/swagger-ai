@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { ProductPhotoOverlay } from './ProductPhotoOverlay'
 
 export interface ProductVariant {
   id: string
@@ -27,6 +27,8 @@ interface ProductCardProps {
   onToggle?: () => void
   onClick?: () => void
   variant?: 'selectable' | 'static'
+  /** Brand logo (from Brandfetch/theme-color detection) to overlay on the REAL product photo via CSS. */
+  logoUrl?: string | null
 }
 
 /**
@@ -38,11 +40,13 @@ export function ProductCard({
   isSelected = false,
   onToggle,
   onClick,
-  variant = 'selectable'
+  variant = 'selectable',
+  logoUrl = null,
 }: ProductCardProps) {
-  const [imageError, setImageError] = useState(false)
-
-  const displayImage = product.mockupImage || product.image
+  // Always show the REAL Printify product photo — the brand logo is
+  // composited on top via CSS (ProductPhotoOverlay), never baked into a
+  // generated/replacement image.
+  const displayImage = product.image
   const price = product.variants[0]?.price || 0
 
   const cardStyle: React.CSSProperties = {
@@ -95,31 +99,13 @@ export function ProductCard({
           transition: 'transform 200ms ease',
         }}
       >
-        {!imageError ? (
-          <img
-            src={displayImage}
-            alt={product.title}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              transition: 'transform 200ms ease',
-            }}
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <div style={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--color-text-muted)',
-            fontSize: '0.875rem',
-          }}>
-            Image unavailable
-          </div>
-        )}
+        <ProductPhotoOverlay
+          imageUrl={displayImage}
+          logoUrl={logoUrl}
+          category={product.category}
+          alt={product.title}
+          imageStyle={{ transition: 'transform 200ms ease' }}
+        />
       </div>
 
       {/* Content area — flexes to fill */}

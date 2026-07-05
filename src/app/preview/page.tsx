@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { normalizeDomain } from '@/lib/brand'
 import { useAuth } from '@/lib/useAuth'
 import { SigninModal } from '@/components/SigninModal'
+import { ProductPhotoOverlay } from '@/components/ProductPhotoOverlay'
 
 type LoadingState = 'idle' | 'loading' | 'loaded' | 'error'
 type CreatingState = 'idle' | 'creating' | 'success' | 'error'
@@ -443,13 +444,11 @@ function PreviewContent() {
                           overflow: 'hidden',
                         }}
                       >
-                        <img
-                          src={product.mockupImage || product.image}
+                        <ProductPhotoOverlay
+                          imageUrl={product.image}
+                          logoUrl={brand.logo_url}
+                          category={product.category}
                           alt={product.title}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = product.image
-                          }}
                         />
                       </div>
 
