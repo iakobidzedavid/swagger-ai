@@ -9,6 +9,8 @@ interface ProductPhotoOverlayProps {
   imageUrl: string
   /** Brand logo to overlay on the real photo. Omit/null renders the bare photo. */
   logoUrl?: string | null
+  /** Fallback logo URL (e.g. favicon) to try if the primary logo fails to load. */
+  fallbackLogoUrl?: string | null
   category?: OverlayCategory
   alt: string
   imageStyle?: React.CSSProperties
@@ -45,20 +47,34 @@ const OVERLAY_POSITION: Record<
 export function ProductPhotoOverlay({
   imageUrl,
   logoUrl,
+  fallbackLogoUrl,
   category,
   alt,
   imageStyle,
 }: ProductPhotoOverlayProps) {
   const [photoError, setPhotoError] = useState(false)
-  const [logoError, setLogoError] = useState(false)
+  const [primaryLogoError, setPrimaryLogoError] = useState(false)
+  const [fallbackLogoError, setFallbackLogoError] = useState(false)
+  const [useFallback, setUseFallback] = useState(false)
 
   // Reset error state when the underlying URLs change (e.g. selecting a
   // different product/domain re-uses this component instance via key reuse).
   useEffect(() => setPhotoError(false), [imageUrl])
-  useEffect(() => setLogoError(false), [logoUrl])
+  useEffect(() => {
+    setPrimaryLogoError(false)
+    setFallbackLogoError(false)
+    setUseFallback(false)
+  }, [logoUrl, fallbackLogoUrl])
 
   const pos = OVERLAY_POSITION[category || ''] || OVERLAY_POSITION.apparel
-  const showLogo = !!logoUrl && !logoError && !photoError
+
+  // Determine which logo to use:
+  // 1. Primary logoUrl if it exists and hasn't failed
+  // 2. Fallback logoUrl if primary failed and fallback exists and hasn't failed
+  // 3. Don't show logo if both failed or both are null
+  const effectiveLogoUrl = useFallback ? fallbackLogoUrl : logoUrl
+  const effectiveLogoError = useFallback ? fallbackLogoError : primaryLogoError
+  const showLogo = !!effectiveLogoUrl && !effectiveLogoError && !photoError
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -106,9 +122,21 @@ export function ProductPhotoOverlay({
           }}
         >
           <img
-            src={logoUrl!}
+            src={effectiveLogoUrl!}
             alt=""
-            onError={() => setLogoError(true)}
+            onError={() => {
+              if (useFallback) {
+                // Already using fallback; mark it as failed
+                setFallbackLogoError(true)
+              } else if (fallbackLogoUrl) {
+                // Primary logo failed; switch to fallback
+                setPrimaryLogoError(true)
+                setUseFallback(true)
+              } else {
+                // No fallback available; mark primary as failed
+                setPrimaryLogoError(true)
+              }
+            }}
             style={{
               width: '78%',
               height: '78%',

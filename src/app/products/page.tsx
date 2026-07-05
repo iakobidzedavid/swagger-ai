@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { normalizeDomain } from '@/lib/brand'
+import { getFaviconUrl } from '@/lib/favicon'
 import { ProductCard, type Product, type ProductVariant } from '@/components/ProductCard'
 
 type LoadingState = 'idle' | 'loading' | 'loaded' | 'error'
@@ -173,6 +174,7 @@ function ProductsForm() {
                     onToggle={() => handleToggleProduct(product.id)}
                     variant="selectable"
                     logoUrl={brand.logo_url}
+                    fallbackLogoUrl={getFaviconUrl(brand.domain)}
                   />
                 ))}
               </div>

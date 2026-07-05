@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { normalizeDomain } from '@/lib/brand'
+import { getFaviconUrl } from '@/lib/favicon'
 import { useCart } from '@/context/CartContext'
 import { VariantSelector } from '@/components/VariantSelector'
 import { ProductPhotoOverlay } from '@/components/ProductPhotoOverlay'
@@ -399,6 +400,7 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
                     <ProductPhotoOverlay
                       imageUrl={product.image}
                       logoUrl={storefront.logoUrl}
+                      fallbackLogoUrl={getFaviconUrl(domain)}
                       category={product.category}
                       alt={product.title}
                     />

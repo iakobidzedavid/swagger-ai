@@ -29,6 +29,8 @@ interface ProductCardProps {
   variant?: 'selectable' | 'static'
   /** Brand logo (from Brandfetch/theme-color detection) to overlay on the REAL product photo via CSS. */
   logoUrl?: string | null
+  /** Fallback logo URL (e.g. favicon) to try if the primary logo fails to load. */
+  fallbackLogoUrl?: string | null
 }
 
 /**
@@ -42,6 +44,7 @@ export function ProductCard({
   onClick,
   variant = 'selectable',
   logoUrl = null,
+  fallbackLogoUrl = null,
 }: ProductCardProps) {
   // Always show the REAL Printify product photo — the brand logo is
   // composited on top via CSS (ProductPhotoOverlay), never baked into a
@@ -102,6 +105,7 @@ export function ProductCard({
         <ProductPhotoOverlay
           imageUrl={displayImage}
           logoUrl={logoUrl}
+          fallbackLogoUrl={fallbackLogoUrl}
           category={product.category}
           alt={product.title}
           imageStyle={{ transition: 'transform 200ms ease' }}

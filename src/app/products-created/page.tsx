@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { getFaviconUrl } from '@/lib/favicon'
 import { ProductPhotoOverlay } from '@/components/ProductPhotoOverlay'
 
 type LoadingState = 'idle' | 'loading' | 'loaded' | 'error'
@@ -271,6 +272,7 @@ function ProductsCreatedContent() {
                             <ProductPhotoOverlay
                               imageUrl={product.imageUrl}
                               logoUrl={storefront?.logoUrl}
+                              fallbackLogoUrl={storefront ? getFaviconUrl(storefront.domain) : undefined}
                               category={product.category}
                               alt={product.name}
                             />
