@@ -138,13 +138,12 @@ export async function gatherHealthMetrics(): Promise<HealthMetrics> {
   const endTime = Date.now()
   const latency = endTime - startTime
 
-  // Determine overall status
+  // Determine overall status based ONLY on critical runtime failures
+  // Build artifacts (tsconfig.tsbuildinfo, eslint.config.js) are expected to be
+  // absent in production deployments (serverless, containers) — their absence
+  // does not indicate a runtime problem
   let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy'
   if (criticalFailures > 0) {
-    overallStatus = 'degraded'
-  }
-  // TypeScript/ESLint failures also degrade status (build health matters)
-  if (!tsCompiled || !eslintChecked) {
     overallStatus = 'degraded'
   }
 
