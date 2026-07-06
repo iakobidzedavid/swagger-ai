@@ -137,19 +137,19 @@ export async function logHealthAlert(event: HealthAlertEvent): Promise<void> {
 }
 
 /**
- * Send alert notification to ops team
- * Currently logs to console and can be extended to email/Slack/PagerDuty
+ * Send alert notification to ops team via email and Slack
  */
 async function sendAlert(
   failureCount: number,
   event: HealthAlertEvent,
   alertId: string
 ): Promise<void> {
+  const timestamp = new Date().toISOString()
   const message = `
 🚨 HEALTH ALERT: /health endpoint returning ${event.status_code}
   - Failures in last 5 minutes: ${failureCount}
   - Error: ${event.error_message || '(no error message)'}
-  - Time: ${new Date().toISOString()}
+  - Time: ${timestamp}
   - Alert ID: ${alertId}
 
 Action: Check Supabase connectivity, database logs, and API error rates.
@@ -157,7 +157,31 @@ Action: Check Supabase connectivity, database logs, and API error rates.
 
   console.error('[health-alert]', message)
 
-  // TODO: Integrate with email/Slack/PagerDuty for actual alerting
-  // For now, ops should monitor console/logs and set up external monitoring
-  // (e.g., Vercel error tracking, Sentry, Datadog, or custom log aggregation)
+  // Import delivery functions dynamically to avoid circular dependencies
+  try {
+    const { sendHealthAlertEmail, sendHealthAlertSlack } = await import(
+      '@/lib/health-alert-delivery'
+    )
+
+    // Prepare alert payload
+    const alertPayload = {
+      failureCount,
+      statusCode: event.status_code,
+      errorMessage: event.error_message,
+      alertId,
+      timestamp,
+    }
+
+    // Send email alert (fire-and-forget)
+    sendHealthAlertEmail(alertPayload).catch((err) => {
+      console.error('[health-alert] Email delivery error:', err)
+    })
+
+    // Send Slack alert (fire-and-forget)
+    sendHealthAlertSlack(alertPayload).catch((err) => {
+      console.error('[health-alert] Slack delivery error:', err)
+    })
+  } catch (error) {
+    console.error('[health-alert] Error loading delivery module:', error)
+  }
 }
