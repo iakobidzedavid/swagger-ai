@@ -23,6 +23,8 @@ interface ProductsCreatedResponse {
     description: string
     category: string
     imageUrl: string
+    mockupImageUrl?: string | null
+    isRealMockup: boolean
     priceUsd: number
     sku: string
     status: 'active' | 'archived'
@@ -112,6 +114,8 @@ export async function GET(req: NextRequest) {
           description: p.description,
           category: p.category,
           imageUrl: p.image_url,
+          mockupImageUrl: p.mockup_image_url,
+          isRealMockup: !!p.is_real_mockup,
           priceUsd: p.price_usd,
           sku: p.sku,
           status: p.status,

@@ -15,6 +15,7 @@ interface StorefrontProduct {
   sku: string
   image: string
   mockupImage?: string
+  isRealMockup?: boolean
   category: string
   variants: Array<{
     id: string
@@ -399,6 +400,7 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
                   >
                     <ProductPhotoOverlay
                       imageUrl={product.image}
+                      mockupImageUrl={product.isRealMockup ? product.mockupImage : undefined}
                       logoUrl={storefront.logoUrl}
                       fallbackLogoUrl={getFaviconUrl(domain)}
                       category={product.category}

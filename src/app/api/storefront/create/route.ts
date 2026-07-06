@@ -3,8 +3,14 @@ import { supabase } from '@/lib/supabase'
 import { getPrintifyClient } from '@/lib/printify'
 import { verifyAuth } from '@/lib/auth'
 import { computeBrandFidelity, computeGenerationSeconds } from '@/lib/competitive-position'
+import { createRealMockupBatch, type ProductMockupResult } from '@/lib/printify-mockup'
+import { getFaviconUrl } from '@/lib/favicon'
 
 export const runtime = 'nodejs'
+// Real Printify mockup creation makes several sequential Printify API calls
+// per product (provider lookup, variant lookup, product create) — 60s is the
+// highest maxDuration Vercel accepts on every plan tier (Hobby included).
+export const maxDuration = 60
 
 interface ProductSelection {
   productId: string
@@ -152,7 +158,81 @@ export async function POST(req: NextRequest) {
     let productsCreated = 0
     const failedProducts: Array<{ productId: string; error: string }> = []
 
+    // Real Printify mockups: try to create REAL Printify products with the
+    // brand logo uploaded as a print file, so the product photo is Printify's
+    // own rendered mockup (logo really printed on the garment) instead of a
+    // stock catalog photo with a CSS logo sticker pasted on top. Best-effort —
+    // any product that can't get a real mockup falls back to the existing
+    // stock-photo behavior below.
+    let realMockups = new Map<string, ProductMockupResult>()
+    if (!printifyClient.isMockMode()) {
+      try {
+        const batch = await createRealMockupBatch({
+          apiKey: process.env.PRINTIFY_API_KEY!,
+          logoImageUrl: logoUrl,
+          faviconFallbackUrl: getFaviconUrl(domain),
+          domain,
+          products: products.map(p => ({
+            id: p.productId,
+            category: p.productCategory,
+            title: p.productName,
+            priceUsd: p.productPrice,
+          })),
+        })
+        if (batch.enabled) {
+          realMockups = new Map(batch.results.map(r => [r.id, r]))
+        } else {
+          console.warn('[storefront/create] Real Printify mockups unavailable:', batch.reason)
+        }
+      } catch (err) {
+        console.warn('[storefront/create] createRealMockupBatch failed, falling back to stock photos:', err)
+      }
+    }
+
     for (const product of products) {
+      const realMockup = realMockups.get(product.productId)
+      if (realMockup?.success) {
+        // Real Printify product was created and rendered a real mockup —
+        // persist it directly, no stock-photo fallback needed.
+        const { data: insertedProduct, error: insertError } = await supabase
+          .from('printify_products')
+          .insert({
+            storefront_request_id: storefrontId,
+            printify_id: realMockup.printifyProductId,
+            name: product.productName,
+            description: product.productDescription?.trim() || `${product.productName} — custom branded merchandise for your team`,
+            category: product.productCategory,
+            image_url: realMockup.mockupImageUrl,
+            mockup_image_url: realMockup.mockupImageUrl,
+            is_real_mockup: true,
+            printify_blueprint_id: realMockup.blueprintId,
+            printify_print_provider_id: realMockup.printProviderId,
+            printify_variant_id: realMockup.variantId,
+            price_usd: product.productPrice,
+            sku: product.productSku,
+            brand_color_primary: primaryColor,
+            brand_color_secondary: secondaryColor,
+            status: 'active',
+          })
+          .select()
+          .single()
+
+        if (insertError || !insertedProduct) {
+          console.error('Supabase real-mockup product insert error:', insertError)
+          failedProducts.push({ productId: product.productId, error: insertError?.message || 'Unknown error' })
+        } else {
+          productsCreated++
+        }
+        continue
+      }
+
+      if (realMockup && !realMockup.success) {
+        console.warn(
+          `[storefront/create] Real mockup failed for "${product.productName}", falling back to stock photo:`,
+          realMockup.error
+        )
+      }
+
       try {
         // Prepare product data for Printify
         // Use the product's own real catalog description when we have one —
@@ -207,6 +287,7 @@ export async function POST(req: NextRequest) {
             description: productData.description,
             category: product.productCategory,
             image_url: product.productImage,
+            is_real_mockup: false,
             price_usd: product.productPrice,
             sku: product.productSku,
             brand_color_primary: primaryColor,

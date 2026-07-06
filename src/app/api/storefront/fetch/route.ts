@@ -5,6 +5,11 @@ import { normalizeStoredProduct } from '@/lib/printify-catalog'
 import { fulfillStorefrontRequest } from '@/lib/storefront-fulfillment'
 
 export const runtime = 'nodejs'
+// The self-heal paths below call fulfillStorefrontRequest inline, which can
+// make several sequential Printify API calls per product for real-mockup
+// creation — 60s is the highest maxDuration Vercel accepts on every plan
+// tier (Hobby included). Matches /api/storefront/create's maxDuration.
+export const maxDuration = 60
 
 interface StorefrontData {
   id: string
@@ -20,6 +25,7 @@ interface StorefrontData {
     sku: string
     image: string
     mockupImage?: string
+    isRealMockup: boolean
     category: string
     variants: Array<{
       id: string

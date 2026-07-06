@@ -3,6 +3,14 @@ import { supabase } from '@/lib/supabase'
 import { computeBrandFidelity, computeGenerationSeconds } from '@/lib/competitive-position'
 import { fulfillStorefrontRequest } from '@/lib/storefront-fulfillment'
 
+export const runtime = 'nodejs'
+// This route calls fulfillStorefrontRequest inline, which (like
+// /api/storefront/create) can now make several sequential Printify API calls
+// per product for real-mockup creation — 60s is the highest maxDuration
+// Vercel accepts on every plan tier (Hobby included). Without this, the fast
+// no-signup path times out mid-fulfillment and the row is stuck.
+export const maxDuration = 60
+
 const DOMAIN_RE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i
 
 export async function POST(req: NextRequest) {

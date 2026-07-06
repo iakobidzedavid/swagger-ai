@@ -27,6 +27,8 @@ import { supabase } from '@/lib/supabase'
 import { getPrintifyClient } from '@/lib/printify'
 import { fetchProductsForStorefront } from '@/lib/printify-catalog'
 import { computeBrandFidelity, computeGenerationSeconds } from '@/lib/competitive-position'
+import { createRealMockupBatch, type ProductMockupResult } from '@/lib/printify-mockup'
+import { getFaviconUrl } from '@/lib/favicon'
 
 const DEFAULT_PRODUCT_COUNT = 4
 const STALE_PROCESSING_MS = 2 * 60 * 1000 // 2 minutes — long enough for a real create loop to finish
@@ -92,11 +94,85 @@ export async function fulfillStorefrontRequest(requestId: string): Promise<Fulfi
 
   try {
     const catalogProducts = await fetchProductsForStorefront(primaryColor, secondaryColor, DEFAULT_PRODUCT_COUNT)
+    const selectedProducts = catalogProducts.slice(0, DEFAULT_PRODUCT_COUNT)
 
-    for (const product of catalogProducts.slice(0, DEFAULT_PRODUCT_COUNT)) {
+    // Real Printify mockups: this is the fast, no-signup self-serve path
+    // (/onboard → "Continue to Store") — the actual flow the DE-22 MVBP demo
+    // runs. When PRINTIFY_API_KEY is a real token (not mock mode), try to
+    // create REAL Printify products with the brand logo uploaded as a print
+    // file and let Printify render the mockup photo itself, instead of
+    // relying on the frontend's CSS logo-sticker overlay on a stock photo.
+    // Best-effort: any product that can't get a real mockup falls back to
+    // the existing stock-photo + CSS-overlay behavior below.
+    let realMockups = new Map<string, ProductMockupResult>()
+    if (!printifyClient.isMockMode()) {
+      try {
+        const batch = await createRealMockupBatch({
+          apiKey: process.env.PRINTIFY_API_KEY!,
+          logoImageUrl: claimed.logo_url,
+          faviconFallbackUrl: getFaviconUrl(claimed.domain),
+          domain: claimed.domain,
+          products: selectedProducts.map(p => ({
+            id: p.id,
+            category: p.category,
+            title: p.title,
+            priceUsd: p.variants[0]?.price ? p.variants[0].price / 100 : undefined,
+          })),
+        })
+        if (batch.enabled) {
+          realMockups = new Map(batch.results.map(r => [r.id, r]))
+        } else {
+          console.warn('[storefront-fulfillment] Real Printify mockups unavailable:', batch.reason)
+        }
+      } catch (err) {
+        console.warn('[storefront-fulfillment] createRealMockupBatch failed, falling back to stock photos:', err)
+      }
+    }
+
+    for (const product of selectedProducts) {
       try {
         const variant = product.variants[0]
         const priceCents = variant?.price ?? 1999
+        const realMockup = realMockups.get(product.id)
+
+        if (realMockup?.success) {
+          // Real Printify product was created and rendered a real mockup —
+          // persist it directly, no stock-photo fallback needed.
+          const { error: insertError } = await supabase.from('printify_products').insert({
+            storefront_request_id: claimed.id,
+            printify_id: realMockup.printifyProductId,
+            name: product.title,
+            description: product.description,
+            category: product.category,
+            image_url: realMockup.mockupImageUrl,
+            mockup_image_url: realMockup.mockupImageUrl,
+            is_real_mockup: true,
+            printify_blueprint_id: realMockup.blueprintId,
+            printify_print_provider_id: realMockup.printProviderId,
+            printify_variant_id: realMockup.variantId,
+            price_usd: priceCents / 100,
+            sku: product.sku,
+            brand_color_primary: primaryColor,
+            brand_color_secondary: secondaryColor,
+            status: 'active',
+          })
+
+          if (insertError) {
+            console.error('[storefront-fulfillment] real-mockup product insert error:', insertError)
+            failedProducts.push({ productId: product.id, error: insertError.message })
+          } else {
+            productsCreated++
+          }
+          continue
+        }
+
+        if (realMockup && !realMockup.success) {
+          console.warn(
+            `[storefront-fulfillment] Real mockup failed for "${product.title}", falling back to stock photo:`,
+            realMockup.error
+          )
+        }
+
         const productData = {
           title: product.title,
           description: product.description,
@@ -139,6 +215,7 @@ export async function fulfillStorefrontRequest(requestId: string): Promise<Fulfi
           description: productData.description,
           category: product.category,
           image_url: product.image,
+          is_real_mockup: false,
           price_usd: priceCents / 100,
           sku: product.sku,
           brand_color_primary: primaryColor,

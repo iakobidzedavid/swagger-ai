@@ -7,6 +7,15 @@ export type OverlayCategory = 'apparel' | 'drinkware' | 'accessories' | string
 interface ProductPhotoOverlayProps {
   /** The REAL product photo (Printify catalog photography) — never a generated mockup. */
   imageUrl: string
+  /**
+   * A REAL Printify-rendered mockup — the logo already printed onto the
+   * product by Printify's own renderer (see src/lib/printify-mockup.ts).
+   * When present, this is rendered directly with no CSS overlay at all,
+   * since the logo is already part of the photo. Falls back to the CSS
+   * sticker-overlay behavior below if this URL fails to load (e.g. the
+   * Printify CDN briefly 404s).
+   */
+  mockupImageUrl?: string | null
   /** Brand logo to overlay on the real photo. Omit/null renders the bare photo. */
   logoUrl?: string | null
   /** Fallback logo URL (e.g. favicon) to try if the primary logo fails to load. */
@@ -46,6 +55,7 @@ const OVERLAY_POSITION: Record<
  */
 export function ProductPhotoOverlay({
   imageUrl,
+  mockupImageUrl,
   logoUrl,
   fallbackLogoUrl,
   category,
@@ -56,15 +66,32 @@ export function ProductPhotoOverlay({
   const [primaryLogoError, setPrimaryLogoError] = useState(false)
   const [fallbackLogoError, setFallbackLogoError] = useState(false)
   const [useFallback, setUseFallback] = useState(false)
+  const [mockupError, setMockupError] = useState(false)
 
   // Reset error state when the underlying URLs change (e.g. selecting a
   // different product/domain re-uses this component instance via key reuse).
   useEffect(() => setPhotoError(false), [imageUrl])
+  useEffect(() => setMockupError(false), [mockupImageUrl])
   useEffect(() => {
     setPrimaryLogoError(false)
     setFallbackLogoError(false)
     setUseFallback(false)
   }, [logoUrl, fallbackLogoUrl])
+
+  // A real Printify-rendered mockup already has the logo printed onto the
+  // photo — render it plainly with no CSS overlay chip at all. Only fall
+  // through to the sticker-overlay-on-stock-photo behavior if there's no
+  // real mockup, or the mockup URL itself failed to load.
+  if (mockupImageUrl && !mockupError) {
+    return (
+      <img
+        src={mockupImageUrl}
+        alt={alt}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', ...imageStyle }}
+        onError={() => setMockupError(true)}
+      />
+    )
+  }
 
   const pos = OVERLAY_POSITION[category || ''] || OVERLAY_POSITION.apparel
 

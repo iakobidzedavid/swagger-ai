@@ -26,6 +26,8 @@ interface Product {
   description: string
   category: string
   imageUrl: string
+  mockupImageUrl?: string | null
+  isRealMockup: boolean
   priceUsd: number
   sku: string
   status: 'active' | 'archived'
@@ -271,6 +273,7 @@ function ProductsCreatedContent() {
                           {product.imageUrl ? (
                             <ProductPhotoOverlay
                               imageUrl={product.imageUrl}
+                              mockupImageUrl={product.isRealMockup ? product.mockupImageUrl : undefined}
                               logoUrl={storefront?.logoUrl}
                               fallbackLogoUrl={storefront ? getFaviconUrl(storefront.domain) : undefined}
                               category={product.category}

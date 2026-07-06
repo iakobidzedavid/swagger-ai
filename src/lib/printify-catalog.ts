@@ -188,6 +188,7 @@ export interface StoredProductRow {
   category?: string | null
   image_url?: string | null
   mockup_image_url?: string | null
+  is_real_mockup?: boolean | null
   price_usd?: number | string | null
   sku?: string | null
   variants?: Array<{ id: string; title: string; price: number }> | null
@@ -200,6 +201,10 @@ export interface NormalizedStorefrontProduct {
   sku: string
   image: string
   mockupImage?: string
+  /** True when `image` is Printify's own rendered mockup (logo really printed
+   *  on the product) rather than a stock catalog photo — tells the frontend
+   *  to skip the CSS logo-overlay entirely for this product. */
+  isRealMockup: boolean
   category: string
   variants: Array<{ id: string; title: string; price: number }>
 }
@@ -310,12 +315,21 @@ export function normalizeStoredProduct(row: StoredProductRow, index: number = 0)
     ? row.sku
     : fallback?.variants[0]?.sku ?? `SKU-${row.id.replace(/\W/g, '-').toUpperCase()}`
 
+  // Only true when this row's own real Printify-rendered mockup was actually
+  // used for `image` above (not swapped for a catalog fallback because it
+  // failed the usability check) — the frontend uses this to decide whether
+  // it's safe to skip the CSS logo-overlay (the logo is already really
+  // printed on the photo) or whether it still needs the overlay preview.
+  const isRealMockup = !!row.is_real_mockup && imageOk
+
   return {
     id: row.id,
     title,
     description,
     sku,
     image,
+    mockupImage: isRealMockup ? image : undefined,
+    isRealMockup,
     category,
     variants,
   }
