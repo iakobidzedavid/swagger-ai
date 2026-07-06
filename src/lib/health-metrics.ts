@@ -2,6 +2,14 @@ import { execSync } from 'child_process'
 import { promises as fs } from 'fs'
 import path from 'path'
 
+interface GitInfo {
+  commit_hash: string
+  commit_message: string
+  branch: string
+  author: string
+  timestamp: string
+}
+
 interface HealthMetrics {
   status: 'healthy' | 'degraded' | 'unhealthy'
   timestamp: string
@@ -11,13 +19,7 @@ interface HealthMetrics {
       count: number
       files: string[]
     }
-    git: {
-      commit_hash: string
-      commit_message: string
-      branch: string
-      author: string
-      timestamp: string
-    }
+    git: Partial<GitInfo> & { error?: string }
     typescript: {
       compiled: boolean
       errors?: string
@@ -39,37 +41,33 @@ interface HealthMetrics {
 
 export async function gatherHealthMetrics(): Promise<HealthMetrics> {
   const startTime = Date.now()
-  const status_details: string[] = []
+  let criticalFailures = 0
 
-  // Gather Git info
-  const gitInfo = {
-    commit_hash: 'unknown',
-    commit_message: 'unknown',
-    branch: 'unknown',
-    author: 'unknown',
-    timestamp: 'unknown',
-  }
+  // Gather Git info — failures here are non-critical
+  const gitInfo: Partial<GitInfo> & { error?: string } = {}
   try {
     gitInfo.commit_hash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim()
     gitInfo.commit_message = execSync('git log -1 --pretty=%B', { encoding: 'utf-8' }).trim()
     gitInfo.branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim()
     gitInfo.author = execSync('git log -1 --pretty=%an', { encoding: 'utf-8' }).trim()
     gitInfo.timestamp = execSync('git log -1 --pretty=%ai', { encoding: 'utf-8' }).trim()
-  } catch {
-    status_details.push('Git info unavailable')
+  } catch (err) {
+    // Git commands might not be available in production — non-critical
+    gitInfo.error = 'Git info unavailable (normal in serverless/production)'
   }
 
-  // Count test files
+  // Count test files — non-critical
   let testFiles: string[] = []
   try {
     const testsDir = path.join(process.cwd(), 'tests')
+    await fs.access(testsDir)
     const files = await fs.readdir(testsDir)
     testFiles = files.filter(f => f.endsWith('.test.mjs') || f.endsWith('.test.ts'))
   } catch {
-    status_details.push('Could not read tests directory')
+    // Tests directory might not exist in standalone build — non-critical
   }
 
-  // Check TypeScript compilation
+  // Check TypeScript compilation — non-critical
   let tsCompiled = false
   let tsError: string | undefined
   try {
@@ -77,24 +75,21 @@ export async function gatherHealthMetrics(): Promise<HealthMetrics> {
     await fs.access(tsBuildInfo)
     tsCompiled = true
   } catch {
-    tsError = 'tsconfig.tsbuildinfo not found'
-    status_details.push('TypeScript build info not available')
+    tsError = 'TypeScript build info not found (normal in production)'
   }
 
-  // Check ESLint status
+  // Check ESLint status — non-critical
   let eslintChecked = false
   let eslintError: string | undefined
   try {
-    // Try to read eslint config
     const eslintConfig = path.join(process.cwd(), 'eslint.config.js')
     await fs.access(eslintConfig)
     eslintChecked = true
   } catch {
-    eslintError = 'ESLint config not found'
-    status_details.push('ESLint config not available')
+    eslintError = 'ESLint config not found (normal in production)'
   }
 
-  // Check database connectivity
+  // Check database connectivity — CRITICAL
   let dbConnected = false
   let dbError: string | undefined
   try {
@@ -103,28 +98,39 @@ export async function gatherHealthMetrics(): Promise<HealthMetrics> {
 
     if (!supabaseUrl || !supabaseKey) {
       dbError = 'Supabase credentials not configured'
-      status_details.push('Supabase not configured')
+      criticalFailures++
     } else {
-      // Try to make a simple request to Supabase
-      const response = await fetch(`${supabaseUrl}/rest/v1/`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-      })
+      try {
+        // Try to make a simple request to Supabase with timeout
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 5000)
 
-      if (response.ok || response.status === 404) {
-        // 404 is OK — means the API endpoint exists but no resource at root
-        dbConnected = true
-      } else {
-        dbError = `Supabase returned ${response.status}`
-        status_details.push(`Supabase connectivity issue: ${response.status}`)
+        const response = await fetch(`${supabaseUrl}/rest/v1/`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        })
+
+        clearTimeout(timeoutId)
+
+        if (response.ok || response.status === 404) {
+          // 404 is OK — means the API endpoint exists but no resource at root
+          dbConnected = true
+        } else {
+          dbError = `Supabase returned ${response.status}`
+          criticalFailures++
+        }
+      } catch (fetchErr) {
+        dbError = `Supabase fetch error: ${(fetchErr as Error).message}`
+        criticalFailures++
       }
     }
   } catch (err) {
-    dbError = (err as Error).message
-    status_details.push(`Database error: ${(err as Error).message}`)
+    dbError = `Database check error: ${(err as Error).message}`
+    criticalFailures++
   }
 
   const endTime = Date.now()
@@ -132,10 +138,7 @@ export async function gatherHealthMetrics(): Promise<HealthMetrics> {
 
   // Determine overall status
   let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy'
-  if (!dbConnected) {
-    overallStatus = 'degraded'
-  }
-  if (!tsCompiled || !eslintChecked) {
+  if (criticalFailures > 0) {
     overallStatus = 'degraded'
   }
 
