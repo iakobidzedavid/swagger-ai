@@ -120,12 +120,21 @@ function DashboardContent() {
       ])
 
       if (!metricsRes.ok || !ordersRes.ok) {
-        throw new Error('Failed to fetch dashboard data')
+        // Extract error details from API response
+        const failedRes = !metricsRes.ok ? metricsRes : ordersRes
+        const errorData = await failedRes.json().catch(() => ({}))
+        const errorMsg = errorData.error || `HTTP ${failedRes.status}`
+        throw new Error(`Failed to fetch dashboard data: ${errorMsg}`)
       }
 
       const metricsData = await metricsRes.json()
       const ordersData = await ordersRes.json()
       const storefrontsData = storefrontsRes.ok ? await storefrontsRes.json() : { storefronts: [] }
+
+      // Validate response schema to prevent undefined field crashes
+      if (!metricsData.metrics || !ordersData.orders || typeof ordersData.totalCount !== 'number') {
+        throw new Error('Invalid API response schema')
+      }
 
       setState(prev => ({
         ...prev,
