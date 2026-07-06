@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { verifyStripeWebhookSignature } from '@/lib/stripe'
 import { syncStripeSubscription } from '@/lib/subscriptionSync'
+import { supabase } from '@/lib/supabase'
 
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET
 

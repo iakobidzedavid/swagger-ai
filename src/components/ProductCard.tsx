@@ -122,7 +122,7 @@ export function ProductCard({
               checked={isSelected}
               onChange={(e) => {
                 e.stopPropagation()
-                if (onToggle) onToggle()
+                if (onToggle) {onToggle()}
               }}
               style={{
                 marginRight: '8px',

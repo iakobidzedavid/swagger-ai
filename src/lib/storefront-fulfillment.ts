@@ -23,12 +23,12 @@
  *    same failure mode STOREFRONT_CREATION_FIX.md documented for the
  *    authenticated path (a crash mid-loop left the row unfinished forever).
  */
-import { supabase } from '@/lib/supabase'
+import { computeBrandFidelity, computeGenerationSeconds } from '@/lib/competitive-position'
+import { getFaviconUrl } from '@/lib/favicon'
 import { getPrintifyClient } from '@/lib/printify'
 import { fetchProductsForStorefront } from '@/lib/printify-catalog'
-import { computeBrandFidelity, computeGenerationSeconds } from '@/lib/competitive-position'
 import { createRealMockupBatch, type ProductMockupResult } from '@/lib/printify-mockup'
-import { getFaviconUrl } from '@/lib/favicon'
+import { supabase } from '@/lib/supabase'
 
 const DEFAULT_PRODUCT_COUNT = 4
 const STALE_PROCESSING_MS = 2 * 60 * 1000 // 2 minutes — long enough for a real create loop to finish

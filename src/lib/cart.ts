@@ -86,7 +86,7 @@ export function updateItemQuantity(
 }
 
 export function clearItems(items: CartItem[], domain?: string): CartItem[] {
-  if (!domain) return []
+  if (!domain) {return []}
   // Clear only this storefront's items so an in-progress cart for another
   // company (opened in another tab, same browser) survives.
   return items.filter(item => item.domain !== domain)
@@ -104,9 +104,9 @@ export function itemsForDomain(items: CartItem[], domain: string): CartItem[] {
  */
 export function sanitizeLoadedItems(raw: unknown): CartItem[] {
   const items = (raw as { items?: unknown } | null | undefined)?.items
-  if (!Array.isArray(items)) return []
+  if (!Array.isArray(items)) {return []}
   return items.filter(
     (item): item is CartItem =>
-      !!item && typeof item.domain === 'string' && item.domain.length > 0
+      Boolean(item) && typeof item.domain === 'string' && item.domain.length > 0
   )
 }

@@ -26,7 +26,7 @@ const USER_KEY = 'swagger_user'
 function isTokenValid(token: string): boolean {
   try {
     const parts = token.split('.')
-    if (parts.length !== 3) return false
+    if (parts.length !== 3) {return false}
 
     // Decode payload (second part) using atob for browser compatibility
     const payload = parts[1]
@@ -149,7 +149,7 @@ export function useAuth(): UseAuthReturn {
   return {
     user,
     token,
-    isSignedIn: !!token && !!user,
+    isSignedIn: Boolean(token) && Boolean(user),
     isLoading,
     error,
     signin,

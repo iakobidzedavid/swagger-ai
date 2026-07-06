@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
+import { useState, useEffect, Suspense } from 'react'
 
 interface Metrics {
   gmv: string
@@ -87,16 +87,16 @@ function DashboardContent() {
 
       // Build query string for filters
       const metricsParams = new URLSearchParams()
-      if (params.dateFrom) metricsParams.append('dateFrom', params.dateFrom)
-      if (params.dateTo) metricsParams.append('dateTo', params.dateTo)
+      if (params.dateFrom) {metricsParams.append('dateFrom', params.dateFrom)}
+      if (params.dateTo) {metricsParams.append('dateTo', params.dateTo)}
 
       const ordersParams = new URLSearchParams()
       ordersParams.append('limit', '100')
       ordersParams.append('offset', '0')
       ordersParams.append('sortBy', params.sortBy || 'created_at')
       ordersParams.append('sortDir', params.sortDir || 'desc')
-      if (params.dateFrom) ordersParams.append('dateFrom', params.dateFrom)
-      if (params.dateTo) ordersParams.append('dateTo', params.dateTo)
+      if (params.dateFrom) {ordersParams.append('dateFrom', params.dateFrom)}
+      if (params.dateTo) {ordersParams.append('dateTo', params.dateTo)}
       if (params.selectedStorefront && params.selectedStorefront !== 'all') {
         ordersParams.append('storefrontId', params.selectedStorefront)
       }

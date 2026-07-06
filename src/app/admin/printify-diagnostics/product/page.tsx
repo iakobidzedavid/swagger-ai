@@ -1,8 +1,8 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
 
 interface PrintifyVariant {
   id: number
@@ -93,7 +93,6 @@ function ProductDetail() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '16px', marginBottom: '32px' }}>
             {(product.images || []).map((img, idx) => (
               <a key={idx} href={img.src} target="_blank" rel="noopener noreferrer" className="card" style={{ padding: '8px' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={img.src} alt={`${product.title} mockup ${idx}`} style={{ width: '100%', height: '160px', objectFit: 'contain', backgroundColor: '#fff' }} />
               </a>
             ))}

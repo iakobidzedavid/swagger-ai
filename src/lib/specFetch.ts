@@ -25,23 +25,23 @@ interface FetchErr {
 
 function isPrivateIPv4(host: string): boolean {
   const m = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
-  if (!m) return false
+  if (!m) {return false}
   const [a, b] = [Number(m[1]), Number(m[2])]
-  if (a === 127) return true // loopback
-  if (a === 10) return true // 10.0.0.0/8
-  if (a === 169 && b === 254) return true // link-local / cloud metadata (169.254.169.254)
-  if (a === 172 && b >= 16 && b <= 31) return true // 172.16.0.0/12
-  if (a === 192 && b === 168) return true // 192.168.0.0/16
-  if (a === 0) return true
+  if (a === 127) {return true} // loopback
+  if (a === 10) {return true} // 10.0.0.0/8
+  if (a === 169 && b === 254) {return true} // link-local / cloud metadata (169.254.169.254)
+  if (a === 172 && b >= 16 && b <= 31) {return true} // 172.16.0.0/12
+  if (a === 192 && b === 168) {return true} // 192.168.0.0/16
+  if (a === 0) {return true}
   return false
 }
 
 function isBlockedHost(hostname: string): boolean {
   const h = hostname.toLowerCase()
-  if (BLOCKED_HOSTNAMES.has(h)) return true
-  if (h.endsWith('.local') || h.endsWith('.internal')) return true
-  if (isPrivateIPv4(h)) return true
-  if (h === '[::1]' || h.includes(':')) return true // block raw IPv6 literals — not worth the extra validation surface
+  if (BLOCKED_HOSTNAMES.has(h)) {return true}
+  if (h.endsWith('.local') || h.endsWith('.internal')) {return true}
+  if (isPrivateIPv4(h)) {return true}
+  if (h === '[::1]' || h.includes(':')) {return true} // block raw IPv6 literals — not worth the extra validation surface
   return false
 }
 
@@ -50,7 +50,7 @@ function isBlockedHost(hostname: string): boolean {
 // a 4xx without needing to perform the fetch.
 function validateSpecUrl(raw: string): { ok: true; url: URL } | { ok: false; error: string } {
   const trimmed = raw.trim()
-  if (!trimmed) return { ok: false, error: 'spec_url is required' }
+  if (!trimmed) {return { ok: false, error: 'spec_url is required' }}
 
   let url: URL
   try {
@@ -73,7 +73,7 @@ const MAX_REDIRECTS = 5
 
 export async function fetchSpecFromUrl(raw: string): Promise<FetchOk | FetchErr> {
   const validation = validateSpecUrl(raw)
-  if (!validation.ok) return { ok: false, error: validation.error }
+  if (!validation.ok) {return { ok: false, error: validation.error }}
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
@@ -138,7 +138,7 @@ export async function fetchSpecFromUrl(raw: string): Promise<FetchOk | FetchErr>
     const chunks: Uint8Array[] = []
     for (;;) {
       const { done, value } = await reader.read()
-      if (done) break
+      if (done) {break}
       if (value) {
         received += value.byteLength
         if (received > MAX_SPEC_BYTES) {

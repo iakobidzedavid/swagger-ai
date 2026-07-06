@@ -17,7 +17,7 @@ const PRO_TIER_PRICE_USD_CENTS = 100_000
 /** Returns the configured secret key, or null if unset/still a placeholder. */
 export function getStripeSecretKey(): string | null {
   const key = process.env.STRIPE_SECRET_KEY
-  if (!key || key.includes('<your-')) return null
+  if (!key || key.includes('<your-')) {return null}
   return key
 }
 
@@ -29,7 +29,7 @@ function isStripeConfigured(): boolean {
 function toFormBody(params: Record<string, unknown>): string {
   const pairs: string[] = []
   const walk = (value: unknown, prefix: string) => {
-    if (value === undefined || value === null) return
+    if (value === undefined || value === null) {return}
     if (Array.isArray(value)) {
       value.forEach((v) => walk(v, `${prefix}[]`))
     } else if (typeof value === 'object') {
@@ -46,7 +46,7 @@ function toFormBody(params: Record<string, unknown>): string {
 
 async function stripeFetch(path: string, method: 'GET' | 'POST', params?: Record<string, unknown>) {
   const key = getStripeSecretKey()
-  if (!key) throw new Error('Stripe is not configured (STRIPE_SECRET_KEY missing)')
+  if (!key) {throw new Error('Stripe is not configured (STRIPE_SECRET_KEY missing)')}
 
   const auth = `Basic ${Buffer.from(`${key}:`).toString('base64')}`
   const body = params ? toFormBody(params) : ''
@@ -84,7 +84,7 @@ async function createCustomer(email: string, metadata: Record<string, string> = 
 /** Reuses an existing Stripe customer for this email if one exists, avoiding duplicate customers on retry. */
 export async function findOrCreateCustomer(email: string, metadata?: Record<string, string>) {
   const existing = await findCustomerByEmail(email)
-  if (existing) return existing
+  if (existing) {return existing}
   return createCustomer(email, metadata)
 }
 
@@ -191,17 +191,17 @@ export function verifyStripeWebhookSignature(
   toleranceSeconds = 300,
   nowSeconds: number = Math.floor(Date.now() / 1000)
 ): WebhookVerification {
-  if (!signatureHeader) return { valid: false, reason: 'missing_signature_header' }
+  if (!signatureHeader) {return { valid: false, reason: 'missing_signature_header' }}
 
   let timestamp: string | undefined
   const v1Signatures: string[] = []
   for (const part of signatureHeader.split(',')) {
     const [k, v] = part.trim().split('=')
-    if (k === 't') timestamp = v
-    else if (k === 'v1' && v) v1Signatures.push(v)
+    if (k === 't') {timestamp = v}
+    else if (k === 'v1' && v) {v1Signatures.push(v)}
   }
 
-  if (!timestamp || v1Signatures.length === 0) return { valid: false, reason: 'malformed_header' }
+  if (!timestamp || v1Signatures.length === 0) {return { valid: false, reason: 'malformed_header' }}
 
   const expected = crypto.createHmac('sha256', secret).update(`${timestamp}.${payload}`, 'utf8').digest('hex')
   const expectedBuf = Buffer.from(expected, 'hex')
@@ -216,7 +216,7 @@ export function verifyStripeWebhookSignature(
     return sigBuf.length === expectedBuf.length && crypto.timingSafeEqual(sigBuf, expectedBuf)
   })
 
-  if (!matches) return { valid: false, reason: 'signature_mismatch' }
+  if (!matches) {return { valid: false, reason: 'signature_mismatch' }}
 
   const age = nowSeconds - Number(timestamp)
   if (!Number.isFinite(age) || Math.abs(age) > toleranceSeconds) {

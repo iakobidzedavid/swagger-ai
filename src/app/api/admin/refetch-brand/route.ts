@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { DOMAIN_RE, normalizeDomain } from '@/lib/brand'
 import { fetchBrandData } from '@/lib/brandfetch'
+import { supabase } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
 

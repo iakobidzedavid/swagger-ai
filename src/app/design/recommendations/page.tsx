@@ -1,7 +1,7 @@
 'use client'
 
-import { Suspense, useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useState, useRef } from 'react'
 
 interface DesignRecommendation {
   domain: string
@@ -46,7 +46,7 @@ function ColorSwatch({
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') onClick()
+        if (e.key === 'Enter' || e.key === ' ') {onClick()}
       }}
     >
       <div
@@ -129,7 +129,7 @@ function DesignRecommendationsContent() {
   const handleCopyColor = (color: string) => {
     navigator.clipboard.writeText(color).catch(() => null)
     setCopiedColor(color)
-    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current)
+    if (copyTimeoutRef.current) {clearTimeout(copyTimeoutRef.current)}
     copyTimeoutRef.current = setTimeout(() => setCopiedColor(null), 2000)
   }
 
@@ -287,7 +287,7 @@ function DesignRecommendationsContent() {
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ')
-                        handleCopyColor(color)
+                        {handleCopyColor(color)}
                     }}
                     style={{
                       display: 'flex',

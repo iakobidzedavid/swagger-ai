@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-import { retrievePaymentIntent } from '@/lib/stripe'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { sendOrderConfirmation } from '@/lib/email'
+import { retrievePaymentIntent } from '@/lib/stripe'
+import { supabase } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
 

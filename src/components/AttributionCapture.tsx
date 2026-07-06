@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+
 import { captureAttribution } from '@/lib/attribution'
 
 /** Drop this on any landing surface (homepage, /onboard) to record first-touch

@@ -82,7 +82,7 @@ const PERSONAL_DOMAINS = new Set([
  */
 async function fetchFromBrandfetch(domain: string): Promise<BrandData | null> {
   const apiKey = process.env.BRANDFETCH_API_KEY
-  if (!apiKey) return null
+  if (!apiKey) {return null}
 
   try {
     const controller = new AbortController()
@@ -155,13 +155,13 @@ async function fetchFromBrandfetch(domain: string): Promise<BrandData | null> {
  * Note: logos don't have a direct `src` at the top level; src is nested in formats.
  */
 function extractBestLogo(logos: BrandfetchLogoData[] | undefined): string | null {
-  if (!logos || logos.length === 0) return null
+  if (!logos || logos.length === 0) {return null}
 
   // Helper to find and extract format src by priority
   const findFormatUrl = (logo: BrandfetchLogoData, ...formats: string[]): string | null => {
     for (const fmt of formats) {
       const match = logo.formats?.find(f => f.format?.toLowerCase() === fmt.toLowerCase())
-      if (match?.src) return match.src
+      if (match?.src) {return match.src}
     }
     return null
   }
@@ -170,7 +170,7 @@ function extractBestLogo(logos: BrandfetchLogoData[] | undefined): string | null
   for (const logo of logos) {
     if (logo.theme?.toLowerCase() === 'light') {
       const url = findFormatUrl(logo, 'svg', 'png', 'webp')
-      if (url) return url
+      if (url) {return url}
     }
   }
 
@@ -178,20 +178,20 @@ function extractBestLogo(logos: BrandfetchLogoData[] | undefined): string | null
   for (const logo of logos) {
     if (logo.theme?.toLowerCase() === 'light') {
       const url = findFormatUrl(logo, 'jpeg', 'webp', 'png')
-      if (url) return url
+      if (url) {return url}
     }
   }
 
   // Priority 3: SVG from any logo (no theme preference)
   for (const logo of logos) {
     const url = findFormatUrl(logo, 'svg')
-    if (url) return url
+    if (url) {return url}
   }
 
   // Priority 4: PNG from any logo
   for (const logo of logos) {
     const url = findFormatUrl(logo, 'png')
-    if (url) return url
+    if (url) {return url}
   }
 
   // Priority 5: Any available format from first logo
@@ -213,7 +213,7 @@ function extractBestLogo(logos: BrandfetchLogoData[] | undefined): string | null
  * - `brightness`: luminance value 0-255
  */
 function extractColors(colors: BrandfetchColorData[] | undefined): string[] {
-  if (!colors) return []
+  if (!colors) {return []}
 
   // Accept 3-digit (#FFF), 4-digit (#FFFA), 6-digit (#FFFFFF), or 8-digit (#FFFFFFFF) hex
   const hexPattern = /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i
@@ -240,7 +240,7 @@ function extractColors(colors: BrandfetchColorData[] | undefined): string[] {
     const typeOrder = { accent: 0, primary: 1, secondary: 2, dark: 3, light: 4 }
     const aOrder = typeOrder[a.type as keyof typeof typeOrder] ?? 99
     const bOrder = typeOrder[b.type as keyof typeof typeOrder] ?? 99
-    if (aOrder !== bOrder) return aOrder - bOrder
+    if (aOrder !== bOrder) {return aOrder - bOrder}
     // Secondary sort: prefer mid-range brightness (not too light, not too dark)
     const aBrightness = a.brightness ?? 128
     const bBrightness = b.brightness ?? 128
@@ -263,7 +263,7 @@ function extractColors(colors: BrandfetchColorData[] | undefined): string[] {
  * - `weights`: array of available weights (optional)
  */
 function extractFonts(fonts: BrandfetchFontData[] | undefined): string[] {
-  if (!fonts) return []
+  if (!fonts) {return []}
 
   // Sort by type priority: title/heading first, then body, then others
   const typeOrder = { title: 0, heading: 1, body: 2 }
@@ -280,7 +280,7 @@ function extractFonts(fonts: BrandfetchFontData[] | undefined): string[] {
     if (font.name && !seen.has(font.name)) {
       seen.add(font.name)
       extracted.push(font.name)
-      if (extracted.length >= 5) break // Limit to 5 fonts
+      if (extracted.length >= 5) {break} // Limit to 5 fonts
     }
   }
 
@@ -333,7 +333,7 @@ export function isPersonalDomain(domain: string): boolean {
  */
 export async function fetchBrandData(domain: string): Promise<BrandData> {
   const brandfetchResult = await fetchFromBrandfetch(domain)
-  if (brandfetchResult) return brandfetchResult
+  if (brandfetchResult) {return brandfetchResult}
 
   const keyless = await fetchKeylessBrand(domain)
   return {

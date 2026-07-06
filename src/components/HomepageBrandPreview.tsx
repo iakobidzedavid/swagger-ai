@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useCallback, useState } from 'react'
 
 /**
  * Homepage domain-input widget (DE-18 revenue engine: closes the friction gap
@@ -33,9 +33,9 @@ function normalise(v: string) {
 }
 
 function formatValidate(domain: string): string | null {
-  if (!domain) return null
-  if (PERSONAL_DOMAINS.has(domain)) return 'Enter a company domain, not a personal email provider'
-  if (!DOMAIN_RE.test(domain)) return 'Enter a valid domain (e.g., acme.com)'
+  if (!domain) {return null}
+  if (PERSONAL_DOMAINS.has(domain)) {return 'Enter a company domain, not a personal email provider'}
+  if (!DOMAIN_RE.test(domain)) {return 'Enter a valid domain (e.g., acme.com)'}
   return null
 }
 
@@ -88,7 +88,7 @@ export default function HomepageBrandPreview() {
   }
 
   function handleContinue() {
-    if (!brand) return
+    if (!brand) {return}
     router.push(`/onboard?domain=${encodeURIComponent(brand.domain)}`)
   }
 

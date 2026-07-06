@@ -67,7 +67,7 @@ const CATEGORY_PRIORITY: Record<string, number> = {
  * Get category priority score (lower = higher priority)
  */
 function getCategoryPriority(category?: string): number {
-  if (!category) return 999
+  if (!category) {return 999}
   const normalized = category.toLowerCase().trim()
 
   // Direct match
@@ -92,8 +92,8 @@ function getBestImage(product: PrintifyCatalogProduct): string {
   // Use first image if available
   if (product.images && product.images.length > 0) {
     const img = product.images[0]
-    if (typeof img === 'string') return img
-    if ('src' in img && img.src) return img.src
+    if (typeof img === 'string') {return img}
+    if ('src' in img && img.src) {return img.src}
   }
 
   // Last-resort fallback — a real local asset (not a third-party placeholder
@@ -148,7 +148,7 @@ function getPrimaryVariant(
  */
 function getSku(product: PrintifyCatalogProduct): string {
   const variant = product.variants?.[0]
-  if (variant?.sku) return variant.sku
+  if (variant?.sku) {return variant.sku}
 
   // Generate SKU from product ID
   return `SKU-${product.id.replace(/\W/g, '-').toUpperCase()}`
@@ -160,7 +160,7 @@ function getSku(product: PrintifyCatalogProduct): string {
 export function determinePrimaryCategory(
   category?: string
 ): 'apparel' | 'drinkware' | 'accessories' {
-  if (!category) return 'accessories'
+  if (!category) {return 'accessories'}
 
   const normalized = category.toLowerCase()
 

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { getStatusBadge } from '@/lib/order-status'
+import { useSearchParams } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+
 import { DesignFeedbackWidget } from '@/components/DesignFeedbackWidget'
+import { getStatusBadge } from '@/lib/order-status'
 
 interface OrderData {
   id: string
@@ -34,8 +35,8 @@ function OrderTimeline({ order }: { order: OrderData }) {
   const steps = [
     { label: 'Order Placed', date: order.createdAt, completed: true },
     { label: 'Processing', date: undefined, completed: order.status !== 'pending' },
-    { label: 'Shipped', date: order.shippedAt, completed: order.status === 'completed' || !!order.deliveredAt },
-    { label: 'Delivered', date: order.deliveredAt, completed: !!order.deliveredAt },
+    { label: 'Shipped', date: order.shippedAt, completed: order.status === 'completed' || Boolean(order.deliveredAt) },
+    { label: 'Delivered', date: order.deliveredAt, completed: Boolean(order.deliveredAt) },
   ]
 
   return (

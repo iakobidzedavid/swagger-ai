@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { useState, useRef, useCallback, useEffect, Suspense } from 'react'
+
+import { BrandAssetGallery } from '@/components/BrandAssetGallery'
 import { captureAttribution, getAttribution } from '@/lib/attribution'
 import { DOMAIN_RE, normalizeDomain } from '@/lib/brand'
-import { BrandAssetGallery } from '@/components/BrandAssetGallery'
 
 type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid'
 type SubmitState = 'idle' | 'submitting' | 'success' | 'error'
@@ -41,9 +42,9 @@ const PERSONAL_DOMAINS = new Set([
 ])
 
 function formatValidate(domain: string): string | null {
-  if (!domain) return null
-  if (PERSONAL_DOMAINS.has(domain)) return 'Enter a company domain, not a personal email provider'
-  if (!DOMAIN_RE.test(domain)) return 'Enter a valid domain (e.g., acme.com)'
+  if (!domain) {return null}
+  if (PERSONAL_DOMAINS.has(domain)) {return 'Enter a company domain, not a personal email provider'}
+  if (!DOMAIN_RE.test(domain)) {return 'Enter a valid domain (e.g., acme.com)'}
   return null
 }
 
@@ -83,12 +84,12 @@ function OnboardForm() {
   // via /onboard?domain=<domain> so the visitor doesn't retype it — DE-18).
   useEffect(() => {
     const fromQuery = searchParams.get('domain')
-    if (!fromQuery) return
+    if (!fromQuery) {return}
     const norm = normalizeDomain(fromQuery)
-    if (!norm || formatValidate(norm)) return
+    if (!norm || formatValidate(norm)) {return}
     setDomain(norm)
     runApiValidation(norm)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [searchParams])
 
   const showToast = (msg: string) => {
@@ -138,14 +139,14 @@ function OnboardForm() {
     }
 
     // Debounce API validation
-    if (validateTimer.current) clearTimeout(validateTimer.current)
+    if (validateTimer.current) {clearTimeout(validateTimer.current)}
     if (!err && norm) {
       validateTimer.current = setTimeout(() => runApiValidation(norm), 300)
     }
   }, [])
 
   const handleBlur = useCallback(() => {
-    if (validateTimer.current) clearTimeout(validateTimer.current)
+    if (validateTimer.current) {clearTimeout(validateTimer.current)}
     const norm = normalizeDomain(domain)
     const err = formatValidate(norm)
     if (!err && norm && validationState === 'idle') {
@@ -174,7 +175,7 @@ function OnboardForm() {
 
   async function handleGenerateStore(brandOverride?: BrandResult) {
     const brandData = brandOverride ?? brand
-    if (!brandData) return
+    if (!brandData) {return}
     setStoreRequestState('requesting')
     setStoreRequestError(null)
     try {
@@ -232,8 +233,8 @@ function OnboardForm() {
     e.preventDefault()
     const norm = normalizeDomain(domain)
     const err = formatValidate(norm)
-    if (err || !norm) return
-    if (emailError) return
+    if (err || !norm) {return}
+    if (emailError) {return}
 
     // If we don't have a preview yet, fetch it first
     if (!brandPreview) {
@@ -279,7 +280,7 @@ function OnboardForm() {
 
   const norm = normalizeDomain(domain)
   const fmtErr = formatValidate(norm)
-  const canSubmit = !!norm && !fmtErr && !emailError && validationState !== 'invalid' && submitState !== 'submitting'
+  const canSubmit = Boolean(norm) && !fmtErr && !emailError && validationState !== 'invalid' && submitState !== 'submitting'
   const isSubmitting = submitState === 'submitting'
 
   return (

@@ -101,7 +101,7 @@ export function ProductPhotoOverlay({
   // 3. Don't show logo if both failed or both are null
   const effectiveLogoUrl = useFallback ? fallbackLogoUrl : logoUrl
   const effectiveLogoError = useFallback ? fallbackLogoError : primaryLogoError
-  const showLogo = !!effectiveLogoUrl && !effectiveLogoError && !photoError
+  const showLogo = Boolean(effectiveLogoUrl) && !effectiveLogoError && !photoError
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>

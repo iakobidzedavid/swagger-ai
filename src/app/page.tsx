@@ -1,4 +1,5 @@
 import Link from 'next/link'
+
 import AttributionCapture from '@/components/AttributionCapture'
 import HomepageBrandPreview from '@/components/HomepageBrandPreview'
 

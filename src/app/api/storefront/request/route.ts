@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { computeBrandFidelity, computeGenerationSeconds } from '@/lib/competitive-position'
 import { fulfillStorefrontRequest } from '@/lib/storefront-fulfillment'
+import { supabase } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
 // This route calls fulfillStorefrontRequest inline, which (like

@@ -221,32 +221,32 @@ const HEX_COLOR_ONLY = /^#?[0-9a-f]{6}$/i
 const PLACEHOLDER_IMAGE_HOST = /via\.placeholder\.com|placehold\.it/i
 
 function isUsableStoredTitle(title: string | null | undefined): title is string {
-  if (!title) return false
+  if (!title) {return false}
   const t = title.trim()
-  if (!t) return false
-  if (HEX_COLOR_ONLY.test(t)) return false
+  if (!t) {return false}
+  if (HEX_COLOR_ONLY.test(t)) {return false}
   return true
 }
 
 function isUsableStoredImage(image: string | null | undefined): image is string {
-  if (!image) return false
+  if (!image) {return false}
   const img = image.trim()
-  if (!img) return false
-  if (HEX_COLOR_ONLY.test(img)) return false
-  if (PLACEHOLDER_IMAGE_HOST.test(img)) return false
+  if (!img) {return false}
+  if (HEX_COLOR_ONLY.test(img)) {return false}
+  if (PLACEHOLDER_IMAGE_HOST.test(img)) {return false}
   // A real image reference is either an absolute URL or a local /public path.
-  if (!/^https?:\/\//i.test(img) && !img.startsWith('/')) return false
+  if (!/^https?:\/\//i.test(img) && !img.startsWith('/')) {return false}
   return true
 }
 
 function isUsableStoredDescription(description: string | null | undefined): description is string {
-  if (!description) return false
+  if (!description) {return false}
   const d = description.trim()
-  if (!d) return false
-  if (HEX_COLOR_ONLY.test(d)) return false
+  if (!d) {return false}
+  if (HEX_COLOR_ONLY.test(d)) {return false}
   // Reject descriptions that appear to contain brand metadata with hex codes
   // e.g., "...Branded with colors: #4285f4"
-  if (/(Branded\s+)?with\s+colors?\s*:?\s*#[0-9a-fA-F]{6}/i.test(d)) return false
+  if (/(Branded\s+)?with\s+colors?\s*:?\s*#[0-9a-fA-F]{6}/i.test(d)) {return false}
   return true
 }
 
@@ -320,7 +320,7 @@ export function normalizeStoredProduct(row: StoredProductRow, index: number = 0)
   // failed the usability check) — the frontend uses this to decide whether
   // it's safe to skip the CSS logo-overlay (the logo is already really
   // printed on the photo) or whether it still needs the overlay preview.
-  const isRealMockup = !!row.is_real_mockup && imageOk
+  const isRealMockup = Boolean(row.is_real_mockup) && imageOk
 
   return {
     id: row.id,

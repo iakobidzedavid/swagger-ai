@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { classifyAttribution, sanitizeAttribution } from '@/lib/attribution'
 import { fetchBrandData, isPersonalDomain } from '@/lib/brandfetch'
+import { supabase } from '@/lib/supabase'
 
 // Brand extraction requires the Node.js runtime (zlib + Buffer for the
 // keyless PNG-decode fallback in src/lib/keyless-brand.ts), not Edge.
@@ -30,9 +32,9 @@ export async function POST(req: NextRequest) {
   const contactName = (body.contact_name ?? '').trim() || null
   const contactEmail = (body.contact_email ?? '').trim().toLowerCase() || null
 
-  if (!raw) return NextResponse.json({ error: 'domain is required' }, { status: 400 })
-  if (!DOMAIN_RE.test(raw)) return NextResponse.json({ error: 'Invalid domain format' }, { status: 400 })
-  if (isPersonalDomain(raw)) return NextResponse.json({ error: 'Please enter a company domain' }, { status: 400 })
+  if (!raw) {return NextResponse.json({ error: 'domain is required' }, { status: 400 })}
+  if (!DOMAIN_RE.test(raw)) {return NextResponse.json({ error: 'Invalid domain format' }, { status: 400 })}
+  if (isPersonalDomain(raw)) {return NextResponse.json({ error: 'Please enter a company domain' }, { status: 400 })}
 
   // Revenue-engine attribution (DE-18): trust nothing from the client beyond
   // length-clipped strings — classify server-side into the same taxonomy the

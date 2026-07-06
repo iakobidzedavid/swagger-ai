@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
+import { useState, useEffect, Suspense } from 'react'
 
 interface ProductGenerationStatus {
   domain: string
@@ -249,7 +249,7 @@ function DashboardContent() {
 
   // Auto-refresh every 10 seconds when page is visible
   useEffect(() => {
-    if (!state.autoRefresh) return
+    if (!state.autoRefresh) {return}
 
     const handleVisibilityChange = () => {
       if (!document.hidden && state.autoRefresh) {

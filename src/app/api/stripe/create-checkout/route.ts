@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getStripeSecretKey, findOrCreateCustomer, createProCheckoutSession } from '@/lib/stripe'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { verifyAuth } from '@/lib/auth'
+import { getStripeSecretKey, findOrCreateCustomer, createProCheckoutSession } from '@/lib/stripe'
 
 const NEXT_PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

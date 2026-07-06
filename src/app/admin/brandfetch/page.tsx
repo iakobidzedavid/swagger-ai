@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+
 import { DOMAIN_RE, normalizeDomain } from '@/lib/brand'
 
 type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid'
@@ -36,9 +37,9 @@ interface BrandData {
 }
 
 function formatValidate(domain: string): string | null {
-  if (!domain) return null
-  if (PERSONAL_DOMAINS.has(domain)) return 'Enter a company domain, not a personal email provider'
-  if (!DOMAIN_RE.test(domain)) return 'Enter a valid domain (e.g., acme.com)'
+  if (!domain) {return null}
+  if (PERSONAL_DOMAINS.has(domain)) {return 'Enter a company domain, not a personal email provider'}
+  if (!DOMAIN_RE.test(domain)) {return 'Enter a valid domain (e.g., acme.com)'}
   return null
 }
 
@@ -91,14 +92,14 @@ export default function BrandfetchAdminPage() {
       setValidationMsg(null)
     }
 
-    if (validateTimer.current) clearTimeout(validateTimer.current)
+    if (validateTimer.current) {clearTimeout(validateTimer.current)}
     if (!err && norm) {
       validateTimer.current = setTimeout(() => runApiValidation(norm), 300)
     }
   }, [])
 
   const handleBlur = useCallback(() => {
-    if (validateTimer.current) clearTimeout(validateTimer.current)
+    if (validateTimer.current) {clearTimeout(validateTimer.current)}
     const norm = normalizeDomain(domain)
     const err = formatValidate(norm)
     if (!err && norm && validationState === 'idle') {
@@ -128,7 +129,7 @@ export default function BrandfetchAdminPage() {
     e.preventDefault()
     const norm = normalizeDomain(domain)
     const err = formatValidate(norm)
-    if (err || !norm) return
+    if (err || !norm) {return}
 
     setFetchState('fetching')
     setFetchError(null)
@@ -159,7 +160,7 @@ export default function BrandfetchAdminPage() {
 
   const norm = normalizeDomain(domain)
   const fmtErr = formatValidate(norm)
-  const canFetch = !!norm && !fmtErr && validationState !== 'invalid' && fetchState !== 'fetching'
+  const canFetch = Boolean(norm) && !fmtErr && validationState !== 'invalid' && fetchState !== 'fetching'
 
   return (
     <div className="section">

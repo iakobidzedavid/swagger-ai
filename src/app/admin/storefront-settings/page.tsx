@@ -20,7 +20,7 @@ type LoadState = 'idle' | 'loading' | 'loaded' | 'error'
 type SaveState = 'idle' | 'saving' | 'success' | 'error'
 
 function ColorSwatch({ color, label }: { color: string | null; label: string }) {
-  if (!color) return null
+  if (!color) {return null}
   return (
     <div className="flex items-center gap-2" style={{ gap: '10px', padding: '8px 0' }}>
       <div
@@ -154,8 +154,8 @@ export default function StorefrontSettingsPage() {
   // Cleanup timers on unmount
   useEffect(() => {
     return () => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current)
-      if (successTimer.current) clearTimeout(successTimer.current)
+      if (debounceTimer.current) {clearTimeout(debounceTimer.current)}
+      if (successTimer.current) {clearTimeout(successTimer.current)}
     }
   }, [])
 
@@ -190,11 +190,11 @@ export default function StorefrontSettingsPage() {
       }
     }
 
-    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    if (debounceTimer.current) {clearTimeout(debounceTimer.current)}
     debounceTimer.current = setTimeout(loadStorefronts, 300)
 
     return () => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current)
+      if (debounceTimer.current) {clearTimeout(debounceTimer.current)}
     }
   }, [searchDomain])
 
@@ -214,7 +214,7 @@ export default function StorefrontSettingsPage() {
   }
 
   const isValidHexColor = (color: string): boolean => {
-    if (!color) return true // Allow empty
+    if (!color) {return true} // Allow empty
     const hexRegex = /^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/
     return hexRegex.test(color.trim())
   }
@@ -232,7 +232,7 @@ export default function StorefrontSettingsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedStorefront) return
+    if (!selectedStorefront) {return}
 
     // Validate colors before saving
     if (editData.primary_color && !isValidHexColor(editData.primary_color)) {
@@ -273,7 +273,7 @@ export default function StorefrontSettingsPage() {
       setEditData(data.storefront)
 
       // Reset success message after 2 seconds
-      if (successTimer.current) clearTimeout(successTimer.current)
+      if (successTimer.current) {clearTimeout(successTimer.current)}
       successTimer.current = setTimeout(() => setSaveState('idle'), 2000)
     } catch (err) {
       setSaveState('error')

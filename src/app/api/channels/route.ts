@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { supabase } from '@/lib/supabase'
 
 const HORIZONS = new Set(['short_term', 'medium_term', 'long_term'])
@@ -23,7 +25,7 @@ export async function GET() {
   // an honest count, not a fabricated one.
   const attributionKeys = rows
     .map((r: Record<string, unknown>) => r.attribution_key as string | null)
-    .filter((k): k is string => !!k)
+    .filter((k): k is string => Boolean(k))
 
   const submissionCounts = new Map<string, number>()
   if (attributionKeys.length > 0) {
@@ -38,7 +40,7 @@ export async function GET() {
     } else {
       for (const row of submissionRows ?? []) {
         const key = (row as { attribution_key: string | null }).attribution_key
-        if (!key) continue
+        if (!key) {continue}
         submissionCounts.set(key, (submissionCounts.get(key) ?? 0) + 1)
       }
     }
@@ -80,12 +82,12 @@ export async function POST(req: NextRequest) {
   const channelType = (body.channel_type ?? '').trim()
   const description = (body.description ?? '').trim()
 
-  if (!name) return NextResponse.json({ error: 'name is required' }, { status: 400 })
+  if (!name) {return NextResponse.json({ error: 'name is required' }, { status: 400 })}
   if (!HORIZONS.has(horizon)) {
     return NextResponse.json({ error: 'horizon must be one of short_term, medium_term, long_term' }, { status: 400 })
   }
-  if (!channelType) return NextResponse.json({ error: 'channel_type is required' }, { status: 400 })
-  if (!description) return NextResponse.json({ error: 'description is required' }, { status: 400 })
+  if (!channelType) {return NextResponse.json({ error: 'channel_type is required' }, { status: 400 })}
+  if (!description) {return NextResponse.json({ error: 'description is required' }, { status: 400 })}
 
   const { data, error } = await supabase
     .from('swag_acquisition_channels')

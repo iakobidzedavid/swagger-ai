@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
 interface OverviewState {
   status: 'loading' | 'loaded' | 'error'
@@ -52,7 +52,7 @@ interface GenerateResult {
 }
 
 function fmtMs(ms: number): string {
-  if (ms < 1000) return `${ms}ms`
+  if (ms < 1000) {return `${ms}ms`}
   return `${(ms / 1000).toFixed(1)}s`
 }
 
@@ -99,7 +99,7 @@ export default function PrintifyDiagnosticsPage() {
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || `HTTP ${res.status}`)
-        if (data.pipeline) setResult(data)
+        if (data.pipeline) {setResult(data)}
         return
       }
       setResult(data)
@@ -252,7 +252,6 @@ export default function PrintifyDiagnosticsPage() {
                   }}
                 >
                   {sku.mockupImageUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={sku.mockupImageUrl}
                       alt={sku.title || sku.label}

@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { getPrintifyClient } from '@/lib/printify'
+import { supabase } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
 

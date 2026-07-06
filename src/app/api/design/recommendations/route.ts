@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { DOMAIN_RE, normalizeDomain, isCacheFresh } from '@/lib/brand'
+import { supabase } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
 
@@ -49,7 +51,7 @@ function extractAccentColors(
   for (const color of palette) {
     if (!excluded.has(color.toLowerCase())) {
       accents.push(color)
-      if (accents.length >= 3) break // Limit to 3 accent colors
+      if (accents.length >= 3) {break} // Limit to 3 accent colors
     }
   }
 
@@ -137,7 +139,7 @@ async function fetchRecommendations(domain: string): Promise<DesignRecommendatio
       cached.source || 'fallback',
       colorPalette.length > 2,
       fonts.length > 0,
-      !!cached.logo_url,
+      Boolean(cached.logo_url),
     )
 
     return {
@@ -179,7 +181,7 @@ async function fetchRecommendations(domain: string): Promise<DesignRecommendatio
       submission.brand_source || 'fallback',
       colorPalette.length > 2,
       fonts.length > 0,
-      !!submission.logo_url,
+      Boolean(submission.logo_url),
     )
 
     return {

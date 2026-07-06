@@ -1,5 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { promises as dns } from 'dns'
+
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 
 const PERSONAL_DOMAINS = new Set([
   'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
@@ -12,9 +15,9 @@ const DOMAIN_RE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i
 
 function validateFormat(domain: string): { valid: boolean; reason?: string } {
   const d = domain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
-  if (!d) return { valid: false, reason: 'Domain is required' }
-  if (!DOMAIN_RE.test(d)) return { valid: false, reason: 'Enter a valid domain (e.g., acme.com)' }
-  if (PERSONAL_DOMAINS.has(d)) return { valid: false, reason: 'Enter a company domain, not a personal email provider' }
+  if (!d) {return { valid: false, reason: 'Domain is required' }}
+  if (!DOMAIN_RE.test(d)) {return { valid: false, reason: 'Enter a valid domain (e.g., acme.com)' }}
+  if (PERSONAL_DOMAINS.has(d)) {return { valid: false, reason: 'Enter a company domain, not a personal email provider' }}
   return { valid: true }
 }
 

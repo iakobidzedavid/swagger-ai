@@ -13,9 +13,9 @@
 const MAX_LEN = 100
 
 function clip(v: string | null | undefined): string | null {
-  if (!v) return null
+  if (!v) {return null}
   const t = v.trim()
-  if (!t) return null
+  if (!t) {return null}
   return t.slice(0, MAX_LEN)
 }
 
@@ -35,13 +35,13 @@ interface Attribution extends RawAttribution {
  * 'direct' (typed URL, bookmark, or same-origin navigation with no referrer). */
 export function classifyAttribution(raw: RawAttribution): string {
   const src = clip(raw.utm_source)
-  if (src) return src.toLowerCase()
+  if (src) {return src.toLowerCase()}
 
   const ref = clip(raw.referrer_host)?.toLowerCase()
-  if (!ref) return 'direct'
-  if (/(^|\.)google\.|(^|\.)bing\.|(^|\.)duckduckgo\./.test(ref)) return 'organic-search'
-  if (/(^|\.)slack\.com$/.test(ref)) return 'peer-slack'
-  if (/(^|\.)(linkedin|twitter|x)\.com$/.test(ref)) return 'social'
+  if (!ref) {return 'direct'}
+  if (/(^|\.)google\.|(^|\.)bing\.|(^|\.)duckduckgo\./.test(ref)) {return 'organic-search'}
+  if (/(^|\.)slack\.com$/.test(ref)) {return 'peer-slack'}
+  if (/(^|\.)(linkedin|twitter|x)\.com$/.test(ref)) {return 'social'}
   return `referral-${ref.replace(/^www\./, '')}`
 }
 
@@ -59,9 +59,9 @@ const STORAGE_KEY = 'swag_attribution_v1'
 /** Capture first-touch attribution once per session. Safe to call on every
  * page — it no-ops once something is already stored. Client-only. */
 export function captureAttribution(): void {
-  if (typeof window === 'undefined') return
+  if (typeof window === 'undefined') {return}
   try {
-    if (sessionStorage.getItem(STORAGE_KEY)) return
+    if (sessionStorage.getItem(STORAGE_KEY)) {return}
 
     const params = new URLSearchParams(window.location.search)
     const utm_source = params.get('utm_source')
@@ -72,7 +72,7 @@ export function captureAttribution(): void {
     if (document.referrer) {
       try {
         const refUrl = new URL(document.referrer)
-        if (refUrl.host !== window.location.host) referrer_host = refUrl.host
+        if (refUrl.host !== window.location.host) {referrer_host = refUrl.host}
       } catch {
         // malformed referrer — ignore
       }
@@ -80,7 +80,7 @@ export function captureAttribution(): void {
 
     // Nothing to capture yet (e.g. direct nav with no query) — leave unset so a
     // later page in the same session (with a real referrer/utm) can still capture.
-    if (!utm_source && !utm_medium && !utm_campaign && !referrer_host) return
+    if (!utm_source && !utm_medium && !utm_campaign && !referrer_host) {return}
 
     const payload: RawAttribution = { utm_source, utm_medium, utm_campaign, referrer_host }
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
@@ -90,10 +90,10 @@ export function captureAttribution(): void {
 }
 
 export function getAttribution(): RawAttribution {
-  if (typeof window === 'undefined') return {}
+  if (typeof window === 'undefined') {return {}}
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY)
-    if (!raw) return {}
+    if (!raw) {return {}}
     return JSON.parse(raw) as RawAttribution
   } catch {
     return {}

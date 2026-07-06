@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { generateMockup } from '@/lib/mockup-generator'
 import { fetchProductsForStorefront } from '@/lib/printify-catalog'
 

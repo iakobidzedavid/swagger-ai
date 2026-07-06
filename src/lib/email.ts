@@ -347,7 +347,7 @@ function stripHeaderInjection(value: string): string {
 
 /** MIME encoded-word for subjects containing non-ASCII characters. */
 function encodeMimeSubject(subject: string): string {
-  if (/^[\x00-\x7F]*$/.test(subject)) return subject
+  if (/^[\x00-\x7F]*$/.test(subject)) {return subject}
   return `=?UTF-8?B?${Buffer.from(subject, 'utf-8').toString('base64')}?=`
 }
 
@@ -576,7 +576,7 @@ async function retryFailedNotifications(): Promise<{
       return { attempted: 0, successful: 0 }
     }
 
-    let successful = 0
+    const successful = 0
 
     for (const notif of failedNotifs) {
       // Attempt to resend - simplified retry

@@ -1,9 +1,9 @@
 'use client'
 
-import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
+import { Suspense } from 'react'
+import { useEffect, useState } from 'react'
 
 // Hex color validation pattern
 const HEX_COLOR_REGEX = /^#[0-9A-F]{6}$/i

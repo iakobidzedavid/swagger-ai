@@ -13,7 +13,7 @@
  * ```
  */
 
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 interface AuthResult {
   success: boolean
@@ -27,7 +27,7 @@ interface AuthResult {
  * Format: "Bearer <token>"
  */
 function extractToken(authHeader: string | null): string | null {
-  if (!authHeader) return null
+  if (!authHeader) {return null}
   const parts = authHeader.split(' ')
   if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
     return null

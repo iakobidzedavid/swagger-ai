@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { getStripeSecretKey, retrieveCheckoutSession, retrieveSubscription } from '@/lib/stripe'
 import { syncStripeSubscription } from '@/lib/subscriptionSync'
+import { supabase } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {

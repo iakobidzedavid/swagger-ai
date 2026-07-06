@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+
 import { CompetitivePositionChart } from '@/components/CompetitivePositionChart'
 
 interface StorefrontRequest {
@@ -270,7 +271,7 @@ function StoreCreatedContent() {
 
         {/* Your Competitive Position — DE Step 11 made real: your own generation
             time + brand-fidelity score, plotted against the competitive research */}
-        {storeInfo.generationSeconds != null && storeInfo.brandFidelityPct != null && (
+        {storeInfo.generationSeconds !== null && storeInfo.brandFidelityPct !== null && (
           <CompetitivePositionChart
             yourSpeedSeconds={storeInfo.generationSeconds}
             yourBrandFidelityPct={storeInfo.brandFidelityPct}

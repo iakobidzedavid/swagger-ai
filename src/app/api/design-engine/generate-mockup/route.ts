@@ -1,6 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { generateMockup, createMockupCacheKey } from '@/lib/mockup-generator'
 import { createClient } from '@supabase/supabase-js'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
+import { generateMockup, createMockupCacheKey } from '@/lib/mockup-generator'
+
 
 // Initialize Supabase client (service role for server-side ops)
 function getSupabaseClient() {

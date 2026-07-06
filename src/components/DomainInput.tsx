@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, ReactNode } from 'react'
+
 import { DOMAIN_RE, normalizeDomain } from '@/lib/brand'
 
 type ValidationState = 'idle' | 'validating' | 'valid' | 'invalid' | 'unavailable'
@@ -29,9 +30,9 @@ const PERSONAL_DOMAINS = new Set([
  * Returns null if valid, or an error message if invalid.
  */
 function validateFormatOnly(domain: string): string | null {
-  if (!domain) return null
-  if (PERSONAL_DOMAINS.has(domain)) return 'Enter a company domain, not a personal email provider'
-  if (!DOMAIN_RE.test(domain)) return 'Enter a valid domain (e.g., acme.com)'
+  if (!domain) {return null}
+  if (PERSONAL_DOMAINS.has(domain)) {return 'Enter a company domain, not a personal email provider'}
+  if (!DOMAIN_RE.test(domain)) {return 'Enter a valid domain (e.g., acme.com)'}
   return null
 }
 
@@ -113,12 +114,12 @@ export function DomainInput({
     }
 
     // Debounce API validation
-    if (validateTimer.current) clearTimeout(validateTimer.current)
+    if (validateTimer.current) {clearTimeout(validateTimer.current)}
     validateTimer.current = setTimeout(() => runApiValidation(newNorm), 400)
   }, [onChange, updateValidationState, runApiValidation])
 
   const handleBlur = useCallback(() => {
-    if (validateTimer.current) clearTimeout(validateTimer.current)
+    if (validateTimer.current) {clearTimeout(validateTimer.current)}
     const newNorm = normalizeDomain(value)
     const err = validateFormatOnly(newNorm)
     if (!err && newNorm && validationState === 'idle') {

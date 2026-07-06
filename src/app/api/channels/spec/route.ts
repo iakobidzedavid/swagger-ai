@@ -1,7 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-import { parseSpec, parseSpecSource, SpecFormat } from '@/lib/specParser'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { fetchSpecFromUrl } from '@/lib/specFetch'
+import type { SpecFormat } from '@/lib/specParser';
+import { parseSpec, parseSpecSource } from '@/lib/specParser'
+import { supabase } from '@/lib/supabase'
 
 const FORMATS: SpecFormat[] = ['openapi', 'webhook', 'utm']
 
@@ -14,7 +17,7 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false })
     .limit(50)
 
-  if (channelId) query = query.eq('channel_id', channelId)
+  if (channelId) {query = query.eq('channel_id', channelId)}
 
   const { data, error } = await query
 

@@ -64,11 +64,11 @@ export function computeGenerationSeconds(createdAt: string, now: number = Date.n
 }
 
 export function formatSpeedLabel(seconds: number): string {
-  if (seconds < 90) return `${Math.max(1, Math.round(seconds))} sec`
+  if (seconds < 90) {return `${Math.max(1, Math.round(seconds))} sec`}
   const minutes = seconds / 60
-  if (minutes < 90) return `${Math.round(minutes)} min`
+  if (minutes < 90) {return `${Math.round(minutes)} min`}
   const hours = minutes / 60
-  if (hours < 48) return `${Math.round(hours)} hr`
+  if (hours < 48) {return `${Math.round(hours)} hr`}
   const days = hours / 24
   return `${Math.round(days)} day${Math.round(days) === 1 ? '' : 's'}`
 }

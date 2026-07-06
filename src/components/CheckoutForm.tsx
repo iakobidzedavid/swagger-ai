@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
+import Link from 'next/link'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+
 import { useCart } from '@/context/CartContext'
 
 interface ShippingInfo {

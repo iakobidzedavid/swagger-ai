@@ -29,7 +29,7 @@ interface MockupOutput {
  */
 function normalizeHexColor(color: string): string {
   color = color.trim()
-  if (!color.startsWith('#')) color = '#' + color
+  if (!color.startsWith('#')) {color = '#' + color}
   if (color.length === 4) {
     // #RGB -> #RRGGBB
     color = '#' + color[1] + color[1] + color[2] + color[2] + color[3] + color[3]
@@ -43,7 +43,7 @@ function normalizeHexColor(color: string): string {
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const normalized = normalizeHexColor(hex)
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(normalized)
-  if (!result) return { r: 124, g: 58, b: 237 } // violet fallback
+  if (!result) {return { r: 124, g: 58, b: 237 }} // violet fallback
   return {
     r: parseInt(result[1], 16),
     g: parseInt(result[2], 16),

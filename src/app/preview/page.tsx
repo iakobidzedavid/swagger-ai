@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+
+import { ProductPhotoOverlay } from '@/components/ProductPhotoOverlay'
+import { SigninModal } from '@/components/SigninModal'
 import { normalizeDomain } from '@/lib/brand'
 import { getFaviconUrl } from '@/lib/favicon'
 import { useAuth } from '@/lib/useAuth'
-import { SigninModal } from '@/components/SigninModal'
-import { ProductPhotoOverlay } from '@/components/ProductPhotoOverlay'
 
 type LoadingState = 'idle' | 'loading' | 'loaded' | 'error'
 type CreatingState = 'idle' | 'creating' | 'success' | 'error'
@@ -144,7 +145,7 @@ function PreviewContent() {
 
   // Fetch products
   useEffect(() => {
-    if (!brand) return
+    if (!brand) {return}
 
     const fetchProducts = async () => {
       try {
@@ -172,7 +173,7 @@ function PreviewContent() {
   }, [brand])
 
   const createStorefrontWithToken = async (authToken: string) => {
-    if (!brand) return
+    if (!brand) {return}
 
     setCreatingState('creating')
     setCreatingError(null)
@@ -232,7 +233,7 @@ function PreviewContent() {
   }
 
   const handleCreateStore = async () => {
-    if (!brand) return
+    if (!brand) {return}
 
     // Check if user is signed in
     if (!isSignedIn) {
@@ -247,7 +248,7 @@ function PreviewContent() {
   }
 
   const handleSignin = async (email: string, companyName?: string) => {
-    if (!brand) return
+    if (!brand) {return}
 
     try {
       await signin(email, companyName)

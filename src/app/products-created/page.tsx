@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { getFaviconUrl } from '@/lib/favicon'
+import { useState, useEffect, Suspense } from 'react'
+
 import { ProductPhotoOverlay } from '@/components/ProductPhotoOverlay'
+import { getFaviconUrl } from '@/lib/favicon'
 
 type LoadingState = 'idle' | 'loading' | 'loaded' | 'error'
 type SyncState = 'idle' | 'syncing' | 'success' | 'error'
@@ -92,7 +93,7 @@ function ProductsCreatedContent() {
   }, [storefrontRequestId])
 
   const handleSyncProduct = async (productId: string, printifyId: string) => {
-    if (!storefront) return
+    if (!storefront) {return}
 
     setSyncingProductIds(new Set([...syncingProductIds, productId]))
     setSyncState('syncing')
@@ -146,7 +147,7 @@ function ProductsCreatedContent() {
   }
 
   const handleSyncAll = async () => {
-    if (!storefront) return
+    if (!storefront) {return}
 
     setSyncState('syncing')
     setSyncError(null)

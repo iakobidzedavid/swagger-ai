@@ -22,7 +22,9 @@
  * In production, integrate with Supabase Auth's official sign-in flow.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { supabase } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
@@ -138,7 +140,7 @@ export async function POST(req: NextRequest) {
  * Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
  */
 function generateUuid(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0
     const v = c === 'x' ? r : (r & 0x3) | 0x8
     return v.toString(16)

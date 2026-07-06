@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { fetchBrandData } from '@/lib/brandfetch'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { normalizeDomain } from '@/lib/brand'
+import { fetchBrandData } from '@/lib/brandfetch'
 
 // Brand extraction requires the Node.js runtime (zlib + Buffer for the
 // keyless PNG-decode fallback in src/lib/keyless-brand.ts), not Edge.

@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { DOMAIN_RE, normalizeDomain, isCacheFresh } from '@/lib/brand'
 import { fetchBrandData } from '@/lib/brandfetch'
+import { supabase } from '@/lib/supabase'
 
 // Brand extraction requires the Node.js runtime (zlib + Buffer for the
 // keyless PNG-decode fallback in src/lib/keyless-brand.ts), not Edge.
@@ -86,9 +88,9 @@ async function readCache(domain: string): Promise<BrandCacheRow | null> {
       .select('*')
       .eq('domain', domain)
       .maybeSingle()
-    if (error || !data) return null
+    if (error || !data) {return null}
     const row = data as BrandCacheRow
-    if (!isCacheFresh(row.fetched_at, Date.now(), row.source)) return null
+    if (!isCacheFresh(row.fetched_at, Date.now(), row.source)) {return null}
     return row
   } catch (err) {
     console.warn('brand_cache read failed (continuing without cache):', err)
@@ -109,7 +111,7 @@ function bumpHitCount(domain: string, currentHitCount: number) {
         .eq('domain', domain),
     )
       .then((result: { error: unknown }) => {
-        if (result.error) console.warn('brand_cache hit_count bump failed:', result.error)
+        if (result.error) {console.warn('brand_cache hit_count bump failed:', result.error)}
       })
       .catch((err: unknown) => console.warn('brand_cache hit_count bump threw:', err))
   } catch (err) {
@@ -140,7 +142,7 @@ async function writeCache(brand: BrandData): Promise<void> {
         },
         { onConflict: 'domain' },
       )
-    if (error) console.warn('brand_cache write failed (continuing, cache is perf-only):', error)
+    if (error) {console.warn('brand_cache write failed (continuing, cache is perf-only):', error)}
   } catch (err) {
     console.warn('brand_cache write threw (continuing, cache is perf-only):', err)
   }

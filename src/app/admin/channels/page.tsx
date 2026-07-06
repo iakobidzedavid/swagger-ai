@@ -73,7 +73,7 @@ export default function ChannelsAdminPage() {
     try {
       const res = await fetch('/api/channels')
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Failed to load channels')
+      if (!res.ok) {throw new Error(data.error ?? 'Failed to load channels')}
       setChannels(data.channels)
       if (data.channels?.length && !selectedChannelId) {
         setSelectedChannelId(data.channels[0].id)
@@ -88,7 +88,7 @@ export default function ChannelsAdminPage() {
     try {
       const res = await fetch('/api/channels/spec')
       const data = await res.json()
-      if (res.ok) setSpecs(data.specs)
+      if (res.ok) {setSpecs(data.specs)}
     } catch {
       // non-fatal — the upload form still works without the history list
     }
@@ -106,7 +106,7 @@ export default function ChannelsAdminPage() {
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file) {return}
     setFileName(file.name)
     const reader = new FileReader()
     reader.onload = () => setSpecText(String(reader.result ?? ''))

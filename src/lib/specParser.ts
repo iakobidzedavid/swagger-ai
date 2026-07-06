@@ -51,10 +51,10 @@ function parseOpenApi(spec: unknown): ParseResult | ParseError {
 
   const endpoints: ParsedEndpoint[] = []
   for (const [path, pathItemRaw] of Object.entries(paths)) {
-    if (!isPlainObject(pathItemRaw)) continue
+    if (!isPlainObject(pathItemRaw)) {continue}
     for (const method of HTTP_METHODS) {
       const opRaw = pathItemRaw[method]
-      if (!isPlainObject(opRaw)) continue
+      if (!isPlainObject(opRaw)) {continue}
       const summary = typeof opRaw.summary === 'string'
         ? opRaw.summary
         : typeof opRaw.operationId === 'string'
@@ -126,7 +126,7 @@ function parseUtm(spec: unknown): ParseResult | ParseError {
   const baseUrl = typeof spec.url === 'string' && spec.url.trim() ? spec.url.trim() : null
 
   const params = new URLSearchParams({ utm_source: source, utm_medium: medium })
-  if (campaignStr) params.set('utm_campaign', campaignStr)
+  if (campaignStr) {params.set('utm_campaign', campaignStr)}
   const trackedPath = baseUrl ? `${baseUrl}?${params.toString()}` : `?${params.toString()}`
 
   return {

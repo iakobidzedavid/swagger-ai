@@ -71,7 +71,7 @@ function paeth(a: number, b: number, c: number): number {
 /** Decode an 8-bit PNG (color types 0/2/3/4/6) -> flat RGBA pixels. Throws on
  * anything it can't handle so the caller falls back cleanly. */
 function decodePng(buf: Buffer): Array<[number, number, number, number]> {
-  if (buf.length < 8 || buf.readUInt32BE(0) !== 0x89504e47) throw new Error('not png')
+  if (buf.length < 8 || buf.readUInt32BE(0) !== 0x89504e47) {throw new Error('not png')}
   let o = 8, w = 0, h = 0, bd = 0, ct = 0
   const idat: Buffer[] = []
   let plte: Buffer | null = null
@@ -81,13 +81,13 @@ function decodePng(buf: Buffer): Array<[number, number, number, number]> {
     const type = buf.toString('ascii', o + 4, o + 8)
     const data = buf.subarray(o + 8, o + 8 + len)
     if (type === 'IHDR') { w = data.readUInt32BE(0); h = data.readUInt32BE(4); bd = data[8]; ct = data[9] }
-    else if (type === 'PLTE') plte = data
-    else if (type === 'tRNS') trns = data
-    else if (type === 'IDAT') idat.push(data)
-    else if (type === 'IEND') break
+    else if (type === 'PLTE') {plte = data}
+    else if (type === 'tRNS') {trns = data}
+    else if (type === 'IDAT') {idat.push(data)}
+    else if (type === 'IEND') {break}
     o += 12 + len
   }
-  if (bd !== 8 || w === 0 || h === 0) throw new Error('unsupported png')
+  if (bd !== 8 || w === 0 || h === 0) {throw new Error('unsupported png')}
   const raw = zlib.inflateSync(Buffer.concat(idat))
   const ch = ct === 6 ? 4 : ct === 2 ? 3 : ct === 4 ? 2 : 1
   const stride = w * ch
@@ -116,7 +116,7 @@ function decodePng(buf: Buffer): Array<[number, number, number, number]> {
     let r: number, g: number, b: number, al = 255
     if (ct === 6) { r = out[i * 4]; g = out[i * 4 + 1]; b = out[i * 4 + 2]; al = out[i * 4 + 3] }
     else if (ct === 2) { r = out[i * 3]; g = out[i * 3 + 1]; b = out[i * 3 + 2] }
-    else if (ct === 3 && plte) { const idx = out[i]; r = plte[idx * 3]; g = plte[idx * 3 + 1]; b = plte[idx * 3 + 2]; if (trns && idx < trns.length) al = trns[idx] }
+    else if (ct === 3 && plte) { const idx = out[i]; r = plte[idx * 3]; g = plte[idx * 3 + 1]; b = plte[idx * 3 + 2]; if (trns && idx < trns.length) {al = trns[idx]} }
     else { r = g = b = out[i] }
     px.push([r, g, b, al])
   }
@@ -129,10 +129,10 @@ function decodePng(buf: Buffer): Array<[number, number, number, number]> {
 function dominantColor(px: Array<[number, number, number, number]>): string | null {
   const buckets = new Map<string, { r: number; g: number; b: number; n: number; sat: number }>()
   for (const [r, g, b, a] of px) {
-    if (a < 128) continue
+    if (a < 128) {continue}
     const mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx - mn
-    if (mx > 240 && sat < 20) continue // near-white
-    if (mx < 25) continue              // near-black
+    if (mx > 240 && sat < 20) {continue} // near-white
+    if (mx < 25) {continue}              // near-black
     const key = `${r >> 5}-${g >> 5}-${b >> 5}`
     const e = buckets.get(key) || { r: 0, g: 0, b: 0, n: 0, sat: 0 }
     e.r += r; e.g += g; e.b += b; e.n++; e.sat += sat
@@ -144,7 +144,7 @@ function dominantColor(px: Array<[number, number, number, number]>): string | nu
     const score = e.n * (1 + (e.sat / e.n) / 255 * 3)
     if (score > bestScore) { bestScore = score; best = e }
   }
-  if (!best) return null
+  if (!best) {return null}
   const R = Math.round(best.r / best.n), G = Math.round(best.g / best.n), B = Math.round(best.b / best.n)
   return '#' + [R, G, B].map((v) => v.toString(16).padStart(2, '0')).join('')
 }
@@ -158,9 +158,9 @@ async function fetchFaviconBrand(domain: string): Promise<{ logoUrl: string; col
     const t = setTimeout(() => controller.abort(), 3000)
     const r = await fetch(logoUrl, { signal: controller.signal })
     clearTimeout(t)
-    if (!r.ok) return { logoUrl, color: null }
+    if (!r.ok) {return { logoUrl, color: null }}
     const buf = Buffer.from(await r.arrayBuffer())
-    if (buf.length < 64) return { logoUrl, color: null } // Failed decode or too small
+    if (buf.length < 64) {return { logoUrl, color: null }} // Failed decode or too small
     return { logoUrl, color: dominantColor(decodePng(buf)) }
   } catch {
     return { logoUrl, color: null }
@@ -182,7 +182,7 @@ async function fetchThemeColor(domain: string): Promise<string | null> {
       redirect: 'follow',
     })
     clearTimeout(timer)
-    if (!res.ok) return null
+    if (!res.ok) {return null}
     const html = await res.text()
 
     const patterns = [
@@ -195,7 +195,7 @@ async function fetchThemeColor(domain: string): Promise<string | null> {
       const m = html.match(re)
       if (m) {
         const color = m[1].trim()
-        if (/^#[0-9a-f]{3,8}$/i.test(color)) return color
+        if (/^#[0-9a-f]{3,8}$/i.test(color)) {return color}
       }
     }
     return null

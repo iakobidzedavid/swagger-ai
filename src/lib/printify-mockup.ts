@@ -138,7 +138,7 @@ interface RealMockupBatchResult {
  */
 async function resolveRealShop(apiKey: string): Promise<{ id: number; title: string } | null> {
   const resp = await printifyFetch<Array<{ id: number; title: string }>>('/shops.json', apiKey)
-  if (!resp.ok || !Array.isArray(resp.body) || resp.body.length === 0) return null
+  if (!resp.ok || !Array.isArray(resp.body) || resp.body.length === 0) {return null}
   return resp.body[0]
 }
 
@@ -199,7 +199,7 @@ export async function createRealMockupBatch(params: {
 
       for (const keyword of keywords) {
         const blueprint = blueprints.find(bp => bp.title?.toLowerCase().includes(keyword))
-        if (!blueprint) continue
+        if (!blueprint) {continue}
 
         try {
           const providersResp = await printifyFetch<PrintProvider[]>(

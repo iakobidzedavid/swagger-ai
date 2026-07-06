@@ -40,7 +40,7 @@ export function BrandFidelityScore({ domain }: BrandFidelityScoreProps) {
     }
   }, [domain])
 
-  if (!data) return null
+  if (!data) {return null}
 
   const containerStyle: React.CSSProperties = {
     display: 'inline-flex',

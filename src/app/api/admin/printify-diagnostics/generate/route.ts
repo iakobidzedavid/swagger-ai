@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { fetchBrandData } from '@/lib/brandfetch'
+import { supabase } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
 // 60s is the highest maxDuration Vercel accepts on every plan tier (Hobby included);
@@ -150,9 +152,9 @@ export async function POST(req: NextRequest) {
 
   const skuPlans: Array<{ keyword: string; category: string; label: string; price: number; blueprint: Blueprint }> = []
   for (const spec of SKU_KEYWORDS) {
-    if (skuPlans.length >= targetSkuCount) break
+    if (skuPlans.length >= targetSkuCount) {break}
     const match = blueprints.find(bp => bp.title?.toLowerCase().includes(spec.keyword))
-    if (match) skuPlans.push({ ...spec, blueprint: match })
+    if (match) {skuPlans.push({ ...spec, blueprint: match })}
   }
   pushStep('sku_design', 'SKU design (blueprint selection)', s4, {
     blueprintsAvailable: blueprints.length,
@@ -221,7 +223,7 @@ export async function POST(req: NextRequest) {
         const providersResp = await printifyFetch(`/catalog/blueprints/${plan.blueprint.id}/print_providers.json`, apiKey)
         const providers: PrintProvider[] = Array.isArray(providersResp.body) ? providersResp.body : []
         const provider = providers[0]
-        if (!provider) throw new Error('No print provider available for this blueprint')
+        if (!provider) {throw new Error('No print provider available for this blueprint')}
 
         const variantsResp = await printifyFetch(
           `/catalog/blueprints/${plan.blueprint.id}/print_providers/${provider.id}/variants.json`,
@@ -231,7 +233,7 @@ export async function POST(req: NextRequest) {
           ? (variantsResp.body as { variants: Variant[] }).variants
           : []
         const variant = variantList.find(v => v.is_enabled !== false) || variantList[0]
-        if (!variant) throw new Error('No variant available for this blueprint/provider pair')
+        if (!variant) {throw new Error('No variant available for this blueprint/provider pair')}
 
         const createResp = await printifyFetch(`/shops/${shop.id}/products.json`, apiKey, {
           method: 'POST',

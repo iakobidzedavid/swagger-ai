@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
+import { useState, useEffect, Suspense } from 'react'
+
+import { ProductPhotoOverlay } from '@/components/ProductPhotoOverlay'
+import { VariantSelector } from '@/components/VariantSelector'
+import { useCart } from '@/context/CartContext'
 import { normalizeDomain } from '@/lib/brand'
 import { getFaviconUrl } from '@/lib/favicon'
-import { useCart } from '@/context/CartContext'
-import { VariantSelector } from '@/components/VariantSelector'
-import { ProductPhotoOverlay } from '@/components/ProductPhotoOverlay'
 
 interface StorefrontProduct {
   id: string
@@ -76,7 +77,7 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
       try {
         const res = await fetch(`/api/storefront/fetch?domain=${encodeURIComponent(domain)}`)
         const json = await res.json().catch(() => null)
-        if (cancelled) return
+        if (cancelled) {return}
 
         // Real, still-generating storefront (e.g. the one-click "Continue to
         // Store" flow completing in the background) — show a friendly
@@ -99,7 +100,7 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
         setStorefront(json.data)
         setLoadingState('loaded')
       } catch (err) {
-        if (cancelled) return
+        if (cancelled) {return}
         setError(err instanceof Error ? err.message : 'Failed to load storefront')
         setLoadingState('error')
       }
@@ -110,7 +111,7 @@ function StorefrontContent({ domain: paramDomain }: { domain: string }) {
 
     return () => {
       cancelled = true
-      if (pollTimer) clearTimeout(pollTimer)
+      if (pollTimer) {clearTimeout(pollTimer)}
     }
   }, [domain, refreshKey])
 

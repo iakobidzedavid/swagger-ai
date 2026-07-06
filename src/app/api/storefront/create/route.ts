@@ -1,10 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-import { getPrintifyClient } from '@/lib/printify'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { verifyAuth } from '@/lib/auth'
 import { computeBrandFidelity, computeGenerationSeconds } from '@/lib/competitive-position'
-import { createRealMockupBatch, type ProductMockupResult } from '@/lib/printify-mockup'
 import { getFaviconUrl } from '@/lib/favicon'
+import { getPrintifyClient } from '@/lib/printify'
+import { createRealMockupBatch, type ProductMockupResult } from '@/lib/printify-mockup'
+import { supabase } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
 // Real Printify mockup creation makes several sequential Printify API calls

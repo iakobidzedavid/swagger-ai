@@ -34,7 +34,7 @@ export function SigninModal({
     }
   }, [initialCompanyName])
 
-  if (!isOpen) return null
+  if (!isOpen) {return null}
 
   const validateEmail = (value: string) => {
     if (!value) {
@@ -52,7 +52,7 @@ export function SigninModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateEmail(email)) return
+    if (!validateEmail(email)) {return}
 
     setSigningIn(true)
     try {
@@ -130,7 +130,7 @@ export function SigninModal({
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value)
-                if (emailError) validateEmail(e.target.value)
+                if (emailError) {validateEmail(e.target.value)}
               }}
               onBlur={(e) => validateEmail(e.target.value)}
               placeholder="you@company.com"

@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { supabase } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
@@ -115,7 +117,7 @@ export async function GET(req: NextRequest) {
           category: p.category,
           imageUrl: p.image_url,
           mockupImageUrl: p.mockup_image_url,
-          isRealMockup: !!p.is_real_mockup,
+          isRealMockup: Boolean(p.is_real_mockup),
           priceUsd: p.price_usd,
           sku: p.sku,
           status: p.status,

@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { computeBrandFidelityScore } from '@/lib/design-feedback'
+import { supabase } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
 
@@ -49,7 +51,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<SubmitRespons
       { status: 400 }
     )
   }
-  if (wouldReorder != null && typeof wouldReorder !== 'boolean') {
+  if (wouldReorder !== null && typeof wouldReorder !== 'boolean') {
     return NextResponse.json({ success: false, error: 'wouldReorder must be a boolean' }, { status: 400 })
   }
   if (comment && (typeof comment !== 'string' || comment.length > 1000)) {

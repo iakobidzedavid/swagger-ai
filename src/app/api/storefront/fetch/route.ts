@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { normalizeDomain } from '@/lib/brand'
 import { normalizeStoredProduct } from '@/lib/printify-catalog'
 import { fulfillStorefrontRequest } from '@/lib/storefront-fulfillment'
+import { supabase } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
 // The self-heal paths below call fulfillStorefrontRequest inline, which can

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+
+import { ProductCard, type Product, type ProductVariant } from '@/components/ProductCard'
 import { normalizeDomain } from '@/lib/brand'
 import { getFaviconUrl } from '@/lib/favicon'
-import { ProductCard, type Product, type ProductVariant } from '@/components/ProductCard'
 
 type LoadingState = 'idle' | 'loading' | 'loaded' | 'error'
 

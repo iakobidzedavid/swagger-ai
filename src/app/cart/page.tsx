@@ -2,6 +2,7 @@
 
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
+
 import { useCart } from '@/context/CartContext'
 
 function CartContent() {

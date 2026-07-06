@@ -1,14 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { sendFulfillmentUpdate } from '@/lib/email'
-import {
-  verifyPrintifyWebhookSignature,
-  PrintifyWebhookEventType,
+import type {
   PrintifyWebhookPayload,
   PrintifyOrderEvent,
   PrintifyFulfillmentEvent,
-  PrintifyShipmentEvent,
+  PrintifyShipmentEvent} from '@/lib/printify-webhook';
+import {
+  verifyPrintifyWebhookSignature,
+  PrintifyWebhookEventType
 } from '@/lib/printify-webhook'
+import { supabase } from '@/lib/supabase'
 
 const PRINTIFY_ADMIN_SECRET = process.env.PRINTIFY_ADMIN_SECRET
 
@@ -473,7 +476,7 @@ async function handleShipmentEvent(
 function calculateOrderTotal(
   lineItems: Array<{ quantity: number; price: number }> | undefined
 ): number {
-  if (!lineItems || lineItems.length === 0) return 0
+  if (!lineItems || lineItems.length === 0) {return 0}
   const total = lineItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
   return Math.round(total * 100) // Convert to cents
 }

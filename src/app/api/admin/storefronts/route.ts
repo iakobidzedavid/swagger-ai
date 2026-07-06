@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
+
 import { supabase } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
@@ -112,12 +114,12 @@ export async function PATCH(req: NextRequest) {
       updated_at: new Date().toISOString(),
     }
 
-    if (company_name !== undefined) updateData.company_name = company_name
-    if (store_name !== undefined) updateData.store_name = store_name
-    if (store_description !== undefined) updateData.store_description = store_description
-    if (logo_url !== undefined) updateData.logo_url = logo_url
-    if (primary_color !== undefined) updateData.primary_color = primary_color
-    if (secondary_color !== undefined) updateData.secondary_color = secondary_color
+    if (company_name !== undefined) {updateData.company_name = company_name}
+    if (store_name !== undefined) {updateData.store_name = store_name}
+    if (store_description !== undefined) {updateData.store_description = store_description}
+    if (logo_url !== undefined) {updateData.logo_url = logo_url}
+    if (primary_color !== undefined) {updateData.primary_color = primary_color}
+    if (secondary_color !== undefined) {updateData.secondary_color = secondary_color}
 
     const { data, error } = await supabase
       .from('storefront_requests')
