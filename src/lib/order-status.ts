@@ -3,7 +3,7 @@
  * Used across order confirmation, dashboard, and email templates
  */
 
-export interface StatusBadgeInfo {
+interface StatusBadgeInfo {
   label: string
   color: string
   bg: string

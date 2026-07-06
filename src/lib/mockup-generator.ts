@@ -8,7 +8,7 @@
  * - Professional styling to appear hand-designed, not auto-generated
  */
 
-export interface MockupInput {
+interface MockupInput {
   productId: string
   productTitle: string
   productCategory: 'apparel' | 'drinkware' | 'accessories'
@@ -18,7 +18,7 @@ export interface MockupInput {
   companyName: string
 }
 
-export interface MockupOutput {
+interface MockupOutput {
   svg: string
   dataUrl: string
   cacheKey: string

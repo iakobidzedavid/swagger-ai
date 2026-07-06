@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-export type OverlayCategory = 'apparel' | 'drinkware' | 'accessories' | string
+type OverlayCategory = 'apparel' | 'drinkware' | 'accessories' | string
 
 interface ProductPhotoOverlayProps {
   /** The REAL product photo (Printify catalog photography) — never a generated mockup. */

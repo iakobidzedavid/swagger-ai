@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 
-export interface BrandAssets {
+interface BrandAssets {
   domain: string
   companyName: string
   logoUrl: string | null

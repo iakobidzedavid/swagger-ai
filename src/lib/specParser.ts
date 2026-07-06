@@ -10,22 +10,22 @@
 import { parse as parseYaml } from 'yaml'
 
 export type SpecFormat = 'openapi' | 'webhook' | 'utm'
-export type SourceFormat = 'json' | 'yaml'
+type SourceFormat = 'json' | 'yaml'
 
-export interface ParsedEndpoint {
+interface ParsedEndpoint {
   path: string
   method: string
   summary: string
 }
 
-export interface ParseResult {
+interface ParseResult {
   ok: true
   parsedSummary: string
   parsedEndpoints: ParsedEndpoint[]
   endpointCount: number
 }
 
-export interface ParseError {
+interface ParseError {
   ok: false
   error: string
 }
@@ -139,13 +139,13 @@ function parseUtm(spec: unknown): ParseResult | ParseError {
   }
 }
 
-export interface SourceParseResult {
+interface SourceParseResult {
   ok: true
   value: unknown
   sourceFormat: SourceFormat
 }
 
-export interface SourceParseError {
+interface SourceParseError {
   ok: false
   error: string
 }

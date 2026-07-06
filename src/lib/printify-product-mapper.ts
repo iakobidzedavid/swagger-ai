@@ -8,7 +8,7 @@
  * - Applying brand colors for mockup generation
  */
 
-export interface PrintifyCatalogProduct {
+interface PrintifyCatalogProduct {
   id: string
   title: string
   description?: string
@@ -203,7 +203,7 @@ export function determinePrimaryCategory(
  * if a product ever arrives without one, it gets a visible fallback instead
  * of rendering as blank copy.
  */
-export function mapPrintifyProduct(
+function mapPrintifyProduct(
   product: PrintifyCatalogProduct,
   primaryColor?: string,
   secondaryColor?: string

@@ -16,7 +16,7 @@
 const ALLOWED_STATUSES = ['active', 'past_due', 'unpaid', 'canceled', 'incomplete'] as const
 type AllowedStatus = (typeof ALLOWED_STATUSES)[number]
 
-export interface StripeSubscriptionSyncInput {
+interface StripeSubscriptionSyncInput {
   stripeCustomerId: string
   stripeSubscriptionId: string
   stripePriceId: string | undefined | null
@@ -28,7 +28,7 @@ export interface StripeSubscriptionSyncInput {
   canceledAt?: number | null
 }
 
-export type SyncResult =
+type SyncResult =
   | { ok: true; userId: string; tier: 'pro' | 'free' }
   | { ok: false; reason: 'user_not_found' | 'missing_price' | 'db_error' }
 

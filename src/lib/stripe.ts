@@ -12,7 +12,7 @@ import crypto from 'crypto'
 const STRIPE_API = 'https://api.stripe.com/v1'
 
 /** $1,000/yr Pro tier price, in cents — the DE-16 anchor price. */
-export const PRO_TIER_PRICE_USD_CENTS = 100_000
+const PRO_TIER_PRICE_USD_CENTS = 100_000
 
 /** Returns the configured secret key, or null if unset/still a placeholder. */
 export function getStripeSecretKey(): string | null {
@@ -21,7 +21,7 @@ export function getStripeSecretKey(): string | null {
   return key
 }
 
-export function isStripeConfigured(): boolean {
+function isStripeConfigured(): boolean {
   return getStripeSecretKey() !== null
 }
 
@@ -69,12 +69,12 @@ async function stripeFetch(path: string, method: 'GET' | 'POST', params?: Record
 }
 
 /** Finds an existing Stripe customer by exact email match. */
-export async function findCustomerByEmail(email: string): Promise<{ id: string } | null> {
+async function findCustomerByEmail(email: string): Promise<{ id: string } | null> {
   const result = await stripeFetch('/customers', 'GET', { email, limit: 1 })
   return result.data?.[0] ?? null
 }
 
-export async function createCustomer(email: string, metadata: Record<string, string> = {}) {
+async function createCustomer(email: string, metadata: Record<string, string> = {}) {
   return stripeFetch('/customers', 'POST', {
     email,
     metadata: { source: 'swagger_ai_pro_tier', ...metadata },
@@ -156,7 +156,7 @@ export async function createOrderPaymentIntent(opts: {
  * Confirms a PaymentIntent with a payment method.
  * Used after Stripe Elements collect card details client-side.
  */
-export async function confirmPaymentIntent(
+async function confirmPaymentIntent(
   paymentIntentId: string,
   paymentMethodId: string
 ) {
@@ -172,7 +172,7 @@ export async function retrievePaymentIntent(paymentIntentId: string) {
   return stripeFetch(`/payment_intents/${paymentIntentId}`, 'GET')
 }
 
-export interface WebhookVerification {
+interface WebhookVerification {
   valid: boolean
   reason?: 'missing_signature_header' | 'malformed_header' | 'signature_mismatch' | 'timestamp_out_of_tolerance'
 }

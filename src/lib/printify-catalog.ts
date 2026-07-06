@@ -26,7 +26,7 @@ import {
  * image. Swapping in real, verified-loading Printify CDN image URLs fixes that
  * without requiring a network call at request time.
  */
-export const CURATED_FALLBACK_PRODUCTS = [
+const CURATED_FALLBACK_PRODUCTS = [
   {
     id: 'printify-006',
     title: 'Unisex Heavy Cotton Tee',
@@ -116,7 +116,7 @@ export const CURATED_FALLBACK_PRODUCTS = [
  * 1. Fetch from real Printify catalog API (if PRINTIFY_API_KEY is set)
  * 2. Return curated fallback products (in mock mode)
  */
-export async function fetchPrintifyProducts(): Promise<PrintifyProduct[]> {
+async function fetchPrintifyProducts(): Promise<PrintifyProduct[]> {
   try {
     const client = getPrintifyClient()
 
@@ -180,7 +180,7 @@ export async function fetchProductsForStorefront(
  * A row as actually stored in the `printify_products` table (flat columns —
  * distinct from the nested Printify catalog API shape above).
  */
-export interface StoredProductRow {
+interface StoredProductRow {
   id: string
   name?: string | null
   title?: string | null
@@ -194,7 +194,7 @@ export interface StoredProductRow {
   variants?: Array<{ id: string; title: string; price: number }> | null
 }
 
-export interface NormalizedStorefrontProduct {
+interface NormalizedStorefrontProduct {
   id: string
   title: string
   description: string

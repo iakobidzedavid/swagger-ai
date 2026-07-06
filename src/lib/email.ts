@@ -557,7 +557,7 @@ function generateFulfillmentSubject(status: string): string {
  * Retry failed email notifications
  * Can be called by a cron job or manually to retry failed sends
  */
-export async function retryFailedNotifications(): Promise<{
+async function retryFailedNotifications(): Promise<{
   attempted: number
   successful: number
 }> {

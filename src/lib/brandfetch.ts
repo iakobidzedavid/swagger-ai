@@ -20,26 +20,26 @@
  */
 import { fetchKeylessBrand } from './keyless-brand'
 
-export interface BrandfetchLogoData {
+interface BrandfetchLogoData {
   src?: string
   theme?: string
   type?: string
   formats?: Array<{ src?: string; format?: string; background?: string }>
 }
 
-export interface BrandfetchColorData {
+interface BrandfetchColorData {
   hex?: string
   type?: string
   brightness?: number
 }
 
-export interface BrandfetchFontData {
+interface BrandfetchFontData {
   name?: string
   weights?: string[]
   type?: string
 }
 
-export interface BrandfetchRawResponse {
+interface BrandfetchRawResponse {
   id?: string
   name?: string
   description?: string
@@ -50,7 +50,7 @@ export interface BrandfetchRawResponse {
   dateModified?: string
 }
 
-export interface BrandData {
+interface BrandData {
   domain: string
   companyName: string
   logoUrl: string | null
@@ -80,7 +80,7 @@ const PERSONAL_DOMAINS = new Set([
  * Returns null when the API key is unset, the request fails, or parsing fails.
  * The caller always falls back to the keyless path in these cases.
  */
-export async function fetchFromBrandfetch(domain: string): Promise<BrandData | null> {
+async function fetchFromBrandfetch(domain: string): Promise<BrandData | null> {
   const apiKey = process.env.BRANDFETCH_API_KEY
   if (!apiKey) return null
 
@@ -291,7 +291,7 @@ function extractFonts(fonts: BrandfetchFontData[] | undefined): string[] {
  * Lighten a hex color by mixing with white.
  * Used for deriving a secondary color from a primary.
  */
-export function lightenColor(hex: string): string {
+function lightenColor(hex: string): string {
   try {
     const r = parseInt(hex.slice(1, 3), 16)
     const g = parseInt(hex.slice(3, 5), 16)
@@ -310,7 +310,7 @@ export function lightenColor(hex: string): string {
  * Derive a company name from a domain.
  * Example: "linear.app" → "Linear"
  */
-export function deriveCompanyName(domain: string): string {
+function deriveCompanyName(domain: string): string {
   const host = domain.replace(/^www\./, '')
   const name = host.split('.')[0]
   return name.charAt(0).toUpperCase() + name.slice(1)

@@ -102,7 +102,7 @@ function keywordsForProduct(category: string, title: string): string[] {
   return [...prioritized, ...rest]
 }
 
-export interface ProductMockupRequest {
+interface ProductMockupRequest {
   /** Internal identifier (our own product id) to correlate the result back. */
   id: string
   category: string
@@ -121,7 +121,7 @@ export interface ProductMockupResult {
   error?: string
 }
 
-export interface RealMockupBatchResult {
+interface RealMockupBatchResult {
   /** False when no real mockups could be attempted at all (no shop / no logo upload / no catalog). */
   enabled: boolean
   shopId?: string

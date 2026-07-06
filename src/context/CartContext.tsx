@@ -14,7 +14,7 @@ import {
   sanitizeLoadedItems,
 } from '@/lib/cart'
 
-export type { CartProduct, CartItem, Cart }
+
 
 interface CartContextType {
   /** Raw cart across ALL storefronts ever added in this browser. Prefer `cartForDomain`. */

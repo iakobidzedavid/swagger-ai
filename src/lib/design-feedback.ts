@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 
-export interface BrandFidelityScore {
+interface BrandFidelityScore {
   responseCount: number
   brandAccuracyPct: number | null
   reorderRatePct: number | null

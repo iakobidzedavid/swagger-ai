@@ -9,7 +9,7 @@
  * Falls back to mock mode when PRINTIFY_API_KEY is not provided
  */
 
-export interface PrintifyShop {
+interface PrintifyShop {
   id: string
   title: string
   currency: string
@@ -32,7 +32,7 @@ export interface PrintifyProduct {
   }>
 }
 
-export interface PrintifyProductResponse {
+interface PrintifyProductResponse {
   id: string
   title: string
   description: string
@@ -41,7 +41,7 @@ export interface PrintifyProductResponse {
   status: string
 }
 
-export class PrintifyClient {
+class PrintifyClient {
   private apiKey: string | null
   private baseUrl = 'https://api.printify.com/v1'
   private mockMode: boolean

@@ -11,14 +11,14 @@ const FETCH_TIMEOUT_MS = 8000
 
 const BLOCKED_HOSTNAMES = new Set(['localhost', '0.0.0.0', '::1', 'metadata.google.internal'])
 
-export interface FetchOk {
+interface FetchOk {
   ok: true
   text: string
   contentType: string | null
   finalUrl: string
 }
 
-export interface FetchErr {
+interface FetchErr {
   ok: false
   error: string
 }
@@ -48,7 +48,7 @@ function isBlockedHost(hostname: string): boolean {
 // Validates that `raw` is a well-formed, public http(s) URL before any
 // network call is attempted. Exported so the route (and tests) can surface
 // a 4xx without needing to perform the fetch.
-export function validateSpecUrl(raw: string): { ok: true; url: URL } | { ok: false; error: string } {
+function validateSpecUrl(raw: string): { ok: true; url: URL } | { ok: false; error: string } {
   const trimmed = raw.trim()
   if (!trimmed) return { ok: false, error: 'spec_url is required' }
 

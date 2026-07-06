@@ -7,14 +7,14 @@
  * own real result inside the winning quadrant instead of just reading a claim.
  */
 
-export interface BrandFidelityBreakdown {
+interface BrandFidelityBreakdown {
   logoDetected: boolean
   primaryColorDetected: boolean
   secondaryColorDetected: boolean
   productsLaunchedPct: number // 0-100, share of requested products actually created
 }
 
-export interface BrandFidelityResult {
+interface BrandFidelityResult {
   pct: number
   breakdown: BrandFidelityBreakdown
 }
@@ -73,7 +73,7 @@ export function formatSpeedLabel(seconds: number): string {
   return `${Math.round(days)} day${Math.round(days) === 1 ? '' : 's'}`
 }
 
-export interface CompetitorBenchmark {
+interface CompetitorBenchmark {
   name: string
   category: string
   speedHours: number

@@ -13,7 +13,7 @@
  */
 import zlib from 'node:zlib'
 
-export interface KeylessBrandResult {
+interface KeylessBrandResult {
   logoUrl: string
   primaryColor: string
   secondaryColor: string
@@ -26,19 +26,19 @@ export interface KeylessBrandResult {
 // Neutral slate — used only when we truly can't derive a brand color.
 // Deliberately NOT a saturated purple, so a fallback reads as "neutral", not
 // "wrong brand".
-export const NEUTRAL_COLOR = '#4b5563'
+const NEUTRAL_COLOR = '#4b5563'
 
 /** icon.horse service: a real brand mark for ~every domain, keyless and
  * reliable from serverless. Provides 64px+ quality logos superior to Google's
  * 16px favicon. Both the logo AND the source we derive the brand
  * color from — far better than the deprecated Clearbit endpoint. */
-export function faviconUrl(domain: string): string {
+function faviconUrl(domain: string): string {
   return `https://icon.horse/icon/${encodeURIComponent(domain)}`
 }
 
 /** Lighten a hex color by mixing with white. Used to derive a secondary color
  * from a primary when no second color is available. */
-export function lightenColor(hex: string): string {
+function lightenColor(hex: string): string {
   try {
     const r = parseInt(hex.slice(1, 3), 16)
     const g = parseInt(hex.slice(3, 5), 16)
@@ -54,7 +54,7 @@ export function lightenColor(hex: string): string {
 }
 
 /** Derive a company name from a domain. Example: "linear.app" -> "Linear" */
-export function deriveCompanyName(domain: string): string {
+function deriveCompanyName(domain: string): string {
   const host = domain.replace(/^www\./, '')
   const name = host.split('.')[0]
   return name.charAt(0).toUpperCase() + name.slice(1)

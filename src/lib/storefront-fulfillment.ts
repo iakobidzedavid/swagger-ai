@@ -33,7 +33,7 @@ import { getFaviconUrl } from '@/lib/favicon'
 const DEFAULT_PRODUCT_COUNT = 4
 const STALE_PROCESSING_MS = 2 * 60 * 1000 // 2 minutes — long enough for a real create loop to finish
 
-export interface FulfillmentResult {
+interface FulfillmentResult {
   status: string
   productsCreated: number
 }

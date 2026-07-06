@@ -19,14 +19,14 @@ function clip(v: string | null | undefined): string | null {
   return t.slice(0, MAX_LEN)
 }
 
-export interface RawAttribution {
+interface RawAttribution {
   utm_source?: string | null
   utm_medium?: string | null
   utm_campaign?: string | null
   referrer_host?: string | null
 }
 
-export interface Attribution extends RawAttribution {
+interface Attribution extends RawAttribution {
   attribution_key: string
 }
 

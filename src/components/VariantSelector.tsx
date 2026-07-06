@@ -1,6 +1,6 @@
 'use client'
 
-export interface ProductVariant {
+interface ProductVariant {
   id: string
   title: string
   price: number

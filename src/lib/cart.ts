@@ -32,7 +32,7 @@ export interface Cart {
   totalPrice: number
 }
 
-export function calculateTotals(items: CartItem[]): { totalItems: number; totalPrice: number } {
+function calculateTotals(items: CartItem[]): { totalItems: number; totalPrice: number } {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
   const totalPrice = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
   return { totalItems, totalPrice }

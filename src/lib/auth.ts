@@ -26,7 +26,7 @@ interface AuthResult {
  * Extract and verify JWT token from Authorization header
  * Format: "Bearer <token>"
  */
-export function extractToken(authHeader: string | null): string | null {
+function extractToken(authHeader: string | null): string | null {
   if (!authHeader) return null
   const parts = authHeader.split(' ')
   if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
@@ -39,7 +39,7 @@ export function extractToken(authHeader: string | null): string | null {
  * Decode JWT token payload (basic decode, no signature verification for MVP)
  * For a real implementation, integrate with Supabase's native session verification
  */
-export function decodeJwtToken(token: string): { sub?: string; email?: string } | null {
+function decodeJwtToken(token: string): { sub?: string; email?: string } | null {
   try {
     const parts = token.split('.')
     if (parts.length !== 3) {
@@ -104,7 +104,7 @@ export async function verifyAuth(req: NextRequest): Promise<AuthResult> {
  * }
  * ```
  */
-export async function requireAuth(req: NextRequest) {
+async function requireAuth(req: NextRequest) {
   return verifyAuth(req)
 }
 
