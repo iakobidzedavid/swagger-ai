@@ -60,7 +60,6 @@ export async function gatherHealthMetrics(): Promise<HealthMetrics> {
   let testFiles: string[] = []
   try {
     const testsDir = path.join(process.cwd(), 'tests')
-    await fs.access(testsDir)
     const files = await fs.readdir(testsDir)
     testFiles = files.filter(f => f.endsWith('.test.mjs') || f.endsWith('.test.ts'))
   } catch {
@@ -105,23 +104,26 @@ export async function gatherHealthMetrics(): Promise<HealthMetrics> {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 5000)
 
-        const response = await fetch(`${supabaseUrl}/rest/v1/`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${supabaseKey}`,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-        })
+        try {
+          const response = await fetch(`${supabaseUrl}/rest/v1/`, {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json',
+            },
+            signal: controller.signal,
+          })
 
-        clearTimeout(timeoutId)
-
-        if (response.ok || response.status === 404) {
-          // 404 is OK — means the API endpoint exists but no resource at root
-          dbConnected = true
-        } else {
-          dbError = `Supabase returned ${response.status}`
-          criticalFailures++
+          if (response.ok || response.status === 404) {
+            // 404 is OK — means the API endpoint exists but no resource at root
+            dbConnected = true
+          } else {
+            dbError = `Supabase returned ${response.status}`
+            criticalFailures++
+          }
+        } finally {
+          // Always clear timeout, even on error
+          clearTimeout(timeoutId)
         }
       } catch (fetchErr) {
         dbError = `Supabase fetch error: ${(fetchErr as Error).message}`
@@ -139,6 +141,10 @@ export async function gatherHealthMetrics(): Promise<HealthMetrics> {
   // Determine overall status
   let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy'
   if (criticalFailures > 0) {
+    overallStatus = 'degraded'
+  }
+  // TypeScript/ESLint failures also degrade status (build health matters)
+  if (!tsCompiled || !eslintChecked) {
     overallStatus = 'degraded'
   }
 
