@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { gatherHealthMetrics } from '@/lib/health-metrics'
+import { logHealthAlert } from '@/lib/health-alert'
 
 export const runtime = 'nodejs'
 
@@ -11,6 +12,16 @@ export async function GET() {
     // Uptime monitors (Datadog, PagerDuty, etc.) rely on 503 to trigger alerts
     const statusCode = metrics.status === 'healthy' ? 200 : 503
 
+    // Log alert if returning 5xx (degraded/unhealthy)
+    if (statusCode >= 500) {
+      // Fire-and-forget logging (don't block response)
+      logHealthAlert({
+        status_code: statusCode,
+        error_message: metrics.status,
+        endpoint: '/health',
+      }).catch(err => console.error('[health] Alert logging error:', err))
+    }
+
     return NextResponse.json(metrics, {
       status: statusCode,
       headers: {
@@ -20,12 +31,21 @@ export async function GET() {
       },
     })
   } catch (error) {
+    const errorMessage = (error as Error).message
+
+    // Log error as 5xx alert
+    logHealthAlert({
+      status_code: 503,
+      error_message: errorMessage,
+      endpoint: '/health',
+    }).catch(err => console.error('[health] Alert logging error:', err))
+
     // On error, return 503 and degraded status
     // Ensures uptime monitors detect failures
     return NextResponse.json(
       {
         status: 'degraded',
-        error: (error as Error).message,
+        error: errorMessage,
         timestamp: new Date().toISOString(),
       },
       {
