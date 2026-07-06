@@ -11,6 +11,12 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = authHeader.replace('Bearer ', '')
+
+    // Validate userId is not empty or placeholder
+    if (!userId || userId === 'placeholder') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const supabase = getSupabase()
     const { searchParams } = new URL(request.url)
     const dateFrom = searchParams.get('dateFrom')

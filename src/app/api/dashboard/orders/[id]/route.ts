@@ -14,6 +14,12 @@ export async function GET(
     }
 
     const userId = authHeader.replace('Bearer ', '')
+
+    // Validate userId is not a placeholder
+    if (userId === 'placeholder' || !userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const supabase = getSupabase()
     const { id: orderId } = await params
 

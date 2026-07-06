@@ -101,6 +101,11 @@ function DashboardContent() {
         ordersParams.append('storefrontId', params.selectedStorefront)
       }
 
+      // Check if user is authenticated before fetching
+      if (!token || token === 'placeholder') {
+        throw new Error('Authentication required. Please create a storefront first.')
+      }
+
       // Fetch metrics, orders, and storefronts in parallel
       const [metricsRes, ordersRes, storefrontsRes] = await Promise.all([
         fetch(`/api/dashboard/metrics?${metricsParams}`, {
