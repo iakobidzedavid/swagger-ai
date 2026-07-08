@@ -221,10 +221,13 @@ function extractColors(colors: BrandfetchColorData[] | undefined): string[] {
 
   for (const color of colors) {
     if (color.hex && hexPattern.test(color.hex)) {
-      // Normalize to 6-digit hex (expand 3-digit and drop alpha from 8-digit)
+      // Normalize to 6-digit hex (expand 3/4-digit and drop alpha from 8-digit)
       let normalized = color.hex.toLowerCase()
       if (normalized.length === 4) {
         // #RGB → #RRGGBB
+        normalized = '#' + normalized[1] + normalized[1] + normalized[2] + normalized[2] + normalized[3] + normalized[3]
+      } else if (normalized.length === 5) {
+        // #RGBA → #RRGGBBAA → #RRGGBB (expand and drop alpha)
         normalized = '#' + normalized[1] + normalized[1] + normalized[2] + normalized[2] + normalized[3] + normalized[3]
       } else if (normalized.length === 9) {
         // #RRGGBBAA → #RRGGBB (drop alpha)
