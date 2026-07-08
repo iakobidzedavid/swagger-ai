@@ -41,21 +41,45 @@ async function fetch_json(method, path, body = null) {
 // CORE ENDPOINT TESTS
 // ============================================================================
 
-await test('GET /api/brand?domain=linear.app returns brand data', async () => {
+await test('GET /api/brand?domain=linear.app returns brand data with Brandfetch source', async () => {
   const { status, data } = await fetch_json('GET', '/api/brand?domain=linear.app')
   if (status !== 200) throw new Error(`expected 200, got ${status}`)
   if (!data.domain) throw new Error('missing domain field')
   if (!data.companyName) throw new Error('missing companyName field')
   if (!data.primaryColor) throw new Error('missing primaryColor field')
   if (!data.source) throw new Error('missing source field (brandfetch|favicon|fallback)')
+  // CRITICAL: verify Brandfetch API is actually configured and working
+  // If source is 'brandfetch', colors and fonts arrays should be non-empty
+  if (data.source === 'brandfetch') {
+    if (!Array.isArray(data.colors) || data.colors.length === 0) {
+      throw new Error(`Brandfetch source but colors array is empty: ${JSON.stringify(data)}`)
+    }
+    if (!Array.isArray(data.fonts) || data.fonts.length === 0) {
+      throw new Error(`Brandfetch source but fonts array is empty: ${JSON.stringify(data)}`)
+    }
+  } else if (data.source === 'theme-color' || data.source === 'favicon' || data.source === 'fallback') {
+    // Keyless fallback: warn that Brandfetch is not working
+    console.warn(`⚠️  WARNING: /api/brand?domain=linear.app returned source='${data.source}' instead of 'brandfetch'. BRANDFETCH_API_KEY may not be configured in Vercel. Colors/fonts arrays: colors=${data.colors?.length ?? 0}, fonts=${data.fonts?.length ?? 0}`)
+  }
 })
 
-await test('GET /api/brand?domain=retool.com returns brand data', async () => {
+await test('GET /api/brand?domain=retool.com returns brand data with Brandfetch source', async () => {
   const { status, data } = await fetch_json('GET', '/api/brand?domain=retool.com')
   if (status !== 200) throw new Error(`expected 200, got ${status}`)
   if (!data.domain) throw new Error('missing domain field')
   if (!data.companyName) throw new Error('missing companyName field')
   if (!data.primaryColor) throw new Error('missing primaryColor field')
+  // CRITICAL: verify Brandfetch API is actually configured and working
+  if (data.source === 'brandfetch') {
+    if (!Array.isArray(data.colors) || data.colors.length === 0) {
+      throw new Error(`Brandfetch source but colors array is empty: ${JSON.stringify(data)}`)
+    }
+    if (!Array.isArray(data.fonts) || data.fonts.length === 0) {
+      throw new Error(`Brandfetch source but fonts array is empty: ${JSON.stringify(data)}`)
+    }
+  } else {
+    console.warn(`⚠️  WARNING: /api/brand?domain=retool.com returned source='${data.source}' instead of 'brandfetch'. BRANDFETCH_API_KEY may not be configured.`)
+  }
 })
 
 await test('GET /api/brand with invalid domain returns 400', async () => {
@@ -86,7 +110,7 @@ await test('POST /api/domain/submit with valid domain creates submission', async
   if (data.status !== 'detected') throw new Error(`expected status=detected, got ${data.status}`)
 })
 
-await test('POST /api/domain/submit with real domain linear.app creates submission', async () => {
+await test('POST /api/domain/submit with real domain linear.app creates submission with Brandfetch', async () => {
   const { status, data } = await fetch_json('POST', '/api/domain/submit', {
     domain: 'linear.app',
     contact_name: 'Jane Doe',
@@ -97,6 +121,20 @@ await test('POST /api/domain/submit with real domain linear.app creates submissi
   if (data.domain !== 'linear.app') throw new Error(`domain mismatch`)
   if (!data.company_name) throw new Error('missing company_name')
   if (!data.primary_color) throw new Error('missing primary_color')
+  // CRITICAL: verify Brandfetch API is actually configured
+  const brandSource = data.brand_source || data.source
+  if (brandSource === 'brandfetch') {
+    const colorCount = data.color_count || (data.raw_brand_data?.colors?.length ?? 0)
+    const fontCount = data.font_count || (data.raw_brand_data?.fonts?.length ?? 0)
+    if (colorCount === 0) {
+      throw new Error(`Brandfetch source but color_count is 0: ${JSON.stringify(data)}`)
+    }
+    if (fontCount === 0) {
+      throw new Error(`Brandfetch source but font_count is 0: ${JSON.stringify(data)}`)
+    }
+  } else {
+    console.warn(`⚠️  WARNING: /api/domain/submit returned brand_source='${brandSource}' instead of 'brandfetch'. BRANDFETCH_API_KEY may not be configured.`)
+  }
 })
 
 await test('POST /api/domain/submit with personal domain returns 400', async () => {
