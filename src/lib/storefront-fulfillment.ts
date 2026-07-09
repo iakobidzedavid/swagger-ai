@@ -29,6 +29,7 @@ import { getPrintifyClient } from '@/lib/printify'
 import { fetchProductsForStorefront } from '@/lib/printify-catalog'
 import { createRealMockupBatch, type ProductMockupResult } from '@/lib/printify-mockup'
 import { supabase } from '@/lib/supabase'
+import { curateProductDescriptions, type ProductForCuration } from '@/lib/openai-curator'
 
 const DEFAULT_PRODUCT_COUNT = 4
 const STALE_PROCESSING_MS = 2 * 60 * 1000 // 2 minutes — long enough for a real create loop to finish
@@ -96,6 +97,28 @@ export async function fulfillStorefrontRequest(requestId: string): Promise<Fulfi
     const catalogProducts = await fetchProductsForStorefront(primaryColor, secondaryColor, DEFAULT_PRODUCT_COUNT)
     const selectedProducts = catalogProducts.slice(0, DEFAULT_PRODUCT_COUNT)
 
+    // AI-powered product curation: enhance descriptions based on brand context
+    // If OPENAI_API_KEY is set, this will use OpenAI to write brand-aware product descriptions
+    // Otherwise, it gracefully falls back to the default descriptions from the catalog
+    const companyNameForCuration = claimed.company_name || claimed.domain.split('.')[0]
+    const curatedProducts = await curateProductDescriptions(
+      selectedProducts.map(p => ({
+        id: p.id,
+        title: p.title,
+        category: p.category,
+        description: p.description,
+      }) as ProductForCuration),
+      companyNameForCuration,
+    )
+
+    // Use curated descriptions (with AI-enhanced copy if available)
+    const finalProducts = selectedProducts.map((original, idx) => ({
+      ...original,
+      description: curatedProducts[idx]?.aiDescription ?? original.description,
+    }))
+
+    console.log(`[storefront-fulfillment] Using ${curatedProducts.filter(p => p.aiDescription).length}/${finalProducts.length} AI-curated product descriptions`)
+
     // Real Printify mockups: this is the fast, no-signup self-serve path
     // (/onboard → "Continue to Store") — the actual flow the DE-22 MVBP demo
     // runs. When PRINTIFY_API_KEY is a real token (not mock mode), try to
@@ -112,7 +135,7 @@ export async function fulfillStorefrontRequest(requestId: string): Promise<Fulfi
           logoImageUrl: claimed.logo_url,
           faviconFallbackUrl: getFaviconUrl(claimed.domain),
           domain: claimed.domain,
-          products: selectedProducts.map(p => ({
+          products: finalProducts.map(p => ({
             id: p.id,
             category: p.category,
             title: p.title,
@@ -129,7 +152,7 @@ export async function fulfillStorefrontRequest(requestId: string): Promise<Fulfi
       }
     }
 
-    for (const product of selectedProducts) {
+    for (const product of finalProducts) {
       try {
         const variant = product.variants[0]
         const priceCents = variant?.price ?? 1999
