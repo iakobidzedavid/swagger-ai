@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { fetchBrandData } from '@/lib/brandfetch'
 
 interface BrandData {
   domain: string
@@ -6,7 +7,10 @@ interface BrandData {
   logoUrl: string | null
   primaryColor: string
   secondaryColor: string
-  source: string
+  source: 'brandfetch' | 'favicon' | 'theme-color' | 'fallback'
+  colors?: string[]
+  fonts?: string[]
+  raw?: Record<string, unknown>
 }
 
 // Sample domains from Step 9 prospects + other known SaaS companies
@@ -34,28 +38,17 @@ const PRODUCT_SAMPLES = [
 
 async function fetchBrandDataServer(domain: string): Promise<BrandData> {
   try {
-    // Use absolute URL for server-side fetch
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    const response = await fetch(`${baseUrl}/api/brand?domain=${encodeURIComponent(domain)}`, {
-      next: { revalidate: 3600 }, // Cache for 1 hour
-    })
-    if (!response.ok) {
-      return {
-        domain,
-        companyName: domain.replace('.com', '').toUpperCase(),
-        logoUrl: null,
-        primaryColor: '#7c3aed',
-        secondaryColor: '#a78bfa',
-        source: 'fallback',
-      }
-    }
-    const data = await response.json()
-    return data
+    // Direct call to fetchBrandData — bypasses HTTP request, works reliably
+    // at build time and doesn't depend on NEXT_PUBLIC_APP_URL being set.
+    // fetchBrandData never throws and always returns a valid BrandData object.
+    const brand = await fetchBrandData(domain)
+    return brand as BrandData
   } catch (error) {
     console.error(`Error fetching brand for ${domain}:`, error)
+    // Fallback (should never reach here since fetchBrandData never throws)
     return {
       domain,
-      companyName: domain.replace('.com', '').toUpperCase(),
+      companyName: domain.replace(/\..+$/, '').toUpperCase(),
       logoUrl: null,
       primaryColor: '#7c3aed',
       secondaryColor: '#a78bfa',
