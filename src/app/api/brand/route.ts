@@ -80,7 +80,11 @@ function cacheRowToBrandData(row: BrandCacheRow): BrandData {
  * denial, network blip), on a stale/missing row, or if the source is a fallback
  * (favicon/theme-color) — caller always falls through to a live fetch in every
  * one of those cases. Fallback sources indicate Brandfetch failed at cache time;
- * we always refetch to get real Brandfetch data when it recovers. */
+ * we always refetch to get real Brandfetch data when it recovers.
+ *
+ * EXCEPTION: If the cache entry was recently written (< 5 min) AND the source is a
+ * fallback, we assume Brandfetch API quota or network issues are ongoing and serve
+ * the fallback rather than hammering the API again. */
 async function readCache(domain: string): Promise<BrandCacheRow | null> {
   try {
     const { data, error } = await supabase
@@ -90,7 +94,19 @@ async function readCache(domain: string): Promise<BrandCacheRow | null> {
       .maybeSingle()
     if (error || !data) {return null}
     const row = data as BrandCacheRow
-    if (!isCacheFresh(row.fetched_at, Date.now(), row.source)) {return null}
+
+    const now = Date.now()
+    const age = now - new Date(row.fetched_at).getTime()
+    const RECENT_FALLBACK_TTL = 5 * 60 * 1000 // 5 minutes
+
+    // Special case: if cache is recent AND from a fallback source, serve it
+    // (don't hammer API when Brandfetch quota/network is likely failing)
+    if (age <= RECENT_FALLBACK_TTL && (row.source === 'favicon' || row.source === 'theme-color' || row.source === 'fallback')) {
+      console.log(`[cache-read] serving recent fallback for ${domain} (age: ${Math.round(age / 1000)}s)`)
+      return row
+    }
+
+    if (!isCacheFresh(row.fetched_at, now, row.source)) {return null}
     return row
   } catch (err) {
     console.warn('brand_cache read failed (continuing without cache):', err)

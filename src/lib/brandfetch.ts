@@ -82,12 +82,16 @@ const PERSONAL_DOMAINS = new Set([
  */
 async function fetchFromBrandfetch(domain: string): Promise<BrandData | null> {
   const apiKey = process.env.BRANDFETCH_API_KEY
-  if (!apiKey) {return null}
+  if (!apiKey) {
+    console.warn(`[Brandfetch] API key not set for domain: ${domain}`)
+    return null
+  }
 
   try {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), 8000)
 
+    console.log(`[Brandfetch] Fetching brand data for ${domain}...`)
     const response = await fetch(`https://api.brandfetch.io/v2/brands/${domain}`, {
       method: 'GET',
       headers: {
@@ -100,11 +104,24 @@ async function fetchFromBrandfetch(domain: string): Promise<BrandData | null> {
     clearTimeout(timer)
 
     if (!response.ok) {
-      console.warn(`Brandfetch request failed for ${domain}: ${response.status}`)
+      const errorText = await response.text()
+      console.warn(`Brandfetch request failed for ${domain}: ${response.status} - ${errorText.slice(0, 200)}`)
+
+      // Log quota errors separately for visibility
+      if (response.status === 429) {
+        try {
+          const errorData = JSON.parse(errorText)
+          if (errorData.message?.includes('quota')) {
+            console.error(`[Brandfetch Quota] ${errorData.message} (quota: ${errorData.quota}, used: ${errorData.used})`)
+          }
+        } catch {}
+      }
+
       return null
     }
 
     const data = await response.json() as BrandfetchRawResponse
+    console.log(`[Brandfetch] Successfully fetched data for ${domain}: ${data.name ?? 'unknown'}`)
 
     // Extract logos (prefer SVG, then PNG, then any available)
     const logoUrl = extractBestLogo(data.logos)
@@ -139,7 +156,8 @@ async function fetchFromBrandfetch(domain: string): Promise<BrandData | null> {
       },
     }
   } catch (error) {
-    console.warn('Brandfetch fetch error:', error)
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.warn(`Brandfetch fetch error for ${domain}:`, errorMsg)
     return null
   }
 }
