@@ -272,6 +272,19 @@ await test('POST /api/domain/submit + POST /api/storefront/request creates a com
 })
 
 // ============================================================================
+// GALLERY PAGE (visitor-facing brand sample gallery)
+// ============================================================================
+
+await test('GET /gallery returns 200 and contains expected content', async () => {
+  const res = await fetch(`${DEPLOY_URL}/gallery`)
+  if (res.status !== 200) throw new Error(`expected 200, got ${res.status}`)
+  const html = await res.text()
+  if (!html.includes('Brand Sample Gallery')) throw new Error('missing gallery title')
+  if (!html.includes('real company brands')) throw new Error('missing descriptive text')
+  if (!html.includes('linear.com') && !html.includes('Brand Colors')) throw new Error('missing brand data elements')
+})
+
+// ============================================================================
 // SUMMARY
 // ============================================================================
 

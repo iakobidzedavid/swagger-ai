@@ -32,8 +32,8 @@ export default function LandingPage() {
             <Link href="/onboard" className="btn btn-primary btn-lg">
               Get started free
             </Link>
-            <Link href="/design-engine?domain=stripe.com" className="btn btn-secondary btn-lg">
-              View sample
+            <Link href="/gallery" className="btn btn-secondary btn-lg">
+              Browse gallery
             </Link>
           </div>
 
