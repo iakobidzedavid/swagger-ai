@@ -12,7 +12,7 @@ export default function LandingPage() {
         <div className="container content-narrow text-center">
           <div style={{ marginBottom: '32px' }}>
             <span className="badge badge-accent" style={{ marginBottom: '16px', display: 'inline-block' }}>
-              ✨ Built for People Ops teams
+              Built for People Ops teams
             </span>
           </div>
 
@@ -46,20 +46,26 @@ export default function LandingPage() {
         <div className="container">
           <h2 className="text-h2" style={{ textAlign: 'center', marginBottom: '48px' }}>Why Swagger AI</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '32px' }}>
-            <div style={{ padding: '24px' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '12px' }}>⚡</div>
-              <h3 className="text-h3" style={{ marginBottom: '8px' }}>Lightning fast</h3>
-              <p className="text-body text-muted" style={{ lineHeight: '1.6' }}>Domain paste → branded store in under 5 minutes. No waiting for designers or vendors.</p>
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ width: '140px', height: '140px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src="/hoodie-mockup.svg" alt="Branded hoodie mockup - Lightning fast storefront generation" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              </div>
+              <h3 className="text-h3" style={{ marginBottom: '8px', textAlign: 'center' }}>Lightning fast</h3>
+              <p className="text-body text-muted" style={{ lineHeight: '1.6', textAlign: 'center' }}>Domain paste → branded store in under 5 minutes. No waiting for designers or vendors.</p>
             </div>
-            <div style={{ padding: '24px' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '12px' }}>🎨</div>
-              <h3 className="text-h3" style={{ marginBottom: '8px' }}>AI-powered brand accuracy</h3>
-              <p className="text-body text-muted" style={{ lineHeight: '1.6' }}>Automatic color extraction and logo detection. Your brand, perfectly applied to every product.</p>
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ width: '140px', height: '140px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src="/cap-mockup.svg" alt="Branded cap mockup - AI-powered brand accuracy" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              </div>
+              <h3 className="text-h3" style={{ marginBottom: '8px', textAlign: 'center' }}>AI-powered brand accuracy</h3>
+              <p className="text-body text-muted" style={{ lineHeight: '1.6', textAlign: 'center' }}>Automatic color extraction and logo detection. Your brand, perfectly applied to every product.</p>
             </div>
-            <div style={{ padding: '24px' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '12px' }}>🛍️</div>
-              <h3 className="text-h3" style={{ marginBottom: '8px' }}>Self-serve storefronts</h3>
-              <p className="text-body text-muted" style={{ lineHeight: '1.6' }}>Employees browse, customize, and buy. You earn a margin on every order with zero inventory.</p>
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ width: '140px', height: '140px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src="/mug-mockup.svg" alt="Branded mug mockup - Self-serve storefronts" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              </div>
+              <h3 className="text-h3" style={{ marginBottom: '8px', textAlign: 'center' }}>Self-serve storefronts</h3>
+              <p className="text-body text-muted" style={{ lineHeight: '1.6', textAlign: 'center' }}>Employees browse, customize, and buy. You earn a margin on every order with zero inventory.</p>
             </div>
           </div>
         </div>

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 350">
+  <!-- Background -->
+  <rect width="300" height="350" fill="#0d1f33"/>
+
+  <!-- Hoodie body (navy/dark gray) -->
+  <defs>
+    <linearGradient id="hoodieFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a2f42;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f1d2d;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Hoodie front -->
+  <path d="M 75 80 L 70 150 Q 70 220 120 280 L 180 280 Q 230 220 230 150 L 225 80 Z" fill="url(#hoodieFill)" stroke="#0a1420" stroke-width="1.5"/>
+
+  <!-- Hood -->
+  <ellipse cx="150" cy="70" rx="45" ry="35" fill="#1a2f42" stroke="#0a1420" stroke-width="1.5"/>
+  <ellipse cx="150" cy="65" rx="40" ry="28" fill="#243750" opacity="0.6"/>
+
+  <!-- Drawstring -->
+  <path d="M 130 90 Q 150 95 170 90" stroke="#a78bfa" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <!-- Front pocket area (larger for design showcase) -->
+  <rect x="100" y="120" width="100" height="110" rx="8" fill="#102542" stroke="#1a3a5c" stroke-width="1.5" opacity="0.8"/>
+
+  <!-- Brand design on chest - violet accent circle -->
+  <circle cx="150" cy="150" r="28" fill="none" stroke="#a78bfa" stroke-width="2"/>
+
+  <!-- Brand name/logo placeholder -->
+  <text x="150" y="155" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="bold" fill="#a78bfa">
+    BRAND
+  </text>
+
+  <!-- Sleeve suggestion (left) -->
+  <path d="M 75 100 Q 40 120 35 180" stroke="#1a2f42" stroke-width="20" fill="none" stroke-linecap="round" opacity="0.6"/>
+  <path d="M 75 100 Q 40 120 35 180" stroke="#243750" stroke-width="16" fill="none" stroke-linecap="round"/>
+
+  <!-- Sleeve suggestion (right) -->
+  <path d="M 225 100 Q 260 120 265 180" stroke="#1a2f42" stroke-width="20" fill="none" stroke-linecap="round" opacity="0.6"/>
+  <path d="M 225 100 Q 260 120 265 180" stroke="#243750" stroke-width="16" fill="none" stroke-linecap="round"/>
+
+  <!-- Highlights for 3D effect -->
+  <ellipse cx="120" cy="130" rx="15" ry="8" fill="#ffffff" opacity="0.08"/>
+
+  <!-- Bottom seam -->
+  <line x1="120" y1="280" x2="180" y2="280" stroke="#0a1420" stroke-width="2"/>
+
+  <!-- Text label -->
+  <text x="150" y="320" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500" fill="#ecebf3">
+    Branded Hoodie
+  </text>
+</svg>
