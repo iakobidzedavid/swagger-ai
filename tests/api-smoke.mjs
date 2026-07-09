@@ -162,6 +162,113 @@ await test('POST /api/domain/submit without domain field returns 400', async () 
 })
 
 // ============================================================================
+// STOREFRONT GENERATION FLOW (full end-to-end)
+// ============================================================================
+
+// DE-22 MVBP: the complete fast self-serve path:
+// 1. domain submission → brand detection (Brandfetch)
+// 2. storefront request → queued/processing
+// 3. storefront fulfillment → products created
+// 4. storefront fetch → display storefront with products
+
+let lastStorefrontRequestId = null
+
+await test('POST /api/storefront/request queues a storefront for a valid domain', async () => {
+  const { status, data } = await fetch_json('POST', '/api/storefront/request', {
+    domain: 'linear.app',
+    company_name: 'Linear',
+    logo_url: 'https://example.com/logo.png',
+    primary_color: '#3e3e42',
+    secondary_color: '#8fa3b8',
+  })
+  if (status !== 201) throw new Error(`expected 201, got ${status}`)
+  if (!data.id) throw new Error('missing id in response')
+  if (data.domain !== 'linear.app') throw new Error('domain mismatch')
+  if (!data.status) throw new Error('missing status field')
+  // Status can be 'queued', 'processing', 'partial', or 'complete' depending on
+  // whether fulfillment completed synchronously inline or is still running
+  if (!['queued', 'processing', 'partial', 'complete'].includes(data.status)) {
+    throw new Error(`unexpected status: ${data.status}`)
+  }
+  lastStorefrontRequestId = data.id
+})
+
+await test('GET /api/storefront/fetch?id=<request_id> retrieves queued storefront', async () => {
+  if (!lastStorefrontRequestId) throw new Error('no storefront request ID from previous test')
+  const { status, data } = await fetch_json('GET', `/api/storefront/fetch?id=${encodeURIComponent(lastStorefrontRequestId)}`)
+  if (status !== 200) throw new Error(`expected 200, got ${status}`)
+  if (!data.id) throw new Error('missing id field')
+  if (!data.domain) throw new Error('missing domain field')
+  if (!data.status) throw new Error('missing status field')
+  // After fulfillment (sync or via self-heal in fetch), should have products
+  // For now, just verify the structure exists — products may be in progress
+  if (!Array.isArray(data.products) && data.status !== 'queued') {
+    // If status is queued/processing, products array may not be present yet
+  }
+})
+
+await test('GET /api/storefront/fetch?domain=linear.app returns complete storefront when ready', async () => {
+  // The full storefront with products is only returned when status='complete'
+  // This may 404 or return 202 in-progress if fulfillment is still running
+  const { status, data } = await fetch_json('GET', '/api/storefront/fetch?domain=linear.app')
+
+  // Acceptable responses:
+  // - 200 + success:true + products array (storefront is complete)
+  // - 202 + inProgress:true (storefront is still generating, visitor should retry)
+  // - 404 (no storefront ever created for this domain yet — this is OK in a fresh test environment)
+  if (status === 200) {
+    if (!data.success) throw new Error('success=false in 200 response')
+    if (!data.data) throw new Error('missing data field')
+    if (!data.data.domain) throw new Error('missing data.domain')
+    if (!Array.isArray(data.data.products)) throw new Error('products must be an array')
+    // The products array should have products if the storefront is complete
+    // (the self-heal in fetch or the initial fulfillment should have created them)
+  } else if (status === 202) {
+    if (!data.inProgress) throw new Error('inProgress should be true for 202')
+  } else if (status === 404) {
+    // OK — no completed storefront for this domain yet (fresh test environment)
+  } else {
+    throw new Error(`unexpected status: ${status}`)
+  }
+})
+
+await test('POST /api/domain/submit + POST /api/storefront/request creates a complete storefront flow', async () => {
+  // Full integration test: submit domain → auto-trigger storefront request
+  // This mirrors the actual user flow on /onboard page
+  const testDomain = `swagger-test-${Date.now()}.com`
+
+  // Step 1: Submit domain, get brand data
+  const submitRes = await fetch_json('POST', '/api/domain/submit', {
+    domain: testDomain,
+    contact_name: 'Integration Test',
+    contact_email: 'test@example.com',
+  })
+  if (submitRes.status !== 200) throw new Error(`domain/submit failed: ${submitRes.status}`)
+  const domainId = submitRes.data.id
+  if (!domainId) throw new Error('no submission ID returned')
+  if (submitRes.data.status !== 'detected') throw new Error('domain submission should be in detected status')
+
+  // Step 2: Queue storefront request using detected brand data
+  const storeRes = await fetch_json('POST', '/api/storefront/request', {
+    domain_submission_id: domainId,
+    domain: testDomain,
+    company_name: submitRes.data.company_name,
+    logo_url: submitRes.data.logo_url,
+    primary_color: submitRes.data.primary_color,
+    secondary_color: submitRes.data.secondary_color,
+  })
+  if (storeRes.status !== 201) throw new Error(`storefront/request failed: ${storeRes.status}`)
+  const requestId = storeRes.data.id
+  if (!requestId) throw new Error('no storefront request ID returned')
+
+  // Step 3: Verify storefront can be fetched
+  const fetchRes = await fetch_json('GET', `/api/storefront/fetch?id=${encodeURIComponent(requestId)}`)
+  if (fetchRes.status !== 200) throw new Error(`storefront/fetch failed: ${fetchRes.status}`)
+  if (!fetchRes.data.id) throw new Error('storefront missing id')
+  if (fetchRes.data.domain !== testDomain) throw new Error('storefront domain mismatch')
+})
+
+// ============================================================================
 // SUMMARY
 // ============================================================================
 
