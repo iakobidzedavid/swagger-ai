@@ -112,12 +112,20 @@ export async function fulfillStorefrontRequest(requestId: string): Promise<Fulfi
     )
 
     // Use curated descriptions (with AI-enhanced copy if available)
-    const finalProducts = selectedProducts.map((original, idx) => ({
-      ...original,
-      description: curatedProducts[idx]?.aiDescription ?? original.description,
-    }))
+    const finalProducts = selectedProducts.map((original, idx) => {
+      const aiDesc = curatedProducts[idx]?.aiDescription
+      const description = aiDesc ?? original.description
+      if (aiDesc) {
+        console.log(`[storefront-fulfillment] AI description for "${original.title}": "${description.substring(0, 60)}..."`)
+      }
+      return {
+        ...original,
+        description,
+      }
+    })
 
-    console.log(`[storefront-fulfillment] Using ${curatedProducts.filter(p => p.aiDescription).length}/${finalProducts.length} AI-curated product descriptions`)
+    const aiCount = curatedProducts.filter(p => p.aiDescription).length
+    console.log(`[storefront-fulfillment] Generated ${aiCount}/${finalProducts.length} AI-curated product descriptions for ${companyNameForCuration}. OPENAI_API_KEY=${process.env.OPENAI_API_KEY ? 'SET' : 'UNSET'}`)
 
     // Real Printify mockups: this is the fast, no-signup self-serve path
     // (/onboard → "Continue to Store") — the actual flow the DE-22 MVBP demo
@@ -245,6 +253,10 @@ export async function fulfillStorefrontRequest(requestId: string): Promise<Fulfi
           brand_color_secondary: secondaryColor,
           status: 'active',
         })
+
+        if (!insertError) {
+          console.log(`[storefront-fulfillment] Product saved to DB: "${product.title}" with description: "${productData.description.substring(0, 50)}..."`)
+        }
 
         if (insertError) {
           console.error('[storefront-fulfillment] product insert error:', insertError)

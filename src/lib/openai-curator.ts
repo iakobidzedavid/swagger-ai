@@ -38,10 +38,12 @@ export async function curateProductDescriptions(
   if (!apiKey) {
     // Keyless fallback: return products unchanged
     console.warn(
-      '[OpenAI Curator] OPENAI_API_KEY not configured — using default product descriptions'
+      '[OpenAI Curator] OPENAI_API_KEY not configured — using default product descriptions. Products will display generic descriptions unless the key is set in production environment variables.'
     )
     return products.map(p => ({ ...p }))
   }
+
+  console.log(`[OpenAI Curator] OPENAI_API_KEY configured, attempting to generate AI descriptions for ${products.length} products for company: ${companyName}`)
 
   try {
     // Build curation prompt
