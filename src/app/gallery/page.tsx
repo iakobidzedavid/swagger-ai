@@ -1,7 +1,4 @@
-'use client'
-
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
 
 interface BrandData {
   domain: string
@@ -10,11 +7,6 @@ interface BrandData {
   primaryColor: string
   secondaryColor: string
   source: string
-}
-
-interface GalleryBrand extends BrandData {
-  isLoading?: boolean
-  error?: string
 }
 
 // Sample domains from Step 9 prospects + other known SaaS companies
@@ -40,9 +32,13 @@ const PRODUCT_SAMPLES = [
   { name: 'Tote Bag', category: 'Bags', image: '👜' },
 ]
 
-async function fetchBrandData(domain: string): Promise<GalleryBrand> {
+async function fetchBrandDataServer(domain: string): Promise<BrandData> {
   try {
-    const response = await fetch(`/api/brand?domain=${encodeURIComponent(domain)}`)
+    // Use absolute URL for server-side fetch
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const response = await fetch(`${baseUrl}/api/brand?domain=${encodeURIComponent(domain)}`, {
+      next: { revalidate: 3600 }, // Cache for 1 hour
+    })
     if (!response.ok) {
       return {
         domain,
@@ -51,7 +47,6 @@ async function fetchBrandData(domain: string): Promise<GalleryBrand> {
         primaryColor: '#7c3aed',
         secondaryColor: '#a78bfa',
         source: 'fallback',
-        error: 'Failed to load brand data',
       }
     }
     const data = await response.json()
@@ -65,12 +60,11 @@ async function fetchBrandData(domain: string): Promise<GalleryBrand> {
       primaryColor: '#7c3aed',
       secondaryColor: '#a78bfa',
       source: 'fallback',
-      error: 'Network error',
     }
   }
 }
 
-function BrandCard({ brand }: { brand: GalleryBrand }) {
+function BrandCard({ brand }: { brand: BrandData }) {
   return (
     <div className="card" style={{ position: 'relative', overflow: 'hidden' }}>
       {/* Brand header with logo */}
@@ -93,9 +87,6 @@ function BrandCard({ brand }: { brand: GalleryBrand }) {
               borderRadius: 'var(--radius-md)',
               background: 'var(--color-bg)',
               padding: '8px',
-            }}
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none'
             }}
           />
         ) : null}
@@ -204,21 +195,8 @@ function BrandCard({ brand }: { brand: GalleryBrand }) {
   )
 }
 
-export default function GalleryPage() {
-  const [brands, setBrands] = useState<GalleryBrand[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const loadBrands = async () => {
-      setIsLoading(true)
-      const brandPromises = SAMPLE_DOMAINS.map(domain => fetchBrandData(domain))
-      const results = await Promise.all(brandPromises)
-      setBrands(results)
-      setIsLoading(false)
-    }
-
-    loadBrands()
-  }, [])
+export default async function GalleryPage() {
+  const brands = await Promise.all(SAMPLE_DOMAINS.map(domain => fetchBrandDataServer(domain)))
 
   return (
     <>
@@ -242,22 +220,16 @@ export default function GalleryPage() {
       {/* Gallery section */}
       <section className="section">
         <div className="container">
-          {isLoading ? (
-            <div style={{ textAlign: 'center', padding: '60px 24px' }}>
-              <p className="text-body text-muted">Loading brand gallery...</p>
-            </div>
-          ) : (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-              gap: '24px',
-              marginBottom: '48px',
-            }}>
-              {brands.map((brand) => (
-                <BrandCard key={brand.domain} brand={brand} />
-              ))}
-            </div>
-          )}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '24px',
+            marginBottom: '48px',
+          }}>
+            {brands.map((brand) => (
+              <BrandCard key={brand.domain} brand={brand} />
+            ))}
+          </div>
 
           {/* How it works section */}
           <div style={{
