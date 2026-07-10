@@ -4,6 +4,9 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { useState, useRef, useCallback, useEffect, Suspense } from 'react'
 
 import { BrandAssetGallery } from '@/components/BrandAssetGallery'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { LoadingSkeleton, LoadingOverlay } from '@/components/LoadingSkeleton'
+import { ErrorRecovery, ValidationErrorMessage } from '@/components/ErrorRecovery'
 import { captureAttribution, getAttribution } from '@/lib/attribution'
 import { DOMAIN_RE, normalizeDomain } from '@/lib/brand'
 
@@ -412,12 +415,23 @@ function OnboardForm() {
             )}
 
             {submitError && (
-              <div className="error-banner" style={{ marginBottom: '16px' }}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4"/>
-                  <path d="M8 4v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-                </svg>
-                {submitError}
+              <div style={{ marginBottom: '16px' }}>
+                <ErrorRecovery
+                  error={submitError}
+                  title="Could not detect brand"
+                  icon="server"
+                  actions={[
+                    {
+                      label: 'Try Again',
+                      onClick: () => {
+                        setSubmitError(null)
+                        setBrandPreview(null)
+                        setSubmitState('idle')
+                      },
+                      primary: true,
+                    },
+                  ]}
+                />
               </div>
             )}
 
@@ -452,25 +466,53 @@ function OnboardForm() {
         </div>
 
         {/* Brand Preview Gallery */}
-        {brandPreview && !brand && previewFetchState === 'loaded' && (
+        {brandPreview && !brand && (
           <div className="card" style={{ marginBottom: '24px', borderColor: 'var(--color-accent)', borderWidth: '1px' }}>
-            <BrandAssetGallery
-              assets={{
-                domain: brandPreview.domain,
-                companyName: brandPreview.companyName,
-                logoUrl: brandPreview.logoUrl,
-                primaryColor: brandPreview.primaryColor,
-                secondaryColor: brandPreview.secondaryColor,
-                colors: brandPreview.colors,
-                fonts: brandPreview.fonts,
-              }}
-              logoError={logoError}
-              primaryColor={primaryColor}
-              secondaryColor={secondaryColor}
-              userSelectedSecondaryColor={userSelectedSecondaryColor}
-              onColorSelect={setPrimaryColor}
-              onSecondaryColorChange={setUserSelectedSecondaryColor}
-            />
+            {previewFetchState === 'loading' ? (
+              <LoadingSkeleton type="gallery" />
+            ) : previewFetchState === 'error' ? (
+              <ErrorRecovery
+                error="Could not load brand assets. Please check the domain and try again."
+                title="Brand Load Failed"
+                icon="network"
+                actions={[
+                  {
+                    label: 'Retry',
+                    onClick: () => {
+                      const norm = normalizeDomain(domain)
+                      if (norm) fetchBrandPreview(norm)
+                    },
+                    primary: true,
+                  },
+                  {
+                    label: 'Clear',
+                    onClick: () => {
+                      setBrandPreview(null)
+                      setSubmitState('idle')
+                      setSubmitError(null)
+                    },
+                  },
+                ]}
+              />
+            ) : previewFetchState === 'loaded' && brandPreview ? (
+              <BrandAssetGallery
+                assets={{
+                  domain: brandPreview.domain,
+                  companyName: brandPreview.companyName,
+                  logoUrl: brandPreview.logoUrl,
+                  primaryColor: brandPreview.primaryColor,
+                  secondaryColor: brandPreview.secondaryColor,
+                  colors: brandPreview.colors,
+                  fonts: brandPreview.fonts,
+                }}
+                logoError={logoError}
+                primaryColor={primaryColor}
+                secondaryColor={secondaryColor}
+                userSelectedSecondaryColor={userSelectedSecondaryColor}
+                onColorSelect={setPrimaryColor}
+                onSecondaryColorChange={setUserSelectedSecondaryColor}
+              />
+            ) : null}
           </div>
         )}
 
@@ -500,12 +542,26 @@ function OnboardForm() {
 
             {/* Store request error */}
             {storeRequestError && (
-              <div className="error-banner" style={{ marginBottom: '16px' }}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4"/>
-                  <path d="M8 4v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-                </svg>
-                {storeRequestError}
+              <div style={{ marginBottom: '16px' }}>
+                <ErrorRecovery
+                  error={storeRequestError}
+                  title="Store creation failed"
+                  icon="server"
+                  actions={[
+                    {
+                      label: 'Retry',
+                      onClick: () => handleGenerateStore(),
+                      primary: true,
+                    },
+                    {
+                      label: 'Cancel',
+                      onClick: () => {
+                        setStoreRequestError(null)
+                        setStoreRequestState('idle')
+                      },
+                    },
+                  ]}
+                />
               </div>
             )}
 
@@ -579,15 +635,28 @@ function OnboardForm() {
           {toast}
         </div>
       )}
+
+      {/* Loading overlay for store creation */}
+      <LoadingOverlay
+        visible={storeRequestState === 'requesting' || storeRequestState === 'queued'}
+        message={
+          storeRequestState === 'requesting'
+            ? 'Creating your branded store...'
+            : 'Processing your store request...'
+        }
+      />
     </div>
   )
 }
 
 export default function OnboardPage() {
   // useSearchParams requires a Suspense boundary during static generation.
+  // Wrap in ErrorBoundary to gracefully handle any runtime errors
   return (
-    <Suspense fallback={null}>
-      <OnboardForm />
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={null}>
+        <OnboardForm />
+      </Suspense>
+    </ErrorBoundary>
   )
 }
