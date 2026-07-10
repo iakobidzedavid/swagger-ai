@@ -272,6 +272,24 @@ await test('POST /api/domain/submit + POST /api/storefront/request creates a com
 })
 
 // ============================================================================
+// DASHBOARD PAGE (admin dashboard with empty states for new users)
+// ============================================================================
+
+await test('GET /dashboard returns 200 and shows empty states (no auth error)', async () => {
+  const res = await fetch(`${DEPLOY_URL}/dashboard`)
+  if (res.status !== 200) throw new Error(`expected 200, got ${res.status}`)
+  const html = await res.text()
+  // Should NOT show authentication error (the fix we're testing)
+  if (html.includes('Authentication required') && html.includes('Please create a storefront first')) {
+    throw new Error('authentication blocker still present — empty states unreachable')
+  }
+  // Should contain elements for the empty state experience
+  if (!html.includes('/onboard') && !html.includes('Create Your')) {
+    throw new Error('missing CTA to create storefront — empty state not functional')
+  }
+})
+
+// ============================================================================
 // GALLERY PAGE (visitor-facing brand sample gallery)
 // ============================================================================
 
