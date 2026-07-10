@@ -82,7 +82,7 @@ function DashboardContent() {
     try {
       setState(prev => ({ ...prev, loadingState: 'loading' }))
 
-      const token = localStorage.getItem('supabase_auth_token') || 'placeholder'
+      const token = localStorage.getItem('supabase_auth_token') || null
       const params = filterParams || state
 
       // Build query string for filters
@@ -101,12 +101,22 @@ function DashboardContent() {
         ordersParams.append('storefrontId', params.selectedStorefront)
       }
 
-      // Check if user is authenticated before fetching
-      if (!token || token === 'placeholder') {
-        throw new Error('Authentication required. Please create a storefront first.')
+      // If no authentication token, show empty state - allow unauthenticated users to see the dashboard
+      if (!token) {
+        setState(prev => ({
+          ...prev,
+          metrics: null,
+          orders: [],
+          storefronts: [],
+          totalOrderCount: 0,
+          loadingState: 'loaded',
+          error: null,
+          ...filterParams
+        }))
+        return
       }
 
-      // Fetch metrics, orders, and storefronts in parallel
+      // Fetch metrics, orders, and storefronts in parallel (only if authenticated)
       const [metricsRes, ordersRes, storefrontsRes] = await Promise.all([
         fetch(`/api/dashboard/metrics?${metricsParams}`, {
           headers: { 'Authorization': `Bearer ${token}` }
