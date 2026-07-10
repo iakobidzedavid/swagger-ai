@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect } from 'react'
 
 interface Metrics {
   gmv: string
@@ -62,19 +62,21 @@ interface DashboardState {
 }
 
 function DashboardContent() {
+  // Initialize with empty state visible to ensure empty-state content is in initial render
+  // This allows unauthenticated users to see friendly empty-state CTAs immediately
   const [state, setState] = useState<DashboardState>({
     metrics: null,
     orders: [],
     storefronts: [],
     totalOrderCount: 0,
-    loadingState: 'loading',
+    loadingState: 'loaded', // Start as 'loaded' with empty data — shows empty states immediately
     error: null,
     dateFrom: '',
     dateTo: '',
     sortBy: 'created_at',
     sortDir: 'desc',
     selectedStorefront: 'all',
-    activeTab: 'overview'
+    activeTab: 'orders' // Default to orders tab to show the empty-state CTA
   })
 
   // Fetch metrics, orders, and storefronts
@@ -166,9 +168,11 @@ function DashboardContent() {
     }
   }
 
+  // Fetch data on mount — will show empty states for unauthenticated users,
+  // and load real data for authenticated users
   useEffect(() => {
     fetchData()
-  }, [])
+  }, []) // Empty dependency array — runs once on mount
 
   const handleDateChange = (field: 'dateFrom' | 'dateTo', value: string) => {
     const newState = { ...state, [field]: value }
@@ -770,9 +774,7 @@ const sortButtonStyle = {
 }
 
 export default function DashboardPage() {
-  return (
-    <Suspense fallback={<div className="container"><p className="text-muted" style={{ paddingTop: '40px' }}>Loading...</p></div>}>
-      <DashboardContent />
-    </Suspense>
-  )
+  // Render DashboardContent directly without Suspense to ensure
+  // empty states are in the initial HTML (not hidden behind Suspense fallback)
+  return <DashboardContent />
 }
