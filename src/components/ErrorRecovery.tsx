@@ -49,26 +49,27 @@ export function ErrorRecovery({
   icon = 'generic',
 }: ErrorRecoveryProps) {
   return (
-    <div className="error-banner" style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
+    <div className="error-banner" role="alert" style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-        <div style={{ flexShrink: 0, marginTop: '2px' }}>
+        <div style={{ flexShrink: 0, marginTop: '2px', color: 'var(--color-danger)' }}>
           {ErrorIcons[icon]}
         </div>
-        <div style={{ flex: 1 }}>
-          <p style={{ fontWeight: 600, marginBottom: '4px' }}>{title}</p>
-          <p style={{ fontSize: '0.875rem', opacity: 0.9, marginBottom: actions.length > 0 ? '12px' : 0 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontWeight: 600, marginBottom: '4px', margin: 0 }}>{title}</p>
+          <p style={{ fontSize: '0.875rem', opacity: 0.9, marginBottom: actions.length > 0 ? '12px' : 0, margin: 0 }}>
             {error}
           </p>
         </div>
       </div>
 
       {actions.length > 0 && (
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', paddingTop: '8px' }}>
           {actions.map((action, idx) => (
             <button
               key={idx}
               onClick={action.onClick}
               className={action.primary ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}
+              type="button"
             >
               {action.label}
             </button>

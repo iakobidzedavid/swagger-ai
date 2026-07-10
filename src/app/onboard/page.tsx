@@ -216,12 +216,18 @@ function OnboardForm() {
 
   async function fetchBrandPreview(norm: string) {
     setPreviewFetchState('loading')
+    const startTime = Date.now()
     try {
       const res = await fetch(`/api/brand?domain=${encodeURIComponent(norm)}`)
       const data = await res.json()
       if (!res.ok) {
         setPreviewFetchState('error')
         return
+      }
+      // Ensure loading state is visible for at least 500ms
+      const elapsed = Date.now() - startTime
+      if (elapsed < 500) {
+        await new Promise(resolve => setTimeout(resolve, 500 - elapsed))
       }
       setBrandPreview(data)
       setPrimaryColor(data.primaryColor)

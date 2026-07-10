@@ -164,6 +164,28 @@ await test('POST /api/domain/submit without domain field returns 400', async () 
   if (status !== 400) throw new Error(`expected 400, got ${status}`)
 })
 
+await test('GET /api/domain/validate with valid company domain returns valid:true', async () => {
+  const { status, data } = await fetch_json('GET', '/api/domain/validate?domain=linear.app')
+  if (status !== 200) throw new Error(`expected 200, got ${status}`)
+  if (data.valid !== true) throw new Error(`expected valid:true, got valid:${data.valid}`)
+  if (!data.domain) throw new Error('missing domain field')
+})
+
+await test('GET /api/domain/validate with personal domain returns valid:false with reason', async () => {
+  const { status, data } = await fetch_json('GET', '/api/domain/validate?domain=gmail.com')
+  if (status !== 200) throw new Error(`expected 200, got ${status}`)
+  if (data.valid !== false) throw new Error(`expected valid:false, got valid:${data.valid}`)
+  if (!data.reason) throw new Error('missing reason field for invalid domain')
+  if (!data.reason.includes('personal')) throw new Error(`expected "personal" in reason, got: ${data.reason}`)
+})
+
+await test('GET /api/domain/validate with non-existent domain returns valid:false with reason', async () => {
+  const { status, data } = await fetch_json('GET', '/api/domain/validate?domain=invaliddomainthatdoesnotexist99999.com')
+  if (status !== 200) throw new Error(`expected 200, got ${status}`)
+  if (data.valid !== false) throw new Error(`expected valid:false, got valid:${data.valid}`)
+  if (!data.reason) throw new Error('missing reason field for non-existent domain')
+})
+
 // ============================================================================
 // STOREFRONT GENERATION FLOW (full end-to-end)
 // ============================================================================
