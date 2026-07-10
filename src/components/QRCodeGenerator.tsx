@@ -39,7 +39,9 @@ export function QRCodeGenerator({ url, fileName = 'store-qr-code' }: QRCodeGener
   }, [url])
 
   const downloadQRCode = async () => {
-    if (!qrDataUrl) return
+    if (!qrDataUrl) {
+      return
+    }
 
     try {
       // Create a link element and trigger download
@@ -57,7 +59,9 @@ export function QRCodeGenerator({ url, fileName = 'store-qr-code' }: QRCodeGener
   }
 
   const copyQRToClipboard = async () => {
-    if (!qrDataUrl) return
+    if (!qrDataUrl) {
+      return
+    }
 
     try {
       // Convert data URL to blob
