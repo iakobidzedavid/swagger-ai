@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import { useState, useEffect, Suspense } from 'react'
 
 import { CompetitivePositionChart } from '@/components/CompetitivePositionChart'
+import { QRCodeGenerator } from '@/components/QRCodeGenerator'
 
 interface StorefrontRequest {
   id: string
@@ -234,6 +235,8 @@ function StoreCreatedContent() {
                   background: 'var(--color-bg)',
                   borderRadius: 'var(--radius-md)',
                   border: '1px solid var(--color-border)',
+                  transition: 'all 0.2s',
+                  borderColor: copied ? 'var(--color-accent)' : 'var(--color-border)',
                 }}
               >
                 <code style={{ flex: 1, fontSize: '14px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
@@ -243,10 +246,10 @@ function StoreCreatedContent() {
                   onClick={() => copyToClipboard(storeInfo.storeUrl)}
                   style={{
                     padding: '8px 12px',
-                    background: 'transparent',
+                    background: copied ? 'var(--color-accent)' : 'transparent',
                     border: '1px solid var(--color-border)',
                     borderRadius: '4px',
-                    color: 'var(--color-accent)',
+                    color: copied ? 'var(--color-on-accent)' : 'var(--color-accent)',
                     cursor: 'pointer',
                     fontSize: '12px',
                     fontWeight: 600,
@@ -254,12 +257,16 @@ function StoreCreatedContent() {
                     whiteSpace: 'nowrap',
                   }}
                   onMouseEnter={(e) => {
-                    ;(e.target as HTMLElement).style.background = 'var(--color-accent)'
-                    ;(e.target as HTMLElement).style.color = 'var(--color-on-accent)'
+                    if (!copied) {
+                      ;(e.target as HTMLElement).style.background = 'var(--color-accent)'
+                      ;(e.target as HTMLElement).style.color = 'var(--color-on-accent)'
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    ;(e.target as HTMLElement).style.background = 'transparent'
-                    ;(e.target as HTMLElement).style.color = 'var(--color-accent)'
+                    if (!copied) {
+                      ;(e.target as HTMLElement).style.background = 'transparent'
+                      ;(e.target as HTMLElement).style.color = 'var(--color-accent)'
+                    }
                   }}
                 >
                   {copied ? '✓ Copied' : 'Copy'}
@@ -268,6 +275,16 @@ function StoreCreatedContent() {
             </div>
           </div>
         </div>
+
+        {/* QR Code Section */}
+        {storeInfo && (
+          <div style={{ marginBottom: '32px' }}>
+            <QRCodeGenerator
+              url={storeInfo.storeUrl}
+              fileName={`${storeInfo.domain}-store-qr`}
+            />
+          </div>
+        )}
 
         {/* Your Competitive Position — DE Step 11 made real: your own generation
             time + brand-fidelity score, plotted against the competitive research */}
