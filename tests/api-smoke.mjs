@@ -303,6 +303,27 @@ await test('GET /gallery returns 200 and contains expected content', async () =>
 })
 
 // ============================================================================
+// 404 PAGE (on-brand error page with navigation)
+// ============================================================================
+
+await test('GET /nonexistent-route returns 404 with branded error page', async () => {
+  const res = await fetch(`${DEPLOY_URL}/nonexistent-route-xyz-404-test`)
+  if (res.status !== 404) throw new Error(`expected 404, got ${res.status}`)
+  const html = await res.text()
+  // Verify the 404 page contains expected elements
+  if (!html.includes('404')) throw new Error('missing 404 text in response')
+  if (!html.includes('Page not found') && !html.includes('page you')) throw new Error('missing error message')
+  // Verify back-to-home links are present
+  if (!html.includes('href="/"') && !html.includes('Back to home')) {
+    throw new Error('missing link back to home')
+  }
+  // Verify on-brand styling is applied (check for design tokens in the HTML or CSS)
+  if (!html.includes('color') && !html.includes('button')) {
+    throw new Error('404 page missing expected HTML structure')
+  }
+})
+
+// ============================================================================
 // SUMMARY
 // ============================================================================
 
