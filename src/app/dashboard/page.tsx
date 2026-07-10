@@ -330,15 +330,37 @@ function DashboardContent() {
 
           {state.storefronts.length === 0 ? (
             <div style={{
-              padding: '40px',
+              padding: '48px 40px',
               textAlign: 'center',
               backgroundColor: 'var(--color-surface)',
               borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--color-border)'
             }}>
-              <p className="text-body text-muted">No storefronts created yet. Start by creating one to extract brand data.</p>
-              <Link href="/onboard" className="btn btn-primary" style={{ marginTop: '16px' }}>
-                Create Storefront
+              <div style={{
+                fontSize: '3rem',
+                marginBottom: '16px'
+              }}>
+                ✨
+              </div>
+              <h3 style={{
+                fontSize: '1.25rem',
+                fontWeight: 600,
+                marginBottom: '8px',
+                color: 'var(--color-text)'
+              }}>
+                No brand extractions yet
+              </h3>
+              <p style={{
+                fontSize: '0.875rem',
+                color: 'var(--color-text-muted)',
+                marginBottom: '24px',
+                maxWidth: '400px',
+                margin: '0 auto 24px'
+              }}>
+                Get started by creating your first storefront. We'll automatically extract your brand colors and logo to create a beautiful, on-brand merchandising experience.
+              </p>
+              <Link href="/onboard" className="btn btn-primary">
+                Create Your First Storefront
               </Link>
             </div>
           ) : (
@@ -572,15 +594,37 @@ function DashboardContent() {
 
           {state.orders.length === 0 ? (
             <div style={{
-              padding: '40px',
+              padding: '48px 40px',
               textAlign: 'center',
               backgroundColor: 'var(--color-surface)',
               borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--color-border)'
             }}>
-              <p className="text-body text-muted">No orders found. Start by creating a storefront and processing orders.</p>
-              <Link href="/onboard" className="btn btn-primary" style={{ marginTop: '16px' }}>
-                Create Storefront
+              <div style={{
+                fontSize: '3rem',
+                marginBottom: '16px'
+              }}>
+                📦
+              </div>
+              <h3 style={{
+                fontSize: '1.25rem',
+                fontWeight: 600,
+                marginBottom: '8px',
+                color: 'var(--color-text)'
+              }}>
+                No orders yet
+              </h3>
+              <p style={{
+                fontSize: '0.875rem',
+                color: 'var(--color-text-muted)',
+                marginBottom: '24px',
+                maxWidth: '400px',
+                margin: '0 auto 24px'
+              }}>
+                Your storefront is ready to go! Once your first customers place orders, they'll appear here. Create a storefront or share your existing one to start getting orders.
+              </p>
+              <Link href="/onboard" className="btn btn-primary">
+                Create a New Storefront
               </Link>
             </div>
           ) : (
