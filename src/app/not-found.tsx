@@ -1,6 +1,50 @@
+'use client'
+
+import { useEffect } from 'react'
 import Link from 'next/link'
 
 export default function NotFound() {
+  useEffect(() => {
+    // Track 404 event for analytics (broken link identification)
+    // Called on page load to log the attempted path and referrer
+    const trackNotFound = async () => {
+      try {
+        // Get the attempted path from referrer or window location
+        const attemptedPath = window.location.pathname
+        const referrer = document.referrer || null
+
+        // Extract UTM params from referrer if present
+        const urlParams = new URLSearchParams(window.location.search)
+        const utmSource = urlParams.get('utm_source') || null
+        const utmMedium = urlParams.get('utm_medium') || null
+        const utmCampaign = urlParams.get('utm_campaign') || null
+
+        // Send to analytics endpoint
+        const response = await fetch('/api/analytics/track-404', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            attempted_path: attemptedPath,
+            referrer: referrer,
+            user_agent: navigator.userAgent,
+            utm_source: utmSource,
+            utm_medium: utmMedium,
+            utm_campaign: utmCampaign,
+          }),
+        })
+
+        if (!response.ok) {
+          console.warn(`404 tracking failed: ${response.status}`)
+        }
+      } catch (err) {
+        // Silently fail — don't break the page if analytics fails
+        console.warn('Failed to track 404 event:', err)
+      }
+    }
+
+    trackNotFound()
+  }, [])
+
   return (
     <>
       {/* 404 Hero Section */}

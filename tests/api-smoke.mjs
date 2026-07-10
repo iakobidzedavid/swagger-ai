@@ -323,6 +323,43 @@ await test('GET /nonexistent-route returns 404 with branded error page', async (
   }
 })
 
+await test('POST /api/analytics/track-404 tracks 404 event with path and referrer', async () => {
+  const testPath = '/broken-link-test-' + Date.now()
+  const { status, data } = await fetch_json('POST', '/api/analytics/track-404', {
+    attempted_path: testPath,
+    referrer: 'https://example.com/previous-page',
+    user_agent: 'Test User Agent',
+    utm_source: 'test_source',
+    utm_medium: 'test_medium',
+    utm_campaign: 'test_campaign',
+  })
+  if (status !== 200 && status !== 202) throw new Error(`expected 200 or 202, got ${status}`)
+  if (!data.success) throw new Error('response should have success=true')
+  if (status === 200 && !data.event_id) throw new Error('missing event_id in 200 response')
+  if (data.attempted_path !== testPath) throw new Error(`attempted_path mismatch`)
+})
+
+await test('POST /api/analytics/track-404 handles missing referrer gracefully', async () => {
+  const testPath = '/another-broken-link-' + Date.now()
+  const { status, data } = await fetch_json('POST', '/api/analytics/track-404', {
+    attempted_path: testPath,
+    // omit referrer, user_agent, and utm params
+  })
+  if (status !== 200 && status !== 202) throw new Error(`expected 200 or 202, got ${status}`)
+  if (!data.success) throw new Error('response should indicate success')
+})
+
+await test('POST /api/analytics/track-404 with invalid JSON returns 400', async () => {
+  const opts = {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: 'not-json',
+  }
+  const res = await fetch(`${DEPLOY_URL}/api/analytics/track-404`, opts)
+  const data = await res.json()
+  if (res.status !== 400) throw new Error(`expected 400, got ${res.status}`)
+})
+
 // ============================================================================
 // SUMMARY
 // ============================================================================
