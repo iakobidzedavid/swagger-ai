@@ -111,7 +111,9 @@ interface LoadingOverlayProps {
 }
 
 export function LoadingOverlay({ visible, message = 'Processing...' }: LoadingOverlayProps) {
-  if (!visible) return null
+  if (!visible) {
+    return null
+  }
 
   return (
     <div

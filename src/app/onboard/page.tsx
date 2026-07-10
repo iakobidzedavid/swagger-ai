@@ -401,11 +401,42 @@ function OnboardForm() {
               </span>
             </div>
 
-            {/* Inline error */}
-            {(fmtErr || validationMsg) && (
+            {/* Format validation error */}
+            {fmtErr && (
               <p id="domain-error" className="text-small text-danger" style={{ marginBottom: '12px' }}>
-                {fmtErr || validationMsg}
+                {fmtErr}
               </p>
+            )}
+
+            {/* API validation error with recovery options */}
+            {!fmtErr && validationMsg && (
+              <div style={{ marginBottom: '16px' }}>
+                <ErrorRecovery
+                  error={validationMsg}
+                  title="Domain verification failed"
+                  icon="validation"
+                  actions={[
+                    {
+                      label: 'Try Again',
+                      onClick: () => {
+                        const norm = normalizeDomain(domain)
+                        if (norm) {
+                          runApiValidation(norm)
+                        }
+                      },
+                      primary: true,
+                    },
+                    {
+                      label: 'Clear',
+                      onClick: () => {
+                        setDomain('')
+                        setValidationMsg(null)
+                        setValidationState('idle')
+                      },
+                    },
+                  ]}
+                />
+              </div>
             )}
 
             {!fmtErr && !validationMsg && domain && (
@@ -466,7 +497,7 @@ function OnboardForm() {
         </div>
 
         {/* Brand Preview Gallery */}
-        {brandPreview && !brand && (
+        {(brandPreview || previewFetchState === 'loading' || previewFetchState === 'error') && !brand && (
           <div className="card" style={{ marginBottom: '24px', borderColor: 'var(--color-accent)', borderWidth: '1px' }}>
             {previewFetchState === 'loading' ? (
               <LoadingSkeleton type="gallery" />
@@ -480,7 +511,9 @@ function OnboardForm() {
                     label: 'Retry',
                     onClick: () => {
                       const norm = normalizeDomain(domain)
-                      if (norm) fetchBrandPreview(norm)
+                      if (norm) {
+                        fetchBrandPreview(norm)
+                      }
                     },
                     primary: true,
                   },
@@ -488,6 +521,7 @@ function OnboardForm() {
                     label: 'Clear',
                     onClick: () => {
                       setBrandPreview(null)
+                      setPreviewFetchState('idle')
                       setSubmitState('idle')
                       setSubmitError(null)
                     },
