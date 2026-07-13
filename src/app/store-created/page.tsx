@@ -108,7 +108,8 @@ function StoreCreatedContent() {
     )
   }
 
-  if (error || !storeInfo) {
+  // If we have no store info at all, show error page
+  if (!storeInfo) {
     return (
       <div className="section">
         <div className="container content-narrow">
@@ -130,14 +131,27 @@ function StoreCreatedContent() {
   return (
     <div className="section">
       <div className="container content-narrow">
-        {/* Success Banner */}
-        <div className="success-banner" style={{ marginBottom: '32px' }}>
-          <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4" />
-            <path d="M5 8l2.5 2.5 4-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Store request created successfully!
-        </div>
+        {/* Success Banner or Partial Success Banner */}
+        {error ? (
+          <div className="error-banner" style={{ marginBottom: '32px' }}>
+            <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4" />
+              <path d="M8 4v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+            <div>
+              <strong>Store Created, But Some Products Are Pending</strong>
+              <div className="text-small" style={{ marginTop: '4px' }}>Your store is ready to use, but we're still preparing some products. You can start sharing now!</div>
+            </div>
+          </div>
+        ) : (
+          <div className="success-banner" style={{ marginBottom: '32px' }}>
+            <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4" />
+              <path d="M5 8l2.5 2.5 4-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Store request created successfully!
+          </div>
+        )}
 
         {/* Header */}
         <div style={{ marginBottom: '32px' }}>
